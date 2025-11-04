@@ -1,0 +1,39 @@
+{
+  "name": "Your Character Name",
+  "pronouns": "they/them",
+  "color": "Custom Color (e.g. Pink, Blue, Green)",
+  "portraits": {
+    "streetwear": "images/yourcharacter-streetwear.png",
+    "qfactor": "images/yourcharacter-qfactor.png"
+  },
+  "themes": [
+    {
+      "type": "rainbow",
+      "name": "Signature",
+      "runway": "Describe your main fabulous ability or inspiration.",
+      "powerTags": ["Power Tag 1", "Power Tag 2", "Power Tag 3"],
+      "weaknessTags": ["Weakness Tag 1"],
+      "growth": [false, false, false],
+      "shade": [false, false, false],
+      "combos": [{"name": "Combo Name", "tags": ["Power Tag 1", "Power Tag 2"]}]
+    },
+    {
+      "type": "realness",
+      "name": "Goal",
+      "identity": "Your driving belief or identity statement.",
+      "powerTags": ["Tag 1", "Tag 2"],
+      "weaknessTags": ["Tag 3"],
+      "growth": [false, false, false],
+      "crack": [false, false, false],
+      "combos": []
+    }
+  ],
+  "tagCombos": [],
+  "statusEffects": [],
+  "burntTags": [],
+  "resources": {
+    "QPower": 3,
+    "Drama": 0,
+    "Inspiration": 0
+  }
+}

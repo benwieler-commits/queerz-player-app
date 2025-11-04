@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUEERZ! Player App</title>
+    <link rel="stylesheet" href="styles-player.css">
+</head>
+<body>
+    <div id="app">
+        <header class="app-header">
+            <h1 class="app-title">QUEERZ! Player Companion</h1>
+        </header>
+        <main class="main-content">
+            <section id="characterSection" class="section active">
+                <h2 class="section-title">Your Character</h2>
+                <div class="character-card" id="characterCard">
+                    <p>Load a character JSON file to begin.</p>
+                    <input type="file" id="importCharacter" accept=".json" />
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="player-app.js"></script>
+</body>
+</html>
