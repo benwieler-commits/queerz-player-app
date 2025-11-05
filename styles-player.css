@@ -27,3 +27,43 @@ body {
     border-radius: 10px;
     margin: 10px;
 }
+.character-portrait {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 12px;
+    border: 5px solid var(--accent);
+    margin-bottom: 10px;
+    transition: opacity 0.4s ease, transform 0.3s ease;
+}
+
+.character-portrait.fade-out {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.character-portrait.fade-in {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.portrait-toggle {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.portrait-toggle button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.portrait-toggle button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}

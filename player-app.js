@@ -53,9 +53,40 @@ async function applyCharacter(json){
   els.runway.textContent = json.runway || '';
   if (json.balance) els.balance.textContent = `${json.balance.rainbow||0} Rainbow | ${json.balance.realness||0} Realness`;
 
-  const p = json.portraits || {};
-  const src = p.streetwear || p.qfactor || '';
-  if (src){ els.portrait.src = src; els.portrait.style.display='block'; } else { els.portrait.style.display='none'; }
+  const portraits = json.portraits || {};
+let currentPortrait = 'streetwear';
+
+function updatePortrait() {
+  const img = document.getElementById('characterPortrait');
+  const btn = document.getElementById('togglePortraitBtn');
+
+  const nextSrc = portraits[currentPortrait] || '';
+  if (nextSrc) {
+    img.classList.add('fade-out');
+    setTimeout(() => {
+      img.src = nextSrc;
+      img.classList.remove('fade-out');
+      img.classList.add('fade-in');
+    }, 200);
+  }
+
+  // Update button text
+  if (btn) {
+    btn.textContent =
+      currentPortrait === 'streetwear'
+        ? 'Switch to Q-Factor'
+        : 'Switch to Streetwear';
+  }
+}
+
+// Hook up button
+document.getElementById('togglePortraitBtn')?.addEventListener('click', () => {
+  currentPortrait = currentPortrait === 'streetwear' ? 'qfactor' : 'streetwear';
+  updatePortrait();
+});
+
+// Initialize on load
+updatePortrait();
 
   const t = json.trackers || {};
   current.trackers.juice = Number.isFinite(t.juice) ? t.juice : 0;
