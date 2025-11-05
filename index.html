@@ -3,103 +3,91 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QUEERZ! Player App</title>
-  <link rel="stylesheet" href="styles/styles-player.css" />
-  <!-- Firebase (modular) -->
+  <title>QUEERZ! Player — Folio Redux</title>
+  <link rel="stylesheet" href="styles/folio.css" />
   <script type="module" src="firebase-config.js"></script>
   <script type="module" src="player-app.js"></script>
 </head>
 <body>
-  <header class="app-header">
-    <h1 class="app-title">🌈 QUEERZ! Player App</h1>
-    <div class="top-row">
-      <label>
-        Campaign:
+  <header class="folio-header">
+    <div class="brand">🌈 QUEERZ! Player</div>
+    <div class="selectors">
+      <label>Campaign
         <select id="campaignSelect">
           <option value="characters/manifest_campaignA.json">Campaign A</option>
           <option value="characters/manifest_campaignB.json">Campaign B</option>
           <option value="characters/manifest_testLuxy.json" selected>Test (Luxy)</option>
         </select>
       </label>
-      <label>
-        Character:
+      <label>Character
         <select id="characterSelect"></select>
       </label>
     </div>
-    <div class="character-name-display" id="characterNameDisplay"></div>
   </header>
 
-  <main class="main-content">
-    <!-- Firebase Scene/Music Sync -->
-    <section class="mc-sync-panel">
-      <div class="sync-header">
-        <h3>🎬 Scene Sync</h3>
-        <button id="syncNowBtn" class="sync-btn">Sync Now</button>
+  <main class="folio">
+    <section class="folio-left">
+      <div class="portrait-card accent-border">
+        <img id="characterPortrait" class="portrait" src="images/placeholder-portrait.png" alt="Portrait" />
+        <button id="togglePortraitBtn" class="pill">Switch to Q-Factor</button>
+        <div class="char-meta">
+          <h2 id="characterNameDisplay" class="char-name">—</h2>
+          <p id="charDescription" class="char-desc"></p>
+        </div>
       </div>
-      <div class="sync-content">
-        <div id="syncScene" class="sync-scene">
-          <div class="scene-placeholder">Waiting for MC broadcast...</div>
-        </div>
-        <div id="syncMusic" class="sync-music">
-          <div class="music-placeholder">♪ No track currently playing</div>
-        </div>
+
+      <div class="scene-card">
+        <div class="scene-head">🎬 Scene Sync</div>
+        <div id="syncScene" class="scene-pane muted">Waiting for MC broadcast…</div>
+        <div id="syncMusic" class="music-pane muted">♪ No track currently playing</div>
+        <button id="syncNowBtn" class="pill ghost">Sync Now</button>
       </div>
     </section>
 
-    <!-- Portrait + Toggle -->
-    <section class="character-card">
-      <div class="portrait-container">
-        <img id="characterPortrait" class="character-portrait" src="images/placeholder-portrait.png" alt="Character portrait" />
-        <div class="portrait-toggle">
-          <button id="togglePortraitBtn">Switch to Q-Factor</button>
+    <section class="folio-right">
+      <div class="theme-card accent-border">
+        <div class="theme-head">Tags & Dice</div>
+        <div class="move-select">
+          <label for="moveSelect">Move</label>
+          <select id="moveSelect">
+            <option value="">-- choose a move --</option>
+            <option value="vulnerable">Be Vulnerable</option>
+            <option value="care">Care</option>
+            <option value="clue">Get a Clue</option>
+            <option value="resist">Resist</option>
+            <option value="slay">Slay</option>
+            <option value="pose">Strike a Pose</option>
+            <option value="talk">Talk It Out</option>
+          </select>
         </div>
-      </div>
-      <p class="char-description" id="charDescription"></p>
-    </section>
 
-    <!-- Dice + Tags -->
-    <section class="roller-container">
-      <div class="move-selector">
-        <label for="moveSelect">Select Move</label>
-        <select id="moveSelect">
-          <option value="">-- choose a move --</option>
-          <option value="vulnerable">Be Vulnerable</option>
-          <option value="care">Care</option>
-          <option value="clue">Get a Clue</option>
-          <option value="resist">Resist</option>
-          <option value="slay">Slay</option>
-          <option value="pose">Strike a Pose</option>
-          <option value="talk">Talk It Out</option>
-        </select>
-      </div>
+        <div class="tag-grid" id="availableTags"></div>
 
-      <div class="tag-selection">
-        <h3>Available Tags</h3>
-        <div id="availableTags" class="tags-grid"></div>
-      </div>
-
-      <div class="power-display">
-        <div class="power-label">Total Power</div>
-        <div id="currentPower" class="power-value">0</div>
-      </div>
-
-      <button id="rollButton" class="roll-button">🎲 ROLL 2d6 + Power</button>
-      <div id="rollResult" class="roll-result hidden"></div>
-
-      <div class="tracking-subsection">
-        <h3>Story Tags</h3>
-        <div class="tag-input-group">
-          <input id="storyTagName" class="text-input" placeholder="Story tag (e.g., Protected, Inspired)" />
-          <label class="checkbox-label"><input type="checkbox" id="storyTagOngoing" /> Ongoing</label>
-          <button id="addStoryTag" class="add-btn">+ Add Story Tag</button>
+        <div class="power-badge">
+          <div class="label">Power</div>
+          <div id="currentPower" class="value">0</div>
         </div>
-        <div id="storyTagList" class="tag-list"></div>
+
+        <button id="rollButton" class="cta">🎲 Roll 2d6 + Power</button>
+        <div id="rollResult" class="roll muted"></div>
       </div>
 
-      <div class="tracking-subsection">
-        <h3>Burnt Tags</h3>
-        <div id="burntTagsList" class="burnt-tags-list"></div>
-        <button id="recoverBurntTags" class="recover-btn">Recover All Burnt Tags</button>
+      <div class="story-burnt">
+        <div class="story-card">
+          <div class="section-title">Story Tags</div>
+          <div class="row">
+            <input id="storyTagName" class="input" placeholder="Story tag (e.g., Protected)" />
+            <label class="check"><input type="checkbox" id="storyTagOngoing" /> Ongoing</label>
+            <button id="addStoryTag" class="pill small">+ Add</button>
+          </div>
+          <div id="storyTagList" class="list"></div>
+        </div>
+
+        <div class="burnt-card">
+          <div class="section-title">Burnt Tags</div>
+          <div id="burntTagsList" class="chips"></div>
+          <button id="recoverBurntTags" class="pill ghost">Recover All</button>
+        </div>
       </div>
     </section>
   </main>

@@ -1,4 +1,4 @@
-// Firebase config + exports (module)
+// Firebase (Player)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
 import { getDatabase } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 
