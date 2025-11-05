@@ -1,0 +1,11 @@
+{
+  "campaign": "Test Environment - Luxy Charms",
+  "themeColor": "#93E9BE",
+  "characters": [
+    {
+      "name": "Luxy Charms",
+      "file": "luxy-charms.json",
+      "color": "#93E9BE"
+    }
+  ]
+}

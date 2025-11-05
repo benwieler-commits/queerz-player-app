@@ -1,235 +1,237 @@
+import { db } from './firebase-config.js';
+import { ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
+
+// Simple state
 const els = {
-  select: document.getElementById('characterSelect'),
-  btnLoadLocal: document.getElementById('btnLoadLocal'),
-  fileLocal: document.getElementById('fileLocal'),
-  portrait: document.getElementById('portrait'),
-  charName: document.getElementById('charName'),
-  charPronouns: document.getElementById('charPronouns'),
-  charColor: document.getElementById('charColor'),
-  runway: document.getElementById('runway'),
-  balance: document.getElementById('balance'),
-  themes: document.getElementById('themes'),
-  comboList: document.getElementById('comboList'),
-  juiceVal: document.getElementById('juiceVal'),
-  overdrivePips: document.getElementById('overdrivePips'),
+  campaign: document.getElementById('campaignSelect'),
+  character: document.getElementById('characterSelect'),
+  name: document.getElementById('characterNameDisplay'),
+  portrait: document.getElementById('characterPortrait'),
+  toggleBtn: document.getElementById('togglePortraitBtn'),
+  desc: document.getElementById('charDescription'),
+  availableTags: document.getElementById('availableTags'),
+  currentPower: document.getElementById('currentPower'),
+  rollButton: document.getElementById('rollButton'),
+  rollResult: document.getElementById('rollResult'),
+  storyTagName: document.getElementById('storyTagName'),
+  storyTagOngoing: document.getElementById('storyTagOngoing'),
+  addStoryTag: document.getElementById('addStoryTag'),
+  storyTagList: document.getElementById('storyTagList'),
+  burntTagsList: document.getElementById('burntTagsList'),
+  recoverBurntTags: document.getElementById('recoverBurntTags'),
+  syncScene: document.getElementById('syncScene'),
+  syncMusic: document.getElementById('syncMusic'),
+  syncNow: document.getElementById('syncNowBtn'),
+  moveSelect: document.getElementById('moveSelect')
 };
-let current = { data:null, trackers:{juice:0,overdrive:0} };
-let styleLinkEl = null;
 
-async function loadManifest(){
-  try{
-    const res = await fetch('characters/manifest.json', {cache:'no-store'});
-    if (!res.ok) throw new Error('No manifest');
-    const manifest = await res.json();
-    (manifest.files||[]).forEach(f=>{
-      const opt = document.createElement('option');
-      opt.value = f.path;
-      opt.textContent = f.label || f.path.replace(/^.*\//,'');
-      els.select.appendChild(opt);
-    });
-  }catch(e){
-    console.warn('No manifest.json found; you can still load a local JSON.', e);
+let currentCharacter = null;
+let portraits = {};
+let portraitMode = 'streetwear';
+let gameState = {
+  storyTags: [],
+  burntTags: [],
+  selectedTags: []
+};
+
+// ---------- Campaign & Character loading ----------
+async function loadManifest(manifestPath){
+  const res = await fetch(manifestPath);
+  const manifest = await res.json();
+  // populate character dropdown
+  els.character.innerHTML = '';
+  (manifest.characters || []).forEach((c,i)=>{
+    const opt = document.createElement('option');
+    opt.value = c.file;
+    opt.textContent = c.name;
+    els.character.appendChild(opt);
+  });
+  if (manifest.characters && manifest.characters.length){
+    await loadCharacter(els.character.value);
+  }else{
+    els.name.textContent = 'No characters in this campaign yet';
   }
 }
-
-function rememberSelection(path){ localStorage.setItem('qz_selected_character', path || ''); }
-function getRemembered(){ return localStorage.getItem('qz_selected_character') || ''; }
-
-async function loadCharacterFromPath(path){
-  const res = await fetch(path + '?t=' + Date.now());
+async function loadCharacter(path){
+  const res = await fetch(`characters/${path.replace(/^characters\//,'').replace(/^\.\//,'')}`);
   const json = await res.json();
-  await applyCharacter(json);
-  rememberSelection(path);
-}
-
-async function applyCharacter(json){
-  current.data = json;
-  await applyStyle(json);
-  if (json.color){ document.documentElement.style.setProperty('--accent', json.color); }
-
-  els.charName.textContent = json.name || '—';
-  els.charPronouns.textContent = json.pronouns ? `• ${json.pronouns}` : '';
-  els.charColor.textContent = json.color ? `• ${json.color}` : '';
-  els.runway.textContent = json.runway || '';
-  if (json.balance) els.balance.textContent = `${json.balance.rainbow||0} Rainbow | ${json.balance.realness||0} Realness`;
-
-  const portraits = json.portraits || {};
-let currentPortrait = 'streetwear';
-
-function updatePortrait() {
-  const img = document.getElementById('characterPortrait');
-  const btn = document.getElementById('togglePortraitBtn');
-
-  const nextSrc = portraits[currentPortrait] || '';
-  if (nextSrc) {
-    img.classList.add('fade-out');
-    setTimeout(() => {
-      img.src = nextSrc;
-      img.classList.remove('fade-out');
-      img.classList.add('fade-in');
-    }, 200);
+  currentCharacter = json;
+  // Set theme color
+  if (json.color){
+    document.documentElement.style.setProperty('--accent', json.color);
   }
-
-  // Update button text
-  if (btn) {
-    btn.textContent =
-      currentPortrait === 'streetwear'
-        ? 'Switch to Q-Factor'
-        : 'Switch to Streetwear';
-  }
-}
-
-// Hook up button
-document.getElementById('togglePortraitBtn')?.addEventListener('click', () => {
-  currentPortrait = currentPortrait === 'streetwear' ? 'qfactor' : 'streetwear';
+  els.name.textContent = json.name || '';
+  els.desc.textContent = json.description || '';
+  portraits = json.portraits || {};
+  portraitMode = 'streetwear';
   updatePortrait();
-});
-
-// Initialize on load
-updatePortrait();
-
-  const t = json.trackers || {};
-  current.trackers.juice = Number.isFinite(t.juice) ? t.juice : 0;
-  current.trackers.overdrive = Number.isFinite(t.overdrive) ? t.overdrive : 0;
-  renderTrackers();
-
-  renderThemes(json.themes || []);
-  renderCombos(json.tagCombos || []);
+  renderAvailableTags(json);
+  renderStoryTags();
+  renderBurntTags();
 }
 
-async function applyStyle(json){
-  const href = json.styleSheet || null;
-  if (styleLinkEl && styleLinkEl.parentNode){ styleLinkEl.parentNode.removeChild(styleLinkEl); styleLinkEl = null; }
-  if (href){
-    styleLinkEl = document.createElement('link');
-    styleLinkEl.rel = 'stylesheet';
-    styleLinkEl.href = href + '?t=' + Date.now();
-    document.head.appendChild(styleLinkEl);
-    await new Promise(r => styleLinkEl.onload = r);
-  }
+function updatePortrait(){
+  const src = portraits[portraitMode] || portraits.streetwear || portraits.qfactor || 'images/placeholder-portrait.png';
+  els.portrait.classList.add('fade-out');
+  setTimeout(()=>{
+    els.portrait.src = src;
+    els.portrait.classList.remove('fade-out');
+    els.portrait.classList.add('fade-in');
+  },200);
+  els.toggleBtn.textContent = portraitMode === 'streetwear' ? 'Switch to Q-Factor' : 'Switch to Streetwear';
 }
 
-function renderTrackers(){
-  els.juiceVal.textContent = current.trackers.juice;
-  [...els.overdrivePips.querySelectorAll('.pip')].forEach((pip, i)=>{
-    pip.classList.toggle('on', i < current.trackers.overdrive);
+// ---------- Tags & Dice ----------
+function renderAvailableTags(json){
+  const all = [];
+  (json.themes || []).forEach(theme=>{
+    (theme.powerTags||[]).forEach(t=> all.push({name:t,type:'power'}));
+    (theme.weaknessTags||[]).forEach(t=> all.push({name:t,type:'weakness'}));
   });
-}
+  // Add story tags
+  gameState.storyTags.forEach(t=> all.push({name:t.name,type:'story'}));
 
-function addTagList(containerLabel, list){
-  const block = document.createElement('div');
-  block.className = 'block';
-  block.innerHTML = `<div class="label">${containerLabel}</div>`;
-  const ul = document.createElement('ul');
-  (list||[]).forEach(t=>{
-    const li = document.createElement('li');
-    li.innerHTML = `<span class="tag">${escapeHtml(t)}</span>`;
-    ul.appendChild(li);
-  });
-  block.appendChild(ul);
-  return block;
-}
-
-function renderThemes(themes){
-  els.themes.innerHTML = '';
-  themes.forEach(th => {
-    const wrap = document.createElement('div');
-    wrap.className = 'theme card';
-
-    const head = document.createElement('div');
-    head.className = 'head';
-    head.innerHTML = `<div><strong>${escapeHtml(th.name||'')}</strong></div><span class="chip">${escapeHtml(th.category||th.type||'')}</span>`;
-    wrap.appendChild(head);
-
-    wrap.appendChild(addTagList('Power Tags', th.powerTags));
-    wrap.appendChild(addTagList('Weakness Tags', th.weaknessTags));
-    wrap.appendChild(addTagList('New Power Tag Options', th.newPowerTagOptions));
-
-    if (th.themeImprovement){
-      const imp = document.createElement('div');
-      imp.className = 'improvement';
-      imp.innerHTML = `<span class="checkbox" role="checkbox" aria-checked="false" tabindex="0"></span><div>${escapeHtml(th.themeImprovement)}</div>`;
-      wrap.appendChild(imp);
-    }
-
-    if (th.assignedMoves && th.assignedMoves.length){
-      const tblLabel = document.createElement('div');
-      tblLabel.className = 'label';
-      tblLabel.textContent = 'Assigned Moves';
-      wrap.appendChild(tblLabel);
-
-      th.assignedMoves.forEach(row=>{
-        const r = document.createElement('div');
-        r.className = 'move-row';
-        const tags = (row.recommendedTags||[]).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join(' ');
-        r.innerHTML = `<div class="move-name">${escapeHtml(row.move||'')}</div><div class="tags">${tags}</div><div class="power-chip">POWER ${row.powerHint||1}</div>`;
-        wrap.appendChild(r);
+  els.availableTags.innerHTML = '';
+  all.forEach(tag=>{
+    const btn = document.createElement('button');
+    btn.className = 'selectable-tag';
+    if (gameState.burntTags.includes(tag.name)) btn.classList.add('burnt');
+    btn.innerHTML = `<span class="tag-name-text">${tag.name}</span>` + (tag.type!=='story' && !gameState.burntTags.includes(tag.name) ? `<span class="burn-icon" title="Burn this tag">🔥</span>`:'');    
+    btn.addEventListener('click', (e)=>{
+      if (btn.classList.contains('burnt')) return;
+      const idx = gameState.selectedTags.indexOf(tag.name);
+      if (idx>=0){ gameState.selectedTags.splice(idx,1); btn.classList.remove('selected'); }
+      else { gameState.selectedTags.push(tag.name); btn.classList.add('selected'); }
+      updatePowerDisplay();
+    });
+    const burn = btn.querySelector('.burn-icon');
+    if (burn){
+      burn.addEventListener('click',(e)=>{
+        e.stopPropagation();
+        if (!gameState.burntTags.includes(tag.name)){
+          gameState.burntTags.push(tag.name);
+          gameState.selectedTags = gameState.selectedTags.filter(n=>n!==tag.name);
+          renderAvailableTags(json);
+          renderBurntTags();
+          alert(`"${tag.name}" burnt 🔥 → guaranteed hit per your table rules.`);
+        }
       });
     }
-
-    const tracks = document.createElement('div');
-    tracks.className = 'block';
-    const growth = (th.growth||[]).map(on => `<span class="pip ${on?'on':''}"></span>`).join('');
-    const shade  = (th.shade ||[]).map(on => `<span class="pip ${on?'on':''}"></span>`).join('');
-    const crack  = (th.crack ||[]).map(on => `<span class="pip ${on?'on':''}"></span>`).join('');
-    tracks.innerHTML = `<div class="label">Progress</div>
-      <div>Growth: <span class="pips">${growth||'<span class=\"muted\">—</span>'}</span></div>
-      <div>${th.type==='realness'?'Crack':'Shade'}: <span class="pips">${(th.type==='realness'?crack:shade)||'<span class=\"muted\">—</span>'}</span></div>`;
-    wrap.appendChild(tracks);
-
-    els.themes.appendChild(wrap);
+    els.availableTags.appendChild(btn);
   });
+  updatePowerDisplay();
 }
 
-function renderCombos(combos){
-  els.comboList.innerHTML='';
-  combos.forEach(c=>{
+function updatePowerDisplay(){
+  let p=0;
+  gameState.selectedTags.forEach(n=>{
+    // weakness?
+    let isWeak=false;
+    (currentCharacter.themes||[]).forEach(th=>{
+      if ((th.weaknessTags||[]).includes(n)) isWeak=true;
+    });
+    if (isWeak) p-=1; else p+=1;
+  });
+  els.currentPower.textContent = p;
+}
+
+function rollDice(){
+  const move = els.moveSelect.value;
+  if (!move){ alert('Pick a move first'); return; }
+  let p=0, weakness=false;
+  gameState.selectedTags.forEach(n=>{
+    let isWeak=false;
+    (currentCharacter.themes||[]).forEach(th=>{
+      if ((th.weaknessTags||[]).includes(n)) isWeak=true;
+    });
+    if (isWeak){ p-=1; weakness=true; } else { p+=1; }
+  });
+  const d1 = Math.floor(Math.random()*6)+1;
+  const d2 = Math.floor(Math.random()*6)+1;
+  const total = d1+d2+p;
+  let cls='miss', txt='MISS — the MC makes a hard move.';
+  if (total>=10){ cls='success'; txt='FULL SUCCESS — you do it, clean.'; }
+  else if (total>=7){ cls='partial'; txt='PARTIAL SUCCESS — you do it, but…'; }
+  els.rollResult.className = `roll-result ${cls}`;
+  els.rollResult.innerHTML = `<div class="dice-display">🎲 ${d1} + ${d2}</div><div class="total-display">Total: ${total} (Power: ${p})</div><div class="outcome-text">${txt}</div>`;
+  els.rollResult.classList.remove('hidden');
+  if (weakness) alert('You used a weakness tag — remember to mark Growth on that theme!');
+  gameState.selectedTags = [];
+  renderAvailableTags(currentCharacter);
+}
+
+// ---------- Story Tags & Burnt ----------
+function renderStoryTags(){
+  const c = els.storyTagList;
+  c.innerHTML='';
+  if (!gameState.storyTags.length){ c.innerHTML = '<div class="empty-state">No story tags</div>'; return; }
+  gameState.storyTags.forEach((t,i)=>{
     const row = document.createElement('div');
-    row.className = 'combo';
-    const tags = (c.tags||[]).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join(' ');
-    row.innerHTML = `<div class="left"><strong>${escapeHtml(c.name||'')}</strong> • <span class="muted">${escapeHtml(c.move||'')}</span></div>
-                     <div class="tags">${tags}</div>
-                     <div class="power-chip">POWER ${c.powerHint||1}</div>`;
-    els.comboList.appendChild(row);
+    row.className='tag-item';
+    row.innerHTML = `<div class="tag-info"><span class="tag-name">${t.name}</span> <span class="tag-type">${t.ongoing?'(Ongoing)':'(Temp)'}</span></div><button class="remove-btn">Remove</button>`;
+    row.querySelector('.remove-btn').addEventListener('click',()=>{
+      gameState.storyTags.splice(i,1); renderStoryTags(); renderAvailableTags(currentCharacter);
+    });
+    c.appendChild(row);
+  });
+}
+function renderBurntTags(){
+  const c = els.burntTagsList;
+  c.innerHTML='';
+  if (!gameState.burntTags.length){ c.innerHTML='<div class="empty-state">No burnt tags</div>'; return; }
+  gameState.burntTags.forEach(n=>{
+    const div=document.createElement('div'); div.className='burnt-tag-item'; div.textContent=n; c.appendChild(div);
   });
 }
 
-function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-
-document.addEventListener('click', (e)=>{
-  const b = e.target.closest('button[data-counter]');
-  if (!b) return;
-  const key = b.getAttribute('data-counter');
-  const delta = parseInt(b.getAttribute('data-delta'),10);
-  if (key==='juice'){ current.trackers.juice = Math.max(0, current.trackers.juice + delta); }
-  if (key==='overdrive'){ current.trackers.overdrive = Math.max(0, Math.min(3, (current.trackers.overdrive + delta))); }
-  renderTrackers();
-});
-
-els.select.addEventListener('change', (e)=>{
-  const path = e.target.value;
-  if (!path) return;
-  loadCharacterFromPath(path);
-});
-
-els.btnLoadLocal.addEventListener('click', ()=> els.fileLocal.click());
-els.fileLocal.addEventListener('change', (e)=>{
-  const f = e.target.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = async ()=>{
-    try{
-      const json = JSON.parse(r.result);
-      await applyCharacter(json);
-      rememberSelection('');
-    }catch(err){ alert('Invalid JSON file.'); }
-  };
-  r.readAsText(f);
-});
-
-loadManifest().then(()=>{
-  const remembered = getRemembered();
-  if (remembered){
-    const opt = [...els.select.options].find(o=>o.value===remembered);
-    if (opt){ els.select.value = remembered; loadCharacterFromPath(remembered); }
+// ---------- Firebase Sync ----------
+async function manualSync(){
+  const snap = await get(ref(db,'broadcast/current'));
+  const data = snap.val();
+  applyBroadcast(data);
+}
+function applyBroadcast(data){
+  if (!data) return;
+  // Scene
+  if (data.image || data.sceneText){
+    if (data.image){
+      els.syncScene.innerHTML = `<img src="${data.image}" class="scene-image" alt="Scene Image">`;
+    } else if (data.sceneText){
+      els.syncScene.innerHTML = `<div class="scene-text">${data.sceneText}</div>`;
+    }
   }
+  // Music
+  if (data.music){
+    els.syncMusic.innerHTML = `<div class="music-player"><audio controls autoplay loop><source src="${data.music}" type="audio/mpeg"></audio></div>`;
+  }
+}
+// Real-time listener
+onValue(ref(db,'broadcast/current'), (snapshot)=>{
+  applyBroadcast(snapshot.val());
 });
+
+// ---------- Events ----------
+els.toggleBtn.addEventListener('click', ()=>{
+  portraitMode = portraitMode === 'streetwear' ? 'qfactor' : 'streetwear';
+  updatePortrait();
+});
+els.rollButton.addEventListener('click', rollDice);
+els.addStoryTag.addEventListener('click', ()=>{
+  const name = els.storyTagName.value.trim();
+  if (!name) return alert('Enter a story tag');
+  const ongoing = !!els.storyTagOngoing.checked;
+  gameState.storyTags.push({name, ongoing});
+  els.storyTagName.value=''; els.storyTagOngoing.checked=false;
+  renderStoryTags(); renderAvailableTags(currentCharacter);
+});
+els.recoverBurntTags.addEventListener('click', ()=>{
+  gameState.burntTags = [];
+  renderBurntTags(); renderAvailableTags(currentCharacter);
+});
+els.syncNow.addEventListener('click', manualSync);
+
+els.campaign.addEventListener('change', ()=> loadManifest(els.campaign.value));
+els.character.addEventListener('change', ()=> loadCharacter(els.character.value));
+
+// Boot
+loadManifest(els.campaign.value);

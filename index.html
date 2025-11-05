@@ -2,85 +2,106 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>QUEERZ! Player App v2.1</title>
-  <link rel="stylesheet" href="styles/styles-player.css" id="baseStyle">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QUEERZ! Player App</title>
+  <link rel="stylesheet" href="styles/styles-player.css" />
+  <!-- Firebase (modular) -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="player-app.js"></script>
 </head>
 <body>
   <header class="app-header">
-    <h1 class="app-title">QUEERZ! Player Companion</h1>
-    <div class="top-controls">
-      <label for="characterSelect">Choose Character:</label>
-      <select id="characterSelect">
-        <option value="">— Select a character —</option>
-      </select>
-      <button id="btnLoadLocal" class="btn">📥 Load Local JSON</button>
-      <input type="file" id="fileLocal" accept=".json" style="display:none" />
+    <h1 class="app-title">🌈 QUEERZ! Player App</h1>
+    <div class="top-row">
+      <label>
+        Campaign:
+        <select id="campaignSelect">
+          <option value="characters/manifest_campaignA.json">Campaign A</option>
+          <option value="characters/manifest_campaignB.json">Campaign B</option>
+          <option value="characters/manifest_testLuxy.json" selected>Test (Luxy)</option>
+        </select>
+      </label>
+      <label>
+        Character:
+        <select id="characterSelect"></select>
+      </label>
     </div>
+    <div class="character-name-display" id="characterNameDisplay"></div>
   </header>
 
-  <main class="main">
-    <section class="folio card">
-      <div class="folio-header">
-        <img id="portrait" class="portrait" alt="Portrait" style="display:none;">
+  <main class="main-content">
+    <!-- Firebase Scene/Music Sync -->
+    <section class="mc-sync-panel">
+      <div class="sync-header">
+        <h3>🎬 Scene Sync</h3>
+        <button id="syncNowBtn" class="sync-btn">Sync Now</button>
+      </div>
+      <div class="sync-content">
+        <div id="syncScene" class="sync-scene">
+          <div class="scene-placeholder">Waiting for MC broadcast...</div>
+        </div>
+        <div id="syncMusic" class="sync-music">
+          <div class="music-placeholder">♪ No track currently playing</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Portrait + Toggle -->
+    <section class="character-card">
+      <div class="portrait-container">
+        <img id="characterPortrait" class="character-portrait" src="images/placeholder-portrait.png" alt="Character portrait" />
         <div class="portrait-toggle">
-  <button id="togglePortraitBtn">Switch to Q-Factor</button>
-</div>
-        <div class="folio-title">
-          <h2 id="charName">—</h2>
-          <div class="muted">
-            <span id="charPronouns"></span>
-            <span id="charColor"></span>
-          </div>
+          <button id="togglePortraitBtn">Switch to Q-Factor</button>
         </div>
       </div>
-      <div class="folio-body">
-        <div class="row">
-          <div class="col">
-            <div class="label">Runway</div>
-            <div id="runway" class="value"></div>
-          </div>
-          <div class="col">
-            <div class="label">Balance</div>
-            <div id="balance" class="value"></div>
-          </div>
-        </div>
-      </div>
+      <p class="char-description" id="charDescription"></p>
     </section>
 
-    <section class="trackers card">
-      <div class="tracker">
-        <div class="label">Juice</div>
-        <div class="counter">
-          <button class="btn small" data-counter="juice" data-delta="-1">−</button>
-          <div id="juiceVal" class="counter-value">0</div>
-          <button class="btn small" data-counter="juice" data-delta="1">+</button>
-        </div>
+    <!-- Dice + Tags -->
+    <section class="roller-container">
+      <div class="move-selector">
+        <label for="moveSelect">Select Move</label>
+        <select id="moveSelect">
+          <option value="">-- choose a move --</option>
+          <option value="vulnerable">Be Vulnerable</option>
+          <option value="care">Care</option>
+          <option value="clue">Get a Clue</option>
+          <option value="resist">Resist</option>
+          <option value="slay">Slay</option>
+          <option value="pose">Strike a Pose</option>
+          <option value="talk">Talk It Out</option>
+        </select>
       </div>
-      <div class="tracker">
-        <div class="label">OverDrive</div>
-        <div class="pips" id="overdrivePips">
-          <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-        </div>
-        <div class="counter">
-          <button class="btn small" data-counter="overdrive" data-delta="-1">−</button>
-          <button class="btn small" data-counter="overdrive" data-delta="1">+</button>
-        </div>
+
+      <div class="tag-selection">
+        <h3>Available Tags</h3>
+        <div id="availableTags" class="tags-grid"></div>
       </div>
-    </section>
 
-    <section id="themes" class="themes"></section>
+      <div class="power-display">
+        <div class="power-label">Total Power</div>
+        <div id="currentPower" class="power-value">0</div>
+      </div>
 
-    <section class="combos card">
-      <h3>Tag Combos</h3>
-      <div id="comboList" class="combo-list"></div>
+      <button id="rollButton" class="roll-button">🎲 ROLL 2d6 + Power</button>
+      <div id="rollResult" class="roll-result hidden"></div>
+
+      <div class="tracking-subsection">
+        <h3>Story Tags</h3>
+        <div class="tag-input-group">
+          <input id="storyTagName" class="text-input" placeholder="Story tag (e.g., Protected, Inspired)" />
+          <label class="checkbox-label"><input type="checkbox" id="storyTagOngoing" /> Ongoing</label>
+          <button id="addStoryTag" class="add-btn">+ Add Story Tag</button>
+        </div>
+        <div id="storyTagList" class="tag-list"></div>
+      </div>
+
+      <div class="tracking-subsection">
+        <h3>Burnt Tags</h3>
+        <div id="burntTagsList" class="burnt-tags-list"></div>
+        <button id="recoverBurntTags" class="recover-btn">Recover All Burnt Tags</button>
+      </div>
     </section>
   </main>
-
-  <footer class="footer">
-    <div class="muted">QUEERZ! Player App v2.1 — character styles auto-theme this UI</div>
-  </footer>
-
-  <script src="player-app.js"></script>
 </body>
 </html>
