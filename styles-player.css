@@ -1,69 +1,7 @@
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: #fff;
-    margin: 0;
-    padding: 20px;
-}
-.app-header {
-    text-align: center;
-    margin-bottom: 20px;
-}
-.app-title {
-    font-size: 2em;
-    background: linear-gradient(90deg, #FF6B6B, #FFD93D, #6BCF7F);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.character-card {
-    background: rgba(255,255,255,0.1);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    max-width: 500px;
-    margin: 0 auto;
-}
-.character-card img {
-    border-radius: 10px;
-    margin: 10px;
-}
-.character-portrait {
-    width: 100%;
-    max-width: 400px;
-    border-radius: 12px;
-    border: 5px solid var(--accent);
-    margin-bottom: 10px;
-    transition: opacity 0.4s ease, transform 0.3s ease;
-}
 
-.character-portrait.fade-out {
-    opacity: 0;
-    transform: scale(0.95);
-}
-
-.character-portrait.fade-in {
-    opacity: 1;
-    transform: scale(1);
-}
-
-.portrait-toggle {
-    text-align: center;
-    margin-top: 10px;
-}
-
-.portrait-toggle button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.portrait-toggle button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
-}
+.sync-pill{position:fixed;right:14px;top:14px;padding:6px 10px;border-radius:999px;background:#7f1d1d;color:#fff;font-weight:700}
+.sync-pill.online{background:#1b5e20}
+.selectable-tag{padding:10px;border:2px solid transparent;border-radius:10px;background:#f0f0f0;display:flex;gap:8px;justify-content:space-between}
+.selectable-tag.selected{background:#7c3aed;color:#fff;border-color:#7c3aed}
+.selectable-tag.burnt{background:#ffcccc;color:#990000;text-decoration:line-through;border-color:#cc0000}
+.burn-icon{cursor:pointer;opacity:.7}
