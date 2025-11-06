@@ -1,306 +1,55 @@
 {
   "name": "Luxy Charms",
   "pronouns": "she/her",
-  "color": "#93E9BE",
-  "styleSheet": "styles/style-luxy.css",
-  "portraits": {
-    "streetwear": "images/placeholder-streetwear.png",
-    "qfactor": "images/placeholder-qfactor.png"
-  },
-  "runway": "Never following the path; always blazing the trail. Drag Icon.",
-  "balance": {
-    "rainbow": 3,
-    "realness": 1
-  },
+  "colorHex": "#93E9BE",
   "themes": [
     {
       "type": "rainbow",
-      "category": "Signature",
       "name": "Unwavering Sense of Self",
+      "runway": "Never Following the Path, Always Blazing the Trail",
       "powerTags": [
         "You don’t get to dull my sparkle",
         "I’ve survived worse than you",
         "Watch me shine anyway"
       ],
-      "weaknessTags": [
-        "But was I enough?"
-      ],
-      "growth": [
-        false,
-        false,
-        false
-      ],
-      "shade": [
-        false,
-        false,
-        false
-      ],
-      "newPowerTagOptions": [
-        "Diamond-hard boundaries",
-        "Own the stage",
-        "Read the room"
-      ],
-      "themeImprovement": "Doing My Thing: When you Become Vulnerable using tags from this theme, it’s in OverDrive.",
-      "assignedMoves": [
-        {
-          "move": "Be Vulnerable",
-          "recommendedTags": [
-            "You don’t get to dull my sparkle",
-            "I’ve survived worse than you"
-          ],
-          "powerHint": 2
-        },
-        {
-          "move": "Resist",
-          "recommendedTags": [
-            "You don’t get to dull my sparkle"
-          ],
-          "powerHint": 1
-        },
-        {
-          "move": "Strike a Pose",
-          "recommendedTags": [
-            "Watch me shine anyway",
-            "Own the stage"
-          ],
-          "powerHint": 2
-        },
-        {
-          "move": "Talk It Out",
-          "recommendedTags": [
-            "Read the room"
-          ],
-          "powerHint": 1
-        }
-      ]
+      "weaknessTag": "But was I enough?",
+      "themeImprovement": "When you Become Vulnerable with tags from this theme, gain +1 Juice."
     },
     {
       "type": "rainbow",
-      "category": "Fighting Style",
       "name": "Cinnamon Toast Punch!",
+      "runway": "Flash & speed over brute force",
       "powerTags": [
         "Hot and crunchy!",
         "Heels-first entrance!",
         "Sugar rush combo!"
       ],
-      "weaknessTags": [
-        "Too flashy for my own good?"
-      ],
-      "growth": [
-        false,
-        false,
-        false
-      ],
-      "shade": [
-        false,
-        false,
-        false
-      ],
-      "newPowerTagOptions": [
-        "Whiplash spin-kick",
-        "Stage-light feint",
-        "Mirror-step footwork"
-      ],
-      "themeImprovement": "1 vs. 100: When you Slay with tags from this theme, on a hit you also get the ‘More coverage’ upgrade once for free.",
-      "assignedMoves": [
-        {
-          "move": "Slay",
-          "recommendedTags": [
-            "Sugar rush combo",
-            "Hot and crunchy!"
-          ],
-          "powerHint": 3
-        },
-        {
-          "move": "Strike a Pose",
-          "recommendedTags": [
-            "Heels-first entrance!",
-            "Stage-light feint"
-          ],
-          "powerHint": 2
-        },
-        {
-          "move": "Sneak and Spy",
-          "recommendedTags": [
-            "Heels-first entrance!",
-            "Mirror-step footwork"
-          ],
-          "powerHint": 2
-        },
-        {
-          "move": "Get a Clue",
-          "recommendedTags": [
-            "Heels-first entrance!"
-          ],
-          "powerHint": 1
-        }
-      ]
+      "weaknessTag": "Too flashy for my own good?",
+      "themeImprovement": "When you Slay with tags from this theme, you may pick one extra upgrade vs. minions."
     },
     {
       "type": "rainbow",
-      "category": "Q-Gear",
       "name": "Perfect Defense (Aura of Motherly Love)",
+      "runway": "Protect the ones I love",
       "powerTags": [
         "I shield who I love",
         "Not today, hatred!",
         "My drag babies come first"
       ],
-      "weaknessTags": [
-        "Can I protect myself too?"
-      ],
-      "growth": [
-        false,
-        false,
-        false
-      ],
-      "shade": [
-        false,
-        false,
-        false
-      ],
-      "newPowerTagOptions": [
-        "Wrap them in warmth",
-        "Shock-absorb weave",
-        "Stand behind me"
-      ],
-      "themeImprovement": "Guardian Mode: When you Care using tags from this theme, increase effective Power by +1 (stacking with other bonuses).",
-      "assignedMoves": [
-        {
-          "move": "Care",
-          "recommendedTags": [
-            "I shield who I love",
-            "My drag babies come first"
-          ],
-          "powerHint": 3
-        },
-        {
-          "move": "Resist",
-          "recommendedTags": [
-            "Not today, hatred!"
-          ],
-          "powerHint": 2
-        },
-        {
-          "move": "Strike a Pose",
-          "recommendedTags": [
-            "Wrap them in warmth"
-          ],
-          "powerHint": 1
-        },
-        {
-          "move": "Talk It Out",
-          "recommendedTags": [
-            "Stand behind me"
-          ],
-          "powerHint": 1
-        }
-      ]
+      "weaknessTag": "Can I protect myself too?",
+      "themeImprovement": "Spend 1 Juice to give an ally immunity to one action after dice are rolled."
     },
     {
       "type": "realness",
-      "category": "Occupation",
       "name": "The Last Cereal Killer Clown Queen on Earth™",
+      "identity": "One-of-a-kind legacy",
       "powerTags": [
         "Catchphrase saves lives",
         "Legendary name recognition",
-        "Only one left means pressure..."
+        "Mark Growth on reflection"
       ],
-      "weaknessTags": [
-        "Am I truly alone now?"
-      ],
-      "growth": [
-        false,
-        false,
-        false
-      ],
-      "crack": [
-        false,
-        false,
-        false
-      ],
-      "newPowerTagOptions": [
-        "Industry contacts",
-        "Old show posters",
-        "Green room gossip"
-      ],
-      "themeImprovement": "Part of Who I Am: Once per session, remove one Burnt tag from this theme or mark 1 Growth on a Realness theme after a meaningful scene.",
-      "assignedMoves": [
-        {
-          "move": "Get a Clue",
-          "recommendedTags": [
-            "Legendary name recognition",
-            "Green room gossip"
-          ],
-          "powerHint": 2
-        },
-        {
-          "move": "Talk It Out",
-          "recommendedTags": [
-            "Catchphrase saves lives"
-          ],
-          "powerHint": 1
-        },
-        {
-          "move": "Strike a Pose",
-          "recommendedTags": [
-            "Industry contacts",
-            "Old show posters"
-          ],
-          "powerHint": 2
-        },
-        {
-          "move": "Be Vulnerable",
-          "recommendedTags": [
-            "Only one left means pressure..."
-          ],
-          "powerHint": 1
-        }
-      ]
+      "weaknessTag": "Am I truly alone now?",
+      "themeImprovement": "During Downtime on identity, you may mark Growth once per session without using a weakness first."
     }
-  ],
-  "tagCombos": [
-    {
-      "name": "Open With Flash, Finish With Heat",
-      "move": "Slay",
-      "tags": [
-        "Heels-first entrance!",
-        "Hot and crunchy!",
-        "Sugar rush combo"
-      ],
-      "powerHint": 4
-    },
-    {
-      "name": "Guardian Bubble",
-      "move": "Care",
-      "tags": [
-        "I shield who I love",
-        "My drag babies come first"
-      ],
-      "powerHint": 3
-    },
-    {
-      "name": "Shine Through the Shade",
-      "move": "Resist",
-      "tags": [
-        "You don’t get to dull my sparkle",
-        "Not today, hatred!"
-      ],
-      "powerHint": 2
-    },
-    {
-      "name": "Fame Is a Key",
-      "move": "Get a Clue",
-      "tags": [
-        "Legendary name recognition",
-        "Green room gossip"
-      ],
-      "powerHint": 2
-    }
-  ],
-  "trackers": {
-    "juice": 0,
-    "overdrive": 0
-  },
-  "statuses": {},
-  "storyTags": []
+  ]
 }
