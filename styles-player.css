@@ -132,6 +132,7 @@ body {
     padding: 20px;
     max-width: 1800px;
     margin: 0 auto;
+    min-width: 900px; /* Force 3-column layout on tablets */
 }
 
 .folio-column {
@@ -640,9 +641,10 @@ body {
    RESPONSIVE DESIGN
    ================================ */
 
-@media (max-width: 1400px) {
+@media (max-width: 900px) {
     .folio-container {
         grid-template-columns: 1fr;
+        min-width: unset;
     }
     
     .tags-container {
