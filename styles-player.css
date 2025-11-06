@@ -4,11 +4,12 @@
 .tracker-bar{display:flex;gap:16px;align-items:center;margin:8px 0 16px}
 .tracker{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:#0f1a1a;border:1px solid rgba(147,233,190,.35)}
 .tracker button{border:0;padding:4px 8px;border-radius:8px;cursor:pointer}
-.theme-meters{display:flex;gap:10px;margin-top:10px}
+.theme-meters{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
 .theme-meter{display:inline-flex;gap:8px;align-items:center;background:#0f1a1a;border:1px solid rgba(147,233,190,.35);padding:4px 8px;border-radius:10px}
 .meter-label{opacity:.85}
 .core-moves{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
 .core-move{background:#0e1619;border:1px solid rgba(147,233,190,.25);border-radius:14px;padding:12px}
 .core-move h4{margin:0 0 6px}
 .core-move .power{font-weight:700}
+.tag{display:inline-block;padding:4px 8px;border-radius:999px;background:#0f1a1a;border:1px solid rgba(147,233,190,.35);margin-right:6px;margin-bottom:6px}
 .burned{opacity:.55;filter:grayscale(1);text-decoration:line-through;color:#f9b}
