@@ -1,209 +1,925 @@
-/* --- BUILT: QUEERZ Player Theme Fix --- */
-(function() {
-  const CHAR_JSON = "characters/luxy-charms.json";
+// ================================
+// QUEERZ! PLAYER COMPANION APP
+// Main JavaScript
+// ================================
 
-  const store = {
-    get(k, v) { try { return JSON.parse(localStorage.getItem(k)) ?? v; } catch(e) { return v; } },
-    set(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
-  };
+// Global State
+let currentCharacter = null;
+let characterLibrary = {};
+let usingStreerwearPortrait = true;
+let firebaseInitialized = false;
 
-  // Inject global trackers
-  function injectGlobalTrackers() {
-    if (document.querySelector(".tracker-bar")) return;
-    const bar = document.createElement("div");
-    bar.className = "tracker-bar";
-    bar.innerHTML = trackerHTML("Juice") + trackerHTML("Overdrive");
-    const header = document.querySelector("#appHeader, header, .top-bar");
-    const host = header || document.body.firstElementChild;
-    if (host && host.parentNode) host.parentNode.insertBefore(bar, host.nextSibling);
-    attachTracker(bar, "Juice"); attachTracker(bar, "Overdrive");
-  }
-  function trackerHTML(name){
-    const val = store.get("global:"+name, 0);
-    return `<div class="tracker" data-name="${name}">
-      <span class="meter-label">${name}:</span>
-      <button data-delta="1">+</button>
-      <strong class="val">${val}</strong>
-      <button data-delta="-1">-</button>
-    </div>`;
-  }
-  function attachTracker(root, name){
-    const el = root.querySelector(`.tracker[data-name="${name}"]`);
-    if (!el) return;
-    el.addEventListener("click", (e)=>{
-      const b = e.target.closest("button"); if(!b) return;
-      const vEl = el.querySelector(".val");
-      let v = Number(vEl.textContent)||0;
-      v += Number(b.dataset.delta); if(v<0) v=0;
-      vEl.textContent = v; store.set("global:"+name, v);
-    });
-  }
+// Firebase references (will be set when Firebase initializes)
+let db = null;
+let realtimeDb = null;
 
-  // Burn registry
-  const tagRegistry = window.tagRegistry || (window.tagRegistry = {});
-  function syncBurnStates(){
-    for (const [name,burned] of Object.entries(tagRegistry)) {
-      document.querySelectorAll(`[data-tag-name="${name}"]`).forEach(el=>{
-        el.classList.toggle("burned", !!burned);
-      });
-    }
-  }
-  document.addEventListener("click",(e)=>{
-    const pill = e.target.closest("[data-tag-name]");
-    if(!pill) return;
-    const name = pill.getAttribute("data-tag-name");
-    const newState = !pill.classList.contains("burned");
-    tagRegistry[name] = newState;
-    syncBurnStates();
-  });
+// ================================
+// INITIALIZATION
+// ================================
 
-  // Dice roller
-  function wireMainRoll(){
-    const btns = Array.from(document.querySelectorAll("button, .btn")).filter(b=>/Roll 2d6 \+ Power/i.test(b.textContent||""));
-    btns.forEach(btn=>{
-      if (btn.dataset.wired) return;
-      btn.dataset.wired = "1";
-      let out = btn.parentElement.querySelector(".roll-out");
-      if (!out) { out = document.createElement("div"); out.className = "roll-out"; btn.parentElement.appendChild(out); }
-
-      btn.addEventListener("click", ()=>{
-        const plus = document.querySelectorAll(".tag.power:not(.burned)").length;
-        const minus = document.querySelectorAll(".tag.weakness.burned").length;
-        const storyPlus = document.querySelectorAll(".story-tags .tag.positive:not(.burned)").length;
-        const storyMinus = document.querySelectorAll(".story-tags .tag.negative.burned").length;
-        const power = Math.max(0, plus + storyPlus - minus - storyMinus);
-
-        const d1 = 1+Math.floor(Math.random()*6);
-        const d2 = 1+Math.floor(Math.random()*6);
-        const total = d1 + d2 + power;
-        const tier = total >= 10 ? "SUCCESS" : total >= 7 ? "PARTIAL SUCCESS" : "MISS";
-        out.textContent = `🎲 ${d1} + ${d2} + ${power} = ${total} — ${tier}`;
-      });
-    });
-  }
-
-  // Enhance per-theme cards with Shade/Growth meters
-  function enhanceThemeCards(){
-    const cards = document.querySelectorAll(".theme-card");
-    cards.forEach((card,i)=>{
-      if (card.dataset.enhanced) return;
-      card.dataset.enhanced = "1";
-
-      const meters = document.createElement("div");
-      meters.className = "theme-meters";
-
-      ["Shade","Growth"].forEach(kind=>{
-        const key = `theme:${i}:${kind}`;
-        const val = store.get(key, 0);
-        const m = document.createElement("div");
-        m.className = "theme-meter";
-        m.innerHTML = `<span class="meter-label">${kind}:</span>
-          <button data-k="${key}" data-d="1">+</button>
-          <strong class="val" data-k="${key}">${val}</strong>
-          <button data-k="${key}" data-d="-1">-</button>`;
-        meters.appendChild(m);
-      });
-
-      const impKey = `theme:${i}:improve`;
-      const imp = document.createElement("label");
-      imp.style.marginLeft = "auto";
-      const was = store.get(impKey,false) ? "checked" : "";
-      imp.innerHTML = `<input type="checkbox" ${was}> <span class="meter-label">Improvement Achieved</span>`;
-      imp.querySelector("input").addEventListener("change", (e)=> store.set(impKey, e.target.checked));
-      meters.appendChild(imp);
-
-      card.appendChild(meters);
-      meters.addEventListener("click",(e)=>{
-        const btn = e.target.closest("button"); if(!btn) return;
-        const k = btn.dataset.k, d = Number(btn.dataset.d);
-        const valEl = meters.querySelector(`.val[data-k="${k}"]`);
-        let v = Number(valEl.textContent)||0;
-        v += d; if(v<0) v=0;
-        valEl.textContent = v; store.set(k, v);
-      });
-    });
-  }
-
-  // Render themes with tags
-  function renderThemeCard(theme, i) {
-    const card = document.querySelector(`.theme-card[data-theme-index="${i}"]`);
-    if (!card || !theme) {
-      console.warn(`⚠️ Missing data for theme index ${i}`);
-      return;
-    }
-
-    const header = `<h3>${theme.themeName || "Untitled"} (${theme.themeType || "Theme"})</h3>`;
-    const identity = `<p><em>${theme.identity || ""}</em></p>`;
-    const weakness = `<p><strong>Weakness:</strong> ${theme.weakness || ""}</p>`;
-    const improvement = `<p><strong>Theme Improvement:</strong> ${theme.themeImprovement || ""}</p>`;
-
-    const tagContainer = document.createElement("div");
-    tagContainer.className = "tag-container";
-    (theme.tags || []).forEach(tag=>{
-      const span = document.createElement("span");
-      span.className = "tag power";
-      span.setAttribute("data-tag-name", tag);
-      span.textContent = tag;
-      tagContainer.appendChild(span);
-    });
-
-    card.innerHTML = header + identity + weakness + improvement;
-    card.appendChild(tagContainer);
-  }
-
-  async function loadCharacter(){
-    try {
-      const res = await fetch(CHAR_JSON);
-      const data = await res.json();
-      console.log(`✅ Loaded Character: ${data.name}`);
-      if (data.themes) {
-        const names = data.themes.map(t => t.themeName).join(", ");
-        console.log(`✅ Loaded Themes: ${names}`);
-      }
-
-      // Portraits
-      const portraitImg = document.getElementById("portraitImg");
-      const toggleBtn  = document.getElementById("portraitToggle");
-      if (portraitImg && data.portraits) {
-        const street = data.portraits.street || "";
-        const qfactor = data.portraits.qfactor || "";
-        portraitImg.setAttribute("data-state","street");
-        portraitImg.src = street;
-        portraitImg.onerror = ()=>{
-          portraitImg.src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="%23141b1f"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%2393E9BE" font-family="Segoe UI" font-size="20">Portrait unavailable</text></svg>';
-        };
-        if (toggleBtn && !toggleBtn.dataset.wired) {
-          toggleBtn.dataset.wired="1";
-          toggleBtn.addEventListener("click", ()=>{
-            const cur = portraitImg.getAttribute("data-state") || "street";
-            const next = cur==="street" ? "qfactor" : "street";
-            portraitImg.setAttribute("data-state", next);
-            portraitImg.src = next==="street" ? street : qfactor;
-          });
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🌈 QUEERZ! Player App Starting...');
+    console.log('📍 Current URL:', window.location.href);
+    console.log('📍 Page loaded at:', new Date().toISOString());
+    
+    // Check if all required elements exist
+    console.log('🔍 Checking for required HTML elements...');
+    const requiredElements = [
+        'characterSelect',
+        'characterUpload',
+        'portraitToggle',
+        'saveCharBtn',
+        'rollBtn',
+        'juiceUp',
+        'juiceDown',
+        'addStatusBtn',
+        'addStoryBtn',
+        'recoverBtn',
+        'characterPortrait',
+        'characterName',
+        'characterPronouns',
+        'juiceCount',
+        'totalPower',
+        'rollResult'
+    ];
+    
+    let missingElements = [];
+    requiredElements.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) {
+            missingElements.push(id);
+            console.error('❌ Missing element:', id);
+        } else {
+            console.log('✅ Found element:', id);
         }
-      }
-
-      // Render each theme card
-      (data.themes || []).forEach((theme,i)=> renderThemeCard(theme,i));
-
-      afterSheetRendered(()=>{ enhanceThemeCards(); wireMainRoll(); });
-
-    } catch(err) {
-      console.warn("❌ Character load failed:", err);
-    }
-  }
-
-  function afterSheetRendered(callback){
-    if (document.querySelector(".theme-card")) return callback();
-    const obs = new MutationObserver(()=>{
-      if (document.querySelector(".theme-card")) { obs.disconnect(); callback(); }
     });
-    obs.observe(document.body, { childList: true, subtree: true });
-  }
+    
+    if (missingElements.length > 0) {
+        console.error('❌ Missing elements:', missingElements);
+        alert('App error: Some required elements are missing. Check console for details.');
+    } else {
+        console.log('✅ All required elements found!');
+    }
+    
+    // Initialize UI event listeners
+    initializeEventListeners();
+    
+    // Load saved character library from localStorage
+    loadCharacterLibrary();
+    
+    // Try to initialize Firebase
+    initializeFirebase();
+    
+    // Load last used character if available
+    loadLastCharacter();
+    
+    // Add test button for debugging (remove in production)
+    addTestButton();
+    
+    console.log('✅ App initialization complete!');
+});
 
-  document.addEventListener("DOMContentLoaded", ()=>{
-    injectGlobalTrackers();
-    wireMainRoll();
-    loadCharacter();
-  });
-})();
+// ================================
+// TEST/DEBUG FUNCTIONS
+// ================================
+
+function addTestButton() {
+    // Create a test button to load Luxy without file upload
+    const testBtn = document.createElement('button');
+    testBtn.textContent = '🧪 Test Load Luxy';
+    testBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        background: #FF1493;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        z-index: 9999;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    `;
+    testBtn.onclick = function() {
+        console.log('🧪 TEST BUTTON CLICKED - Loading Luxy Charms...');
+        loadTestCharacter();
+    };
+    document.body.appendChild(testBtn);
+    console.log('🧪 Test button added to page');
+}
+
+function loadTestCharacter() {
+    const luxyData = {
+        "name": "Luxy Charms",
+        "pronouns": "She/Her",
+        "playbook": "Drag Icon",
+        "runway": "Never Following the Path, Always Blazing the Trail",
+        "streetwearPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/luxy-charms-streetwear.png",
+        "qfactorPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/luxy-charms-qfactor.png",
+        "juice": 0,
+        "rainbowThemes": [
+            {
+                "name": "UNWAVERING SENSE OF SELF",
+                "type": "SIGNATURE",
+                "runway": "The fiercest confidence isn't just style—it's survival.",
+                "growth": 0,
+                "shade": 0,
+                "powerTags": [
+                    "You don't get to dull my sparkle",
+                    "I've survived worse than you",
+                    "Watch me shine anyway"
+                ],
+                "weaknessTag": "But was I enough?"
+            },
+            {
+                "name": "CINNAMON TOAST PUNCH!",
+                "type": "FIGHTING STYLE",
+                "runway": "A whirlwind of glitter, heels, and spicy justice.",
+                "growth": 0,
+                "shade": 0,
+                "powerTags": [
+                    "Hot and crunchy!",
+                    "Heels-first entrance!",
+                    "Sugar rush combo!"
+                ],
+                "weaknessTag": "Too flashy for my own good?"
+            },
+            {
+                "name": "PERFECT DEFENSE",
+                "type": "Q-GEAR - Aura of Motherly Love",
+                "runway": "A shimmering bubble weave made from decades of emotional labor turned super-shield.",
+                "growth": 0,
+                "shade": 0,
+                "powerTags": [
+                    "I shield who I love",
+                    "Not today, hatred!",
+                    "My drag babies come first"
+                ],
+                "weaknessTag": "Can I protect myself too?"
+            }
+        ],
+        "realnessThemes": [
+            {
+                "name": "THE LAST CEREAL KILLER CLOWN QUEEN ON EARTH™️",
+                "type": "PERSONALITY / OCCUPATION",
+                "runway": "This city forgot where its heart came from… but Luxy remembers every spilled milkshake, every late-night makeup meltdown before dawn shows.",
+                "crack": 0,
+                "powerTags": [
+                    "Catchphrase saves lives",
+                    "Legendary name recognition",
+                    "Only one left means pressure..."
+                ],
+                "weaknessTag": "Am I truly alone now?"
+            }
+        ],
+        "currentStatuses": [],
+        "storyTags": [
+            {
+                "name": "Echoes Under Static",
+                "ongoing": true,
+                "description": "Can be used once to hear a true memory in corrupted spaces"
+            }
+        ],
+        "burntTags": [],
+        "notes": "Balance: 3 Rainbow Themes, 1 Realness Theme."
+    };
+    
+    console.log('🧪 Test data prepared, calling loadCharacter...');
+    loadCharacter(luxyData);
+}
+
+// ================================
+// INITIALIZATION (ORIGINAL)
+// ================================
+
+/*
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🌈 QUEERZ! Player App Starting...');
+    
+    // Initialize UI event listeners
+    initializeEventListeners();
+    
+    // Load saved character library from localStorage
+    loadCharacterLibrary();
+    
+    // Try to initialize Firebase
+    initializeFirebase();
+    
+    // Load last used character if available
+    loadLastCharacter();
+});
+*/
+
+// ================================
+// EVENT LISTENERS
+// ================================
+
+function initializeEventListeners() {
+    // Character Selection
+    document.getElementById('characterSelect').addEventListener('change', handleCharacterSelect);
+    
+    // File Upload
+    document.getElementById('characterUpload').addEventListener('change', handleFileUpload);
+    
+    // Portrait Toggle
+    document.getElementById('portraitToggle').addEventListener('click', togglePortrait);
+    
+    // Save Character
+    document.getElementById('saveCharBtn').addEventListener('click', saveCurrentCharacter);
+    
+    // Dice Roller
+    document.getElementById('rollBtn').addEventListener('click', rollDice);
+    
+    // Juice Tracker
+    document.getElementById('juiceUp').addEventListener('click', () => adjustJuice(1));
+    document.getElementById('juiceDown').addEventListener('click', () => adjustJuice(-1));
+    
+    // Status Management
+    document.getElementById('addStatusBtn').addEventListener('click', addStatus);
+    
+    // Story Tags
+    document.getElementById('addStoryBtn').addEventListener('click', addStoryTag);
+    
+    // Burnt Tags Recovery
+    document.getElementById('recoverBtn').addEventListener('click', recoverAllTags);
+    
+    // Track box clicking for Growth/Shade/Crack
+    initializeTrackBoxListeners();
+}
+
+function initializeTrackBoxListeners() {
+    // Add click listeners to all track boxes
+    document.querySelectorAll('.track-box').forEach(box => {
+        box.addEventListener('click', function() {
+            this.classList.toggle('filled');
+            saveCurrentCharacter();
+        });
+    });
+}
+
+// ================================
+// CHARACTER DATA MANAGEMENT
+// ================================
+
+function loadCharacterLibrary() {
+    const saved = localStorage.getItem('queerz_character_library');
+    if (saved) {
+        try {
+            characterLibrary = JSON.parse(saved);
+            updateCharacterDropdown();
+            console.log('✅ Loaded character library:', Object.keys(characterLibrary));
+        } catch (error) {
+            console.error('❌ Error loading character library:', error);
+        }
+    }
+}
+
+function saveCharacterLibrary() {
+    localStorage.setItem('queerz_character_library', JSON.stringify(characterLibrary));
+    console.log('💾 Character library saved');
+}
+
+function loadLastCharacter() {
+    const lastCharName = localStorage.getItem('queerz_last_character');
+    if (lastCharName && characterLibrary[lastCharName]) {
+        loadCharacter(characterLibrary[lastCharName]);
+    }
+}
+
+function updateCharacterDropdown() {
+    const select = document.getElementById('characterSelect');
+    select.innerHTML = '<option value="">Load Character...</option>';
+    
+    Object.keys(characterLibrary).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+}
+
+// ================================
+// CHARACTER LOADING
+// ================================
+
+function handleCharacterSelect(event) {
+    const charName = event.target.value;
+    if (charName && characterLibrary[charName]) {
+        loadCharacter(characterLibrary[charName]);
+    }
+}
+
+function handleFileUpload(event) {
+    console.log('=== FILE UPLOAD STARTED ===');
+    const file = event.target.files[0];
+    
+    if (!file) {
+        console.log('❌ No file selected');
+        return;
+    }
+    
+    console.log('📄 File selected:', file.name);
+    console.log('📄 File size:', file.size, 'bytes');
+    console.log('📄 File type:', file.type);
+    
+    const reader = new FileReader();
+    
+    reader.onerror = function(error) {
+        console.error('❌ FileReader error:', error);
+        alert('Error reading file. Please try again.');
+    };
+    
+    reader.onload = function(e) {
+        console.log('📖 File read successfully');
+        console.log('📖 Content length:', e.target.result.length);
+        
+        try {
+            console.log('🔍 Attempting to parse JSON...');
+            const data = JSON.parse(e.target.result);
+            console.log('✅ JSON parsed successfully!');
+            console.log('📋 Character data:', data);
+            
+            // Validate required fields
+            if (!data.name) {
+                throw new Error('Character data missing "name" field');
+            }
+            
+            console.log('✅ Character name found:', data.name);
+            console.log('🌈 Rainbow themes:', data.rainbowThemes?.length || 0);
+            console.log('💼 Realness themes:', data.realnessThemes?.length || 0);
+            
+            // Load the character
+            console.log('📥 Loading character into app...');
+            loadCharacter(data);
+            
+            // Add to library
+            if (data.name) {
+                characterLibrary[data.name] = data;
+                saveCharacterLibrary();
+                updateCharacterDropdown();
+                console.log('💾 Character saved to library');
+            }
+            
+            alert(`✅ Character "${data.name}" loaded successfully!`);
+            console.log('=== FILE UPLOAD COMPLETE ===');
+            
+        } catch (error) {
+            console.error('❌ Error during JSON processing:');
+            console.error('Error type:', error.name);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            console.error('Raw file content (first 200 chars):', e.target.result.substring(0, 200));
+            alert(`Error loading character file:\n\n${error.message}\n\nCheck browser console (F12) for details.`);
+        }
+    };
+    
+    console.log('📖 Starting to read file...');
+    reader.readAsText(file);
+}
+
+function loadCharacter(charData) {
+    console.log('=== LOAD CHARACTER STARTED ===');
+    console.log('📋 Character data received:', charData);
+    console.log('📋 Character name:', charData.name);
+    
+    if (!charData || !charData.name) {
+        console.error('❌ Invalid character data - missing name');
+        alert('Invalid character data: missing name field');
+        return;
+    }
+    
+    currentCharacter = charData;
+    console.log('✅ Set currentCharacter');
+    
+    // Save as last used character
+    localStorage.setItem('queerz_last_character', charData.name);
+    console.log('💾 Saved to localStorage');
+    
+    // Update portrait and basic info
+    try {
+        console.log('🖼️ Updating portrait...');
+        updatePortrait();
+        console.log('✅ Portrait updated');
+    } catch (error) {
+        console.error('❌ Error updating portrait:', error);
+    }
+    
+    try {
+        console.log('📝 Updating character name and pronouns...');
+        const nameEl = document.getElementById('characterName');
+        const pronounsEl = document.getElementById('characterPronouns');
+        
+        if (nameEl) {
+            nameEl.textContent = charData.name || 'Unknown Character';
+            console.log('✅ Name set to:', nameEl.textContent);
+        } else {
+            console.error('❌ characterName element not found');
+        }
+        
+        if (pronounsEl) {
+            pronounsEl.textContent = charData.pronouns || '';
+            console.log('✅ Pronouns set to:', pronounsEl.textContent);
+        } else {
+            console.error('❌ characterPronouns element not found');
+        }
+    } catch (error) {
+        console.error('❌ Error updating basic info:', error);
+    }
+    
+    // Load themes
+    try {
+        console.log('🌈 Loading themes...');
+        loadThemes(charData);
+        console.log('✅ Themes loaded');
+    } catch (error) {
+        console.error('❌ Error loading themes:', error);
+    }
+    
+    // Load juice
+    try {
+        console.log('✨ Setting juice...');
+        const juiceEl = document.getElementById('juiceCount');
+        if (juiceEl) {
+            juiceEl.textContent = charData.juice || 0;
+            console.log('✅ Juice set to:', juiceEl.textContent);
+        }
+    } catch (error) {
+        console.error('❌ Error setting juice:', error);
+    }
+    
+    // Load statuses
+    try {
+        console.log('📊 Loading statuses...');
+        loadStatuses(charData.currentStatuses || []);
+        console.log('✅ Statuses loaded');
+    } catch (error) {
+        console.error('❌ Error loading statuses:', error);
+    }
+    
+    // Load story tags
+    try {
+        console.log('🏷️ Loading story tags...');
+        loadStoryTags(charData.storyTags || []);
+        console.log('✅ Story tags loaded');
+    } catch (error) {
+        console.error('❌ Error loading story tags:', error);
+    }
+    
+    // Load burnt tags
+    try {
+        console.log('🔥 Loading burnt tags...');
+        loadBurntTags(charData.burntTags || []);
+        console.log('✅ Burnt tags loaded');
+    } catch (error) {
+        console.error('❌ Error loading burnt tags:', error);
+    }
+    
+    console.log('✅✅✅ CHARACTER LOADED SUCCESSFULLY ✅✅✅');
+    console.log('=== LOAD CHARACTER COMPLETE ===');
+}
+
+function loadThemes(charData) {
+    // Load Rainbow Themes (0, 1, 2)
+    const rainbowThemes = charData.rainbowThemes || [];
+    for (let i = 0; i < 3; i++) {
+        const themeCard = document.getElementById(`theme${i}`);
+        if (rainbowThemes[i]) {
+            populateThemeCard(themeCard, rainbowThemes[i], 'rainbow');
+        } else {
+            clearThemeCard(themeCard);
+        }
+    }
+    
+    // Load Realness Theme (3)
+    const realnessThemes = charData.realnessThemes || [];
+    const realnessCard = document.getElementById('theme3');
+    if (realnessThemes[0]) {
+        populateThemeCard(realnessCard, realnessThemes[0], 'realness');
+    } else {
+        clearThemeCard(realnessCard);
+    }
+}
+
+function populateThemeCard(card, themeData, type) {
+    // Update theme name
+    card.querySelector('.theme-name').textContent = themeData.name || 'Unnamed Theme';
+    
+    // Update theme type label
+    card.querySelector('.theme-type').textContent = themeData.type || 'THEME';
+    
+    // Update runway quote
+    card.querySelector('.runway-quote em').textContent = themeData.runway || 'No quote set';
+    
+    // Update power tags
+    const tagList = card.querySelector('.power-tags .tag-list');
+    tagList.innerHTML = '';
+    if (themeData.powerTags) {
+        themeData.powerTags.forEach(tag => {
+            const li = document.createElement('li');
+            li.textContent = tag;
+            tagList.appendChild(li);
+        });
+    }
+    
+    // Update weakness tag
+    const weaknessText = card.querySelector('.weakness-text');
+    weaknessText.textContent = themeData.weaknessTag || 'No weakness tag set';
+    
+    // Update Growth/Shade/Crack tracks
+    if (type === 'rainbow') {
+        updateTrack(card.querySelector('.growth-track .track-boxes'), themeData.growth || 0);
+        updateTrack(card.querySelector('.shade-track .track-boxes'), themeData.shade || 0);
+    } else if (type === 'realness') {
+        updateTrack(card.querySelector('.crack-track .track-boxes'), themeData.crack || 0);
+    }
+}
+
+function updateTrack(trackContainer, filledCount) {
+    const boxes = trackContainer.querySelectorAll('.track-box');
+    boxes.forEach((box, index) => {
+        if (index < filledCount) {
+            box.classList.add('filled');
+        } else {
+            box.classList.remove('filled');
+        }
+    });
+}
+
+function clearThemeCard(card) {
+    card.querySelector('.theme-name').textContent = 'No Theme';
+    card.querySelector('.runway-quote em').textContent = '';
+    card.querySelector('.power-tags .tag-list').innerHTML = '';
+    card.querySelector('.weakness-text').textContent = '';
+}
+
+// ================================
+// PORTRAIT MANAGEMENT
+// ================================
+
+function updatePortrait() {
+    const portraitImg = document.getElementById('characterPortrait');
+    
+    if (!currentCharacter) {
+        portraitImg.src = '';
+        return;
+    }
+    
+    // Determine which portrait to show
+    let portraitPath;
+    if (usingStreerwearPortrait) {
+        portraitPath = currentCharacter.streetwearPortrait || currentCharacter.portrait || '';
+    } else {
+        portraitPath = currentCharacter.qfactorPortrait || currentCharacter.portrait || '';
+    }
+    
+    // Handle both local paths and URLs
+    if (portraitPath.startsWith('http')) {
+        portraitImg.src = portraitPath;
+    } else if (portraitPath.startsWith('/')) {
+        // Assume it's a GitHub path
+        portraitImg.src = `https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main${portraitPath}`;
+    } else {
+        portraitImg.src = portraitPath;
+    }
+    
+    console.log('🖼️ Portrait updated:', portraitImg.src);
+}
+
+function togglePortrait() {
+    usingStreerwearPortrait = !usingStreerwearPortrait;
+    updatePortrait();
+    
+    const btn = document.getElementById('portraitToggle');
+    btn.textContent = usingStreerwearPortrait ? 'Switch to Q-Factor' : 'Switch to Streetwear';
+}
+
+// ================================
+// DICE ROLLING
+// ================================
+
+function rollDice() {
+    const power = parseInt(document.getElementById('totalPower').value) || 0;
+    const die1 = Math.floor(Math.random() * 6) + 1;
+    const die2 = Math.floor(Math.random() * 6) + 1;
+    const total = die1 + die2 + power;
+    
+    const resultDiv = document.getElementById('rollResult');
+    
+    let resultText = `🎲 ${die1} + ${die2}`;
+    if (power !== 0) {
+        resultText += ` ${power >= 0 ? '+' : ''}${power}`;
+    }
+    resultText += ` = ${total}`;
+    
+    // Add result interpretation
+    let interpretation = '';
+    if (total >= 10) {
+        interpretation = ' ✨ FULL SUCCESS!';
+        resultDiv.style.color = '#4CAF50';
+    } else if (total >= 7) {
+        interpretation = ' ⚡ PARTIAL SUCCESS';
+        resultDiv.style.color = '#F4D35E';
+    } else {
+        interpretation = ' 💔 MISS';
+        resultDiv.style.color = '#E89B9B';
+    }
+    
+    resultDiv.textContent = resultText + interpretation;
+    
+    // Animate result
+    resultDiv.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+        resultDiv.style.transform = 'scale(1)';
+    }, 300);
+}
+
+// ================================
+// JUICE MANAGEMENT
+// ================================
+
+function adjustJuice(amount) {
+    if (!currentCharacter) return;
+    
+    const juiceCountEl = document.getElementById('juiceCount');
+    let currentJuice = parseInt(juiceCountEl.textContent) || 0;
+    currentJuice = Math.max(0, currentJuice + amount);
+    juiceCountEl.textContent = currentJuice;
+    
+    if (currentCharacter) {
+        currentCharacter.juice = currentJuice;
+        saveCurrentCharacter();
+    }
+}
+
+// ================================
+// STATUS MANAGEMENT
+// ================================
+
+function loadStatuses(statuses) {
+    const statusList = document.getElementById('statusList');
+    statusList.innerHTML = '';
+    
+    statuses.forEach(status => {
+        addStatusPill(status);
+    });
+}
+
+function addStatus() {
+    const name = document.getElementById('statusName').value.trim();
+    const tier = parseInt(document.getElementById('statusTier').value) || 1;
+    const type = document.getElementById('statusType').value;
+    
+    if (!name) return;
+    
+    const status = {
+        name: name,
+        tier: tier,
+        beneficial: type === 'positive'
+    };
+    
+    addStatusPill(status);
+    
+    // Save to current character
+    if (currentCharacter) {
+        if (!currentCharacter.currentStatuses) {
+            currentCharacter.currentStatuses = [];
+        }
+        currentCharacter.currentStatuses.push(status);
+        saveCurrentCharacter();
+    }
+    
+    // Clear inputs
+    document.getElementById('statusName').value = '';
+    document.getElementById('statusTier').value = '1';
+}
+
+function addStatusPill(status) {
+    const statusList = document.getElementById('statusList');
+    const pill = document.createElement('div');
+    pill.className = `tag-pill ${status.beneficial ? 'positive' : 'negative'}`;
+    pill.innerHTML = `
+        ${status.name}-${status.tier}
+        <button class="remove-btn" onclick="removeStatus(this)">×</button>
+    `;
+    statusList.appendChild(pill);
+}
+
+function removeStatus(btn) {
+    const pill = btn.parentElement;
+    const statusText = pill.textContent.replace('×', '').trim();
+    pill.remove();
+    
+    // Remove from current character
+    if (currentCharacter && currentCharacter.currentStatuses) {
+        currentCharacter.currentStatuses = currentCharacter.currentStatuses.filter(s => {
+            return `${s.name}-${s.tier}` !== statusText;
+        });
+        saveCurrentCharacter();
+    }
+}
+
+// ================================
+// STORY TAGS MANAGEMENT
+// ================================
+
+function loadStoryTags(tags) {
+    const tagList = document.getElementById('storyTagList');
+    tagList.innerHTML = '';
+    
+    tags.forEach(tag => {
+        addStoryTagPill(tag);
+    });
+}
+
+function addStoryTag() {
+    const name = document.getElementById('storyTagName').value.trim();
+    const ongoing = document.getElementById('storyOngoing').checked;
+    
+    if (!name) return;
+    
+    const tag = { name: name, ongoing: ongoing };
+    addStoryTagPill(tag);
+    
+    // Save to current character
+    if (currentCharacter) {
+        if (!currentCharacter.storyTags) {
+            currentCharacter.storyTags = [];
+        }
+        currentCharacter.storyTags.push(tag);
+        saveCurrentCharacter();
+    }
+    
+    // Clear inputs
+    document.getElementById('storyTagName').value = '';
+    document.getElementById('storyOngoing').checked = false;
+}
+
+function addStoryTagPill(tag) {
+    const tagList = document.getElementById('storyTagList');
+    const pill = document.createElement('div');
+    pill.className = 'tag-pill';
+    pill.innerHTML = `
+        ${tag.name}${tag.ongoing ? ' (Ongoing)' : ''}
+        <button class="remove-btn" onclick="burnTag(this)">🔥</button>
+    `;
+    tagList.appendChild(pill);
+}
+
+function burnTag(btn) {
+    const pill = btn.parentElement;
+    const tagText = pill.textContent.replace('🔥', '').trim();
+    
+    // Move to burnt tags
+    if (currentCharacter) {
+        if (!currentCharacter.burntTags) {
+            currentCharacter.burntTags = [];
+        }
+        currentCharacter.burntTags.push(tagText);
+        
+        // Remove from story tags
+        if (currentCharacter.storyTags) {
+            currentCharacter.storyTags = currentCharacter.storyTags.filter(t => {
+                const fullName = t.name + (t.ongoing ? ' (Ongoing)' : '');
+                return fullName !== tagText;
+            });
+        }
+        
+        saveCurrentCharacter();
+        loadStoryTags(currentCharacter.storyTags || []);
+        loadBurntTags(currentCharacter.burntTags || []);
+    }
+}
+
+// ================================
+// BURNT TAGS MANAGEMENT
+// ================================
+
+function loadBurntTags(tags) {
+    const tagList = document.getElementById('burntTagList');
+    tagList.innerHTML = '';
+    
+    tags.forEach(tag => {
+        const pill = document.createElement('div');
+        pill.className = 'tag-pill';
+        pill.style.opacity = '0.6';
+        pill.textContent = tag;
+        tagList.appendChild(pill);
+    });
+}
+
+function recoverAllTags() {
+    if (!currentCharacter) return;
+    
+    if (currentCharacter.burntTags && currentCharacter.burntTags.length > 0) {
+        // Move all burnt tags back to story tags
+        currentCharacter.burntTags.forEach(tag => {
+            currentCharacter.storyTags.push({ name: tag, ongoing: false });
+        });
+        currentCharacter.burntTags = [];
+        
+        saveCurrentCharacter();
+        loadStoryTags(currentCharacter.storyTags || []);
+        loadBurntTags([]);
+        
+        alert('✨ All burnt tags recovered!');
+    }
+}
+
+// ================================
+// SAVE CURRENT CHARACTER
+// ================================
+
+function saveCurrentCharacter() {
+    if (!currentCharacter) return;
+    
+    // Update character library
+    characterLibrary[currentCharacter.name] = currentCharacter;
+    saveCharacterLibrary();
+    
+    console.log('💾 Current character saved:', currentCharacter.name);
+}
+
+// ================================
+// FIREBASE INTEGRATION
+// ================================
+
+function initializeFirebase() {
+    // Check if Firebase config is loaded
+    if (typeof initializeApp === 'undefined') {
+        console.log('⚠️ Firebase not configured - running in offline mode');
+        return;
+    }
+    
+    try {
+        // Firebase initialization will be handled by firebase-config.js
+        console.log('🔥 Firebase initialization starting...');
+        
+        // Listen for Firebase ready event
+        window.addEventListener('firebaseReady', (event) => {
+            db = event.detail.db;
+            realtimeDb = event.detail.realtimeDb;
+            firebaseInitialized = true;
+            
+            console.log('✅ Firebase connected!');
+            document.getElementById('syncBadge').textContent = '● Online';
+            document.getElementById('syncBadge').classList.remove('offline');
+            document.getElementById('syncBadge').classList.add('online');
+            
+            // Start listening for MC broadcasts
+            listenForMCBroadcasts();
+        });
+        
+    } catch (error) {
+        console.error('❌ Firebase initialization error:', error);
+    }
+}
+
+function listenForMCBroadcasts() {
+    if (!realtimeDb) {
+        console.log('⚠️ Realtime database not available');
+        return;
+    }
+    
+    // Listen for scene updates
+    const sceneRef = realtimeDb.ref('mcBroadcast/currentScene');
+    sceneRef.on('value', (snapshot) => {
+        const sceneData = snapshot.val();
+        if (sceneData) {
+            document.getElementById('sceneInfo').textContent = sceneData.name || 'Unknown Scene';
+            console.log('📍 Scene updated:', sceneData.name);
+        }
+    });
+    
+    // Listen for music updates
+    const musicRef = realtimeDb.ref('mcBroadcast/currentMusic');
+    musicRef.on('value', (snapshot) => {
+        const musicData = snapshot.val();
+        if (musicData) {
+            document.getElementById('musicInfo').textContent = musicData.name || 'Unknown Track';
+            console.log('🎵 Music updated:', musicData.name);
+        }
+    });
+    
+    // Listen for spotlight updates
+    const spotlightRef = realtimeDb.ref('mcBroadcast/activeCharacter');
+    spotlightRef.on('value', (snapshot) => {
+        const charData = snapshot.val();
+        if (charData) {
+            document.getElementById('spotlightInfo').textContent = charData.name || 'Unknown Character';
+            console.log('✨ Spotlight updated:', charData.name);
+        }
+    });
+    
+    console.log('👂 Listening for MC broadcasts...');
+}
+
+// ================================
+// UTILITY FUNCTIONS
+// ================================
+
+// Make functions available globally for onclick handlers
+window.removeStatus = removeStatus;
+window.burnTag = burnTag;
+
+console.log('✅ Player App JavaScript loaded');
