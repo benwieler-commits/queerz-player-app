@@ -16,25 +16,31 @@
     {
       "themeType": "Identity",
       "themeName": "Rainbow",
+      "identity": "Never Following the Path, Always Blazing the Trail",
+      "weakness": "But was I enough?",
+      "themeImprovement": "When you Become Vulnerable with tags from this theme, gain +1 Juice.",
       "attention": 0,
       "fadeCrack": 0,
       "levelUp": false,
       "tags": [
-        "Radiant confidence",
-        "Infectious charisma",
-        "Boundless creativity"
+        "You don’t get to dull my sparkle",
+        "I’ve survived worse than you",
+        "Watch me shine anyway"
       ]
     },
     {
       "themeType": "Mission",
       "themeName": "Anchor",
+      "identity": "Protect the ones I love",
+      "weakness": "Can I protect myself too?",
+      "themeImprovement": "Spend 1 Juice to give an ally immunity to one action after dice are rolled.",
       "attention": 0,
       "fadeCrack": 0,
       "levelUp": false,
       "tags": [
         "I shield who I love",
-        "My drag babies come first",
-        "I’ve survived worse than you"
+        "Not today, hatred!",
+        "My drag babies come first"
       ]
     }
   ],
