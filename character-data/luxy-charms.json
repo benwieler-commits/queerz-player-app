@@ -1,0 +1,10 @@
+{
+  "name": "Luxy Charms",
+  "pronouns": "she/they",
+  "colorHex": "#93E9BE",
+  "portraits": {
+    "street": "images/Luxy_Charms_PFP.png",
+    "qfactor": "images/luxy-q-factor-activate.png"
+  },
+  "themes": []
+}
