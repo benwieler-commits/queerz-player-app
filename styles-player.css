@@ -292,10 +292,28 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.tag-list li:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(244, 211, 94, 0.5);
 }
 
 .tag-list li::before {
     content: "🔥";
+}
+
+.tag-list li.burnt {
+    opacity: 0.3;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+.tag-list li.burnt:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .weakness-text {
@@ -304,6 +322,30 @@ body {
     border-radius: 8px;
     font-style: italic;
     color: var(--gold-tag);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.weakness-text:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(5px);
+}
+
+.weakness-text.burnt {
+    opacity: 0.3;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+.weakness-text.burnt:hover {
+    transform: none;
+}
+
+.power-breakdown {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 5px;
+    text-align: center;
 }
 
 /* ================================
@@ -635,6 +677,260 @@ body {
 
 .btn-recover:hover {
     background: var(--coral-accent);
+}
+
+/* ================================
+   TAG COMBOS SECTION
+   ================================ */
+
+.combos-section {
+    background: rgba(0, 0, 0, 0.5);
+    border-top: 3px solid var(--teal-primary);
+    padding: 30px 20px;
+}
+
+.combos-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.combos-panel {
+    background: var(--bg-card);
+    border: 2px solid var(--teal-primary);
+    border-radius: 15px;
+    padding: 30px;
+}
+
+.combos-panel h2 {
+    color: var(--coral-accent);
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.combos-subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.combo-add {
+    background: rgba(74, 124, 126, 0.1);
+    border: 2px solid var(--teal-primary);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.input-combo-name {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    border: 2px solid var(--teal-primary);
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.combo-tags-input {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.combo-details {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.combo-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.combo-card {
+    background: rgba(244, 211, 94, 0.1);
+    border: 2px solid var(--gold-tag);
+    border-radius: 10px;
+    padding: 15px;
+    transition: all 0.3s;
+}
+
+.combo-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(244, 211, 94, 0.3);
+}
+
+.combo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.combo-name {
+    color: var(--gold-tag);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.combo-remove-btn {
+    background: rgba(255, 68, 68, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: all 0.3s;
+}
+
+.combo-remove-btn:hover {
+    background: #ff4444;
+    transform: scale(1.1);
+}
+
+.combo-tags {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.combo-tag-pill {
+    background: var(--gold-tag);
+    color: var(--bg-dark);
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.combo-details {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9rem;
+}
+
+.combo-power {
+    color: var(--coral-accent);
+    font-weight: bold;
+}
+
+.combo-move {
+    color: var(--teal-primary);
+}
+
+/* ================================
+   CORE MOVES SECTION
+   ================================ */
+
+.moves-section {
+    background: rgba(0, 0, 0, 0.5);
+    border-top: 3px solid var(--coral-accent);
+    padding: 30px 20px;
+}
+
+.moves-section h2 {
+    color: var(--coral-accent);
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.btn-toggle-moves {
+    display: block;
+    margin: 0 auto 20px;
+    padding: 12px 30px;
+    background: var(--teal-primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.btn-toggle-moves:hover {
+    background: var(--coral-accent);
+    transform: translateY(-2px);
+}
+
+.moves-panel {
+    max-width: 1600px;
+    margin: 0 auto;
+    transition: all 0.3s;
+}
+
+.moves-panel.hidden {
+    display: none;
+}
+
+.moves-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.move-card {
+    background: var(--bg-card);
+    border: 2px solid var(--teal-primary);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s;
+}
+
+.move-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(74, 124, 126, 0.3);
+    border-color: var(--coral-accent);
+}
+
+.move-name {
+    color: var(--coral-accent);
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.move-trigger {
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.move-trigger strong {
+    color: var(--teal-primary);
+}
+
+.move-results {
+    background: rgba(74, 124, 126, 0.1);
+    border-left: 4px solid var(--teal-primary);
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+}
+
+.move-results p {
+    margin: 5px 0;
+    font-size: 0.95rem;
+}
+
+.move-upgrades {
+    color: var(--gold-tag);
+    font-size: 0.9rem;
+    font-style: italic;
 }
 
 /* ================================

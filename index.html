@@ -264,6 +264,135 @@
         </div>
     </section>
 
+    <!-- TAG COMBOS SECTION -->
+    <section class="combos-section">
+        <div class="combos-container">
+            <div class="combos-panel">
+                <h2>🎯 TAG COMBOS</h2>
+                <p class="combos-subtitle">Create powerful combinations of your tags!</p>
+                
+                <!-- Add New Combo -->
+                <div class="combo-add">
+                    <input type="text" id="comboName" placeholder="Combo name (e.g., 'Get the Drop on a Baddie')" class="input-combo-name">
+                    <div class="combo-tags-input">
+                        <input type="text" id="comboTag1" placeholder="Tag 1" class="input-small">
+                        <input type="text" id="comboTag2" placeholder="Tag 2" class="input-small">
+                        <input type="text" id="comboTag3" placeholder="Tag 3 (optional)" class="input-small">
+                    </div>
+                    <div class="combo-details">
+                        <input type="number" id="comboPower" value="2" min="1" max="5" class="input-tiny" placeholder="Power">
+                        <select id="comboMove" class="select-small">
+                            <option value="">Select Core Move...</option>
+                            <option value="strike-a-pose">Strike a Pose</option>
+                            <option value="slay">Slay</option>
+                            <option value="get-a-clue">Get a Clue</option>
+                            <option value="sneak-and-spy">Sneak and Spy</option>
+                            <option value="care">Care</option>
+                            <option value="be-vulnerable">Be Vulnerable</option>
+                            <option value="resist">Resist</option>
+                        </select>
+                        <button id="addComboBtn" class="btn-add">+ Add Combo</button>
+                    </div>
+                </div>
+                
+                <!-- Combo List -->
+                <div id="comboList" class="combo-display"></div>
+                
+                <!-- Clear Combos Button -->
+                <button id="clearCombosBtn" class="btn-secondary" style="margin-top: 15px;">Clear All Combos</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- CORE MOVES REFERENCE -->
+    <section class="moves-section">
+        <h2>📖 CORE MOVES REFERENCE</h2>
+        <button id="toggleMovesBtn" class="btn-toggle-moves">Show/Hide Moves</button>
+        <div id="movesPanel" class="moves-panel hidden">
+            <div class="moves-grid">
+                <!-- Strike a Pose -->
+                <div class="move-card">
+                    <h3 class="move-name">STRIKE A POSE</h3>
+                    <p class="move-trigger">When you <strong>attempt to give yourself or your allies a positive status</strong>, or <strong>make an impression or influence others</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Choose 2 upgrades</p>
+                        <p><strong>7-9:</strong> Choose 1 upgrade</p>
+                        <p><strong>Miss:</strong> MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting, Contagious</p>
+                </div>
+
+                <!-- Slay -->
+                <div class="move-card">
+                    <h3 class="move-name">SLAY</h3>
+                    <p class="move-trigger">When you <strong>give your opponents a negative status or overcome their Ignorance Limit</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Choose 2 upgrades</p>
+                        <p><strong>7-9:</strong> Choose 1 upgrade</p>
+                        <p><strong>Miss:</strong> MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting</p>
+                </div>
+
+                <!-- Get a Clue -->
+                <div class="move-card">
+                    <h3 class="move-name">GET A CLUE</h3>
+                    <p class="move-trigger">When you <strong>investigate, research, or gather information</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Gain a Story Tag and ask 2 questions</p>
+                        <p><strong>7-9:</strong> Ask 1 question or gain a Story Tag</p>
+                        <p><strong>Miss:</strong> MC makes a move</p>
+                    </div>
+                </div>
+
+                <!-- Sneak and Spy -->
+                <div class="move-card">
+                    <h3 class="move-name">SNEAK AND SPY</h3>
+                    <p class="move-trigger">When you <strong>avoid detection or move unseen</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> You succeed undetected</p>
+                        <p><strong>7-9:</strong> You succeed but choose: leave evidence, take longer, or face a cost</p>
+                        <p><strong>Miss:</strong> You're spotted or trigger danger</p>
+                    </div>
+                </div>
+
+                <!-- Care -->
+                <div class="move-card">
+                    <h3 class="move-name">CARE</h3>
+                    <p class="move-trigger">When you <strong>help someone with their emotional or physical needs</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Remove a negative status tier or give a positive status</p>
+                        <p><strong>7-9:</strong> As above, but you take a status yourself or mark Growth</p>
+                        <p><strong>Miss:</strong> Your care backfires</p>
+                    </div>
+                </div>
+
+                <!-- Be Vulnerable -->
+                <div class="move-card">
+                    <h3 class="move-name">BE VULNERABLE</h3>
+                    <p class="move-trigger">When you <strong>open up emotionally or share something difficult</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Mark Growth and choose 2 benefits</p>
+                        <p><strong>7-9:</strong> Mark Growth and choose 1 benefit</p>
+                        <p><strong>Miss:</strong> Mark Growth but MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Benefits:</strong> Gain support, clear a status, earn trust, inspire others</p>
+                </div>
+
+                <!-- Resist -->
+                <div class="move-card">
+                    <h3 class="move-name">RESIST</h3>
+                    <p class="move-trigger">When you <strong>fight against a status being applied to you or try to reduce its tier</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Fully resist or reduce by 2 tiers</p>
+                        <p><strong>7-9:</strong> Reduce status by 1 tier</p>
+                        <p><strong>Miss:</strong> Take the full status</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Firebase Config -->
     <script type="module" src="firebase-config.js"></script>
     <!-- Main App JavaScript -->

@@ -13,6 +13,11 @@ let firebaseInitialized = false;
 let db = null;
 let realtimeDb = null;
 
+// Power tracking from burnt tags
+let activePowerTags = []; // Tags that add to power (burnt power tags)
+let activeWeaknessTags = []; // Tags that subtract from power (burnt weakness tags)
+let activeStatusTags = []; // Negative status tags that subtract from power
+
 // ================================
 // INITIALIZATION
 // ================================
@@ -243,6 +248,13 @@ function initializeEventListeners() {
     
     // Burnt Tags Recovery
     document.getElementById('recoverBtn').addEventListener('click', recoverAllTags);
+    
+    // Tag Combos
+    document.getElementById('addComboBtn').addEventListener('click', addCombo);
+    document.getElementById('clearCombosBtn').addEventListener('click', clearAllCombos);
+    
+    // Core Moves Toggle
+    document.getElementById('toggleMovesBtn').addEventListener('click', toggleMoves);
     
     // Track box clicking for Growth/Shade/Crack
     initializeTrackBoxListeners();
@@ -475,6 +487,16 @@ function loadCharacter(charData) {
         console.error('❌ Error loading burnt tags:', error);
     }
     
+    // Load tag combos
+    try {
+        console.log('🎯 Loading tag combos...');
+        tagCombos = charData.tagCombos || [];
+        renderCombos();
+        console.log('✅ Tag combos loaded');
+    } catch (error) {
+        console.error('❌ Error loading tag combos:', error);
+    }
+    
     console.log('✅✅✅ CHARACTER LOADED SUCCESSFULLY ✅✅✅');
     console.log('=== LOAD CHARACTER COMPLETE ===');
 }
@@ -511,20 +533,40 @@ function populateThemeCard(card, themeData, type) {
     // Update runway quote
     card.querySelector('.runway-quote em').textContent = themeData.runway || 'No quote set';
     
-    // Update power tags
+    // Update power tags - MAKE THEM CLICKABLE
     const tagList = card.querySelector('.power-tags .tag-list');
     tagList.innerHTML = '';
     if (themeData.powerTags) {
-        themeData.powerTags.forEach(tag => {
+        themeData.powerTags.forEach((tag, index) => {
             const li = document.createElement('li');
             li.textContent = tag;
+            li.classList.add('burnable-tag');
+            li.dataset.tag = tag;
+            li.dataset.type = 'power';
+            li.dataset.themeIndex = card.id.replace('theme', '');
+            li.dataset.tagIndex = index;
+            
+            // Click to burn
+            li.addEventListener('click', function() {
+                burnThemeTag(this);
+            });
+            
             tagList.appendChild(li);
         });
     }
     
-    // Update weakness tag
+    // Update weakness tag - MAKE IT CLICKABLE
     const weaknessText = card.querySelector('.weakness-text');
     weaknessText.textContent = themeData.weaknessTag || 'No weakness tag set';
+    weaknessText.classList.add('burnable-tag', 'weakness-burnable');
+    weaknessText.dataset.tag = themeData.weaknessTag;
+    weaknessText.dataset.type = 'weakness';
+    weaknessText.dataset.themeIndex = card.id.replace('theme', '');
+    
+    // Click to burn
+    weaknessText.addEventListener('click', function() {
+        burnThemeTag(this);
+    });
     
     // Update Growth/Shade/Crack tracks
     if (type === 'rainbow') {
@@ -595,7 +637,127 @@ function togglePortrait() {
 }
 
 // ================================
-// DICE ROLLING
+// THEME TAG BURNING & POWER CALCULATION
+// ================================
+
+function burnThemeTag(element) {
+    const tag = element.dataset.tag;
+    const type = element.dataset.type;
+    
+    console.log(`🔥 Burning ${type} tag:`, tag);
+    
+    // Visual feedback
+    element.style.opacity = '0.3';
+    element.style.textDecoration = 'line-through';
+    element.classList.add('burnt');
+    
+    // Add to appropriate tracking array
+    if (type === 'power') {
+        if (!activePowerTags.includes(tag)) {
+            activePowerTags.push(tag);
+            console.log('➕ Added to active power tags');
+        }
+    } else if (type === 'weakness') {
+        if (!activeWeaknessTags.includes(tag)) {
+            activeWeaknessTags.push(tag);
+            console.log('➖ Added to active weakness tags');
+        }
+    }
+    
+    // Update power display
+    updatePowerCalculation();
+    
+    // Disable further clicks
+    element.style.cursor = 'not-allowed';
+    element.onclick = null;
+}
+
+function updatePowerCalculation() {
+    // Calculate total power modifier
+    let totalPower = 0;
+    
+    // Add power from burnt power tags (+1 each)
+    totalPower += activePowerTags.length;
+    
+    // Subtract power from burnt weakness tags (-1 each)
+    totalPower -= activeWeaknessTags.length;
+    
+    // Subtract power from negative status tags
+    totalPower -= activeStatusTags.length;
+    
+    // Update display
+    const powerInput = document.getElementById('totalPower');
+    if (powerInput) {
+        powerInput.value = totalPower;
+    }
+    
+    // Update power breakdown display
+    updatePowerBreakdown();
+    
+    console.log('⚡ Total Power:', totalPower);
+    console.log('  Power Tags:', activePowerTags.length);
+    console.log('  Weakness Tags:', -activeWeaknessTags.length);
+    console.log('  Status Tags:', -activeStatusTags.length);
+}
+
+function updatePowerBreakdown() {
+    // Find or create power breakdown element
+    let breakdown = document.getElementById('powerBreakdown');
+    if (!breakdown) {
+        breakdown = document.createElement('div');
+        breakdown.id = 'powerBreakdown';
+        breakdown.className = 'power-breakdown';
+        
+        const powerDisplay = document.querySelector('.power-display');
+        if (powerDisplay) {
+            powerDisplay.appendChild(breakdown);
+        }
+    }
+    
+    // Build breakdown text
+    let parts = [];
+    if (activePowerTags.length > 0) {
+        parts.push(`+${activePowerTags.length} Power Tags`);
+    }
+    if (activeWeaknessTags.length > 0) {
+        parts.push(`-${activeWeaknessTags.length} Weakness Tags`);
+    }
+    if (activeStatusTags.length > 0) {
+        parts.push(`-${activeStatusTags.length} Status Tags`);
+    }
+    
+    breakdown.textContent = parts.length > 0 ? parts.join(', ') : '';
+}
+
+function clearAllBurntTags() {
+    // Reset arrays
+    activePowerTags = [];
+    activeWeaknessTags = [];
+    activeStatusTags = [];
+    
+    // Reset visual state of all tags
+    document.querySelectorAll('.burnable-tag.burnt').forEach(tag => {
+        tag.style.opacity = '1';
+        tag.style.textDecoration = 'none';
+        tag.classList.remove('burnt');
+        tag.style.cursor = 'pointer';
+        
+        // Re-enable clicking
+        if (tag.dataset.type === 'power' || tag.dataset.type === 'weakness') {
+            tag.addEventListener('click', function() {
+                burnThemeTag(this);
+            });
+        }
+    });
+    
+    // Update power
+    updatePowerCalculation();
+    
+    console.log('🔄 All burnt tags cleared');
+}
+
+// ================================
+// DICE ROLLING (UPDATED)
 // ================================
 
 function rollDice() {
@@ -698,16 +860,46 @@ function addStatusPill(status) {
     const statusList = document.getElementById('statusList');
     const pill = document.createElement('div');
     pill.className = `tag-pill ${status.beneficial ? 'positive' : 'negative'}`;
+    pill.dataset.statusName = status.name;
+    pill.dataset.statusTier = status.tier;
+    pill.dataset.beneficial = status.beneficial;
+    
     pill.innerHTML = `
         ${status.name}-${status.tier}
         <button class="remove-btn" onclick="removeStatus(this)">×</button>
     `;
     statusList.appendChild(pill);
+    
+    // If negative status, add to power calculation
+    if (!status.beneficial) {
+        for (let i = 0; i < status.tier; i++) {
+            activeStatusTags.push(`${status.name}-${i+1}`);
+        }
+        updatePowerCalculation();
+    }
 }
 
 function removeStatus(btn) {
     const pill = btn.parentElement;
     const statusText = pill.textContent.replace('×', '').trim();
+    
+    // Remove from power calculation if negative
+    const beneficial = pill.dataset.beneficial === 'true';
+    if (!beneficial) {
+        const tier = parseInt(pill.dataset.statusTier) || 1;
+        const name = pill.dataset.statusName;
+        
+        // Remove from activeStatusTags
+        for (let i = 0; i < tier; i++) {
+            const tagToRemove = `${name}-${i+1}`;
+            const index = activeStatusTags.indexOf(tagToRemove);
+            if (index > -1) {
+                activeStatusTags.splice(index, 1);
+            }
+        }
+        updatePowerCalculation();
+    }
+    
     pill.remove();
     
     // Remove from current character
@@ -811,6 +1003,7 @@ function loadBurntTags(tags) {
 function recoverAllTags() {
     if (!currentCharacter) return;
     
+    // Recover burnt story tags
     if (currentCharacter.burntTags && currentCharacter.burntTags.length > 0) {
         // Move all burnt tags back to story tags
         currentCharacter.burntTags.forEach(tag => {
@@ -818,12 +1011,16 @@ function recoverAllTags() {
         });
         currentCharacter.burntTags = [];
         
-        saveCurrentCharacter();
         loadStoryTags(currentCharacter.storyTags || []);
         loadBurntTags([]);
-        
-        alert('✨ All burnt tags recovered!');
     }
+    
+    // Clear all burnt theme tags (power and weakness)
+    clearAllBurntTags();
+    
+    saveCurrentCharacter();
+    
+    alert('✨ All burnt tags recovered!');
 }
 
 // ================================
@@ -915,11 +1112,122 @@ function listenForMCBroadcasts() {
 }
 
 // ================================
+// TAG COMBOS MANAGEMENT
+// ================================
+
+let tagCombos = [];
+
+function addCombo() {
+    const name = document.getElementById('comboName').value.trim();
+    const tag1 = document.getElementById('comboTag1').value.trim();
+    const tag2 = document.getElementById('comboTag2').value.trim();
+    const tag3 = document.getElementById('comboTag3').value.trim();
+    const power = parseInt(document.getElementById('comboPower').value) || 2;
+    const move = document.getElementById('comboMove').value;
+    
+    if (!name || !tag1 || !tag2) {
+        alert('Please enter combo name and at least 2 tags');
+        return;
+    }
+    
+    const combo = {
+        name: name,
+        tags: [tag1, tag2],
+        power: power,
+        move: move || 'Any'
+    };
+    
+    if (tag3) {
+        combo.tags.push(tag3);
+    }
+    
+    tagCombos.push(combo);
+    renderCombos();
+    
+    // Save to character
+    if (currentCharacter) {
+        currentCharacter.tagCombos = tagCombos;
+        saveCurrentCharacter();
+    }
+    
+    // Clear inputs
+    document.getElementById('comboName').value = '';
+    document.getElementById('comboTag1').value = '';
+    document.getElementById('comboTag2').value = '';
+    document.getElementById('comboTag3').value = '';
+    document.getElementById('comboPower').value = '2';
+    document.getElementById('comboMove').value = '';
+    
+    console.log('✅ Combo added:', combo);
+}
+
+function renderCombos() {
+    const comboList = document.getElementById('comboList');
+    comboList.innerHTML = '';
+    
+    if (tagCombos.length === 0) {
+        comboList.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">No combos created yet</p>';
+        return;
+    }
+    
+    tagCombos.forEach((combo, index) => {
+        const comboCard = document.createElement('div');
+        comboCard.className = 'combo-card';
+        comboCard.innerHTML = `
+            <div class="combo-header">
+                <h4 class="combo-name">${combo.name}</h4>
+                <button class="combo-remove-btn" onclick="removeCombo(${index})">×</button>
+            </div>
+            <div class="combo-tags">
+                ${combo.tags.map(tag => `<span class="combo-tag-pill">${tag}</span>`).join(' + ')}
+            </div>
+            <div class="combo-details">
+                <span class="combo-power">⚡ +${combo.power} Power</span>
+                <span class="combo-move">📖 ${combo.move}</span>
+            </div>
+        `;
+        comboList.appendChild(comboCard);
+    });
+}
+
+function removeCombo(index) {
+    tagCombos.splice(index, 1);
+    renderCombos();
+    
+    if (currentCharacter) {
+        currentCharacter.tagCombos = tagCombos;
+        saveCurrentCharacter();
+    }
+}
+
+function clearAllCombos() {
+    if (confirm('Clear all tag combos?')) {
+        tagCombos = [];
+        renderCombos();
+        
+        if (currentCharacter) {
+            currentCharacter.tagCombos = [];
+            saveCurrentCharacter();
+        }
+    }
+}
+
+// ================================
+// CORE MOVES TOGGLE
+// ================================
+
+function toggleMoves() {
+    const panel = document.getElementById('movesPanel');
+    panel.classList.toggle('hidden');
+}
+
+// ================================
 // UTILITY FUNCTIONS
 // ================================
 
 // Make functions available globally for onclick handlers
 window.removeStatus = removeStatus;
 window.burnTag = burnTag;
+window.removeCombo = removeCombo;
 
 console.log('✅ Player App JavaScript loaded');
