@@ -1,8 +1,0 @@
-:root{
-  --accent:#93E9BE;
-  --accent-strong:#6dd6a5;
-}
-.app-title{ text-shadow:0 0 18px rgba(147,233,190,.6); }
-.portrait{ box-shadow:0 0 24px rgba(147,233,190,.45); }
-select, .btn{ box-shadow:0 0 12px rgba(147,233,190,.25); }
-.theme{ box-shadow:0 0 16px rgba(147,233,190,.2); }
