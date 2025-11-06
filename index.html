@@ -1,3 +1,272 @@
-<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>QUEERZ! Player Companion</title><link rel='stylesheet' href='styles-player.css'></head><body><header class='app-header'><h1 class='title'>QUEERZ! Player Companion</h1><div class='header-right'><select id='characterSelect' class='select'></select><button id='portraitToggle' class='btn'>Switch to Q-Factor</button><span id='syncBadge' class='badge offline'>● Offline</span></div></header><main class='folio'><section class='folio-col'><div class='theme-card' data-theme-index='0'></div><div class='theme-card' data-theme-index='1'></div></section><section class='folio-center'><div class='portrait'><img id='portraitImg' alt='Character portrait'></div><div class='mc-sync'><h3>MC Broadcast</h3><div id='sceneFromMC' class='mc-scene'>Waiting for MC scene…</div><div id='musicFromMC' class='mc-music'>♪ No music playing</div></div><div class='roller'><h3>Roll</h3><div class='power'>Total Power: <span id='totalPower'>0</span></div><button id='rollBtn' class='btn'>🎲 Roll 2d6 + Power</button><div id='rollOut' class='roll-out'></div></div></section><section class='folio-col'><div class='theme-card' data-theme-index='2'></div><div class='theme-card' data-theme-index='3'></div></section></main><section class='tags'><h3>Story Tags</h3><div class='story-add'><input id='storyName' class='input' placeholder='Story tag' /><label><input type='checkbox' id='storyOngoing'> Ongoing</label><button id='storyAdd' class='btn'>+ Add Story Tag</button></div><div id='storyList' class='pill-list'></div><h3>Burnt Tags</h3><div id='burntList' class='pill-list'></div><button id='recoverBtn' class='btn'>Recover All</button></section><script type='module' src='firebase-config.js'></script><script type='module' src='player-app.js'></script><div id='coreMovesHost'></div>
-<script type='module' src='player-app.js'></script>
-</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUEERZ! Player Companion</title>
+    <link rel="stylesheet" href="styles-player.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="app-header">
+        <h1 class="app-title">🌈 QUEERZ! Player Companion</h1>
+        <div class="header-controls">
+            <select id="characterSelect" class="character-select">
+                <option value="">Load Character...</option>
+            </select>
+            <label for="characterUpload" class="btn-upload">📁 Upload JSON</label>
+            <input type="file" id="characterUpload" accept=".json" style="display: none;">
+            <button id="portraitToggle" class="btn-toggle">Switch Portrait</button>
+            <button id="saveCharBtn" class="btn-save">💾 Save</button>
+        </div>
+        <div class="sync-status">
+            <span id="syncBadge" class="badge offline">● Offline</span>
+            <span id="mcStatus" class="mc-status">Waiting for MC...</span>
+        </div>
+    </header>
+
+    <!-- MAIN FOLIO LAYOUT -->
+    <main class="folio-container">
+        
+        <!-- LEFT COLUMN: Rainbow Themes 1 & 2 -->
+        <section class="folio-column left-column">
+            <div class="theme-card rainbow-theme" id="theme0">
+                <div class="theme-header">
+                    <div class="theme-type">SIGNATURE / FIGHTING STYLE</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="growth-track">
+                    <label>GROWTH</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="shade-track">
+                    <label>SHADE</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your runway quote here"</em>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theme-card rainbow-theme" id="theme1">
+                <div class="theme-header">
+                    <div class="theme-type">FIGHTING STYLE / Q-GEAR</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="growth-track">
+                    <label>GROWTH</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="shade-track">
+                    <label>SHADE</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your runway quote here"</em>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER COLUMN: Portrait, MC Sync, Roller -->
+        <section class="folio-center">
+            <!-- Character Portrait -->
+            <div class="portrait-container">
+                <img id="characterPortrait" src="" alt="Character Portrait" class="character-portrait">
+                <div class="character-info">
+                    <h2 id="characterName">Character Name</h2>
+                    <p id="characterPronouns" class="pronouns"></p>
+                </div>
+            </div>
+
+            <!-- MC Broadcast Section -->
+            <div class="mc-broadcast">
+                <h3>📡 MC Broadcast</h3>
+                <div class="broadcast-content">
+                    <div class="broadcast-scene">
+                        <strong>Scene:</strong>
+                        <p id="sceneInfo">Waiting for scene...</p>
+                    </div>
+                    <div class="broadcast-music">
+                        <strong>♪ Music:</strong>
+                        <p id="musicInfo">No music playing</p>
+                    </div>
+                    <div class="broadcast-character">
+                        <strong>Spotlight:</strong>
+                        <p id="spotlightInfo">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dice Roller -->
+            <div class="dice-roller">
+                <h3>🎲 Roll Dice</h3>
+                <div class="power-display">
+                    <label>Total Power:</label>
+                    <input type="number" id="totalPower" class="power-input" value="0" min="-5" max="10">
+                </div>
+                <button id="rollBtn" class="btn-roll">Roll 2d6 + Power</button>
+                <div id="rollResult" class="roll-result"></div>
+            </div>
+
+            <!-- Juice Tracker -->
+            <div class="juice-tracker">
+                <h3>✨ JUICE</h3>
+                <div class="juice-display">
+                    <button id="juiceDown" class="juice-btn">−</button>
+                    <span id="juiceCount" class="juice-count">0</span>
+                    <button id="juiceUp" class="juice-btn">+</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Rainbow Theme 3 & Realness Theme -->
+        <section class="folio-column right-column">
+            <div class="theme-card rainbow-theme" id="theme2">
+                <div class="theme-header">
+                    <div class="theme-type">Q-GEAR / PERSONALITY</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="growth-track">
+                    <label>GROWTH</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="shade-track">
+                    <label>SHADE</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your runway quote here"</em>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theme-card realness-theme" id="theme3">
+                <div class="theme-header">
+                    <div class="theme-type realness-label">REALNESS THEME</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="crack-track">
+                    <label>CRACK</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your identity statement here"</em>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- STATUS & STORY TAGS SECTION -->
+    <section class="tags-section">
+        <div class="tags-container">
+            <!-- Current Statuses -->
+            <div class="status-panel">
+                <h3>Current Statuses</h3>
+                <div class="status-add">
+                    <input type="text" id="statusName" placeholder="Status name" class="input-small">
+                    <input type="number" id="statusTier" value="1" min="1" max="6" class="input-tiny">
+                    <select id="statusType" class="select-small">
+                        <option value="negative">Negative</option>
+                        <option value="positive">Positive</option>
+                    </select>
+                    <button id="addStatusBtn" class="btn-add">+ Add</button>
+                </div>
+                <div id="statusList" class="tag-display"></div>
+            </div>
+
+            <!-- Story Tags -->
+            <div class="story-panel">
+                <h3>Story Tags</h3>
+                <div class="story-add">
+                    <input type="text" id="storyTagName" placeholder="Story tag" class="input-small">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="storyOngoing">
+                        Ongoing
+                    </label>
+                    <button id="addStoryBtn" class="btn-add">+ Add</button>
+                </div>
+                <div id="storyTagList" class="tag-display"></div>
+            </div>
+
+            <!-- Burnt Tags -->
+            <div class="burnt-panel">
+                <h3>Burnt Tags</h3>
+                <div id="burntTagList" class="tag-display"></div>
+                <button id="recoverBtn" class="btn-recover">Recover All Burnt Tags</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Firebase Config -->
+    <script type="module" src="firebase-config.js"></script>
+    <!-- Main App JavaScript -->
+    <script type="module" src="player-app.js"></script>
+</body>
+</html>

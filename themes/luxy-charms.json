@@ -1,9 +1,0 @@
-{
-  "id": "luxy-charms",
-  "displayName": "Luxy Charms",
-  "colorHex": "#93E9BE",
-  "portraits": {
-    "street": "images/characters/Luxy_Charms_PFP.png",
-    "qfactor": "images/characters/luxy-q-factor-activate.png"
-  }
-}
