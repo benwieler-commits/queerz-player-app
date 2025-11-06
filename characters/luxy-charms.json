@@ -1,55 +1,43 @@
 {
   "name": "Luxy Charms",
-  "pronouns": "she/her",
+  "pronouns": "he/they",
   "colorHex": "#93E9BE",
+  "portraits": {
+    "street": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/Luxy_Charms_PFP.png",
+    "qfactor": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/luxy-q-factor-activate.png"
+  },
+  "powerTags": [
+    "You don’t get to dull my sparkle",
+    "I’ve survived worse than you",
+    "Watch me shine anyway"
+  ],
+  "weaknessTag": "But was I enough?",
   "themes": [
     {
-      "type": "rainbow",
-      "name": "Unwavering Sense of Self",
-      "runway": "Never Following the Path, Always Blazing the Trail",
-      "powerTags": [
-        "You don’t get to dull my sparkle",
-        "I’ve survived worse than you",
-        "Watch me shine anyway"
-      ],
-      "weaknessTag": "But was I enough?",
-      "themeImprovement": "When you Become Vulnerable with tags from this theme, gain +1 Juice."
+      "themeType": "Identity",
+      "themeName": "Rainbow",
+      "attention": 0,
+      "fadeCrack": 0,
+      "levelUp": false,
+      "tags": [
+        "Radiant confidence",
+        "Infectious charisma",
+        "Boundless creativity"
+      ]
     },
     {
-      "type": "rainbow",
-      "name": "Cinnamon Toast Punch!",
-      "runway": "Flash & speed over brute force",
-      "powerTags": [
-        "Hot and crunchy!",
-        "Heels-first entrance!",
-        "Sugar rush combo!"
-      ],
-      "weaknessTag": "Too flashy for my own good?",
-      "themeImprovement": "When you Slay with tags from this theme, you may pick one extra upgrade vs. minions."
-    },
-    {
-      "type": "rainbow",
-      "name": "Perfect Defense (Aura of Motherly Love)",
-      "runway": "Protect the ones I love",
-      "powerTags": [
+      "themeType": "Mission",
+      "themeName": "Anchor",
+      "attention": 0,
+      "fadeCrack": 0,
+      "levelUp": false,
+      "tags": [
         "I shield who I love",
-        "Not today, hatred!",
-        "My drag babies come first"
-      ],
-      "weaknessTag": "Can I protect myself too?",
-      "themeImprovement": "Spend 1 Juice to give an ally immunity to one action after dice are rolled."
-    },
-    {
-      "type": "realness",
-      "name": "The Last Cereal Killer Clown Queen on Earth™",
-      "identity": "One-of-a-kind legacy",
-      "powerTags": [
-        "Catchphrase saves lives",
-        "Legendary name recognition",
-        "Mark Growth on reflection"
-      ],
-      "weaknessTag": "Am I truly alone now?",
-      "themeImprovement": "During Downtime on identity, you may mark Growth once per session without using a weakness first."
+        "My drag babies come first",
+        "I’ve survived worse than you"
+      ]
     }
-  ]
+  ],
+  "bio": "Luxy Charms embodies the heart of the queer community’s resilience — the sparkle that never fades, even under pressure. Through compassion, performance, and power, he leads with empathy and strength, protecting his chosen family while daring the world to shine brighter.",
+  "notes": "Luxy has mastered turning vulnerability into power. His strength comes from surviving hardship and finding family in his community. His connection to the Rainbow and Anchor themes allows him to channel both flamboyant energy and grounded loyalty."
 }
