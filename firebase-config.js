@@ -1,8 +1,6 @@
 // Firebase Configuration for QUEERZ! Player Companion App
-// Real-time sync with MC Companion App
 // SYNCED TO: queerz-mc-live (same project as MC App)
 
-// Import Firebase modules
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
@@ -18,10 +16,16 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
+let app;
+let database;
 
-console.log('Firebase initialized successfully - Connected to queerz-mc-live');
+try {
+    app = initializeApp(firebaseConfig);
+    database = getDatabase(app);
+    console.log('✓ Firebase initialized successfully - Connected to queerz-mc-live');
+} catch (error) {
+    console.error('✗ Firebase initialization failed:', error);
+}
 
 // Update sync status badge
 function updateSyncStatus(isOnline) {
@@ -32,78 +36,79 @@ function updateSyncStatus(isOnline) {
     }
 }
 
-// Listen for scene updates from MC
-const sceneRef = ref(database, 'currentScene');
-onValue(sceneRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        console.log('Scene update received:', data);
-        
-        // Update scene title
-        const sceneTitle = document.getElementById('current-scene-title');
-        if (sceneTitle && data.title) {
-            sceneTitle.textContent = data.title;
+// Only set up listeners if Firebase initialized successfully
+if (database) {
+    // Listen for scene updates from MC
+    const sceneRef = ref(database, 'currentScene');
+    onValue(sceneRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            console.log('Scene update received:', data);
+            
+            const sceneTitle = document.getElementById('current-scene-title');
+            if (sceneTitle && data.title) {
+                sceneTitle.textContent = data.title;
+            }
+            
+            const locationImg = document.getElementById('location-image');
+            if (locationImg && data.locationImage) {
+                locationImg.src = data.locationImage;
+                locationImg.style.display = 'block';
+            }
+            
+            updateSyncStatus(true);
         }
-        
-        // Update location image
-        const locationImg = document.getElementById('location-image');
-        if (locationImg && data.locationImage) {
-            locationImg.src = data.locationImage;
-            locationImg.style.display = 'block';
-        }
-        
-        updateSyncStatus(true);
-    }
-}, (error) => {
-    console.error('Error listening to scene updates:', error);
-    updateSyncStatus(false);
-});
+    }, (error) => {
+        console.error('Error listening to scene updates:', error);
+        updateSyncStatus(false);
+    });
 
-// Listen for music updates from MC
-const musicRef = ref(database, 'currentMusic');
-onValue(musicRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        console.log('Music update received:', data);
-        
-        const musicDisplay = document.getElementById('current-music-display');
-        if (musicDisplay && data.title) {
-            musicDisplay.textContent = `♪ ${data.title}`;
+    // Listen for music updates from MC
+    const musicRef = ref(database, 'currentMusic');
+    onValue(musicRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            console.log('Music update received:', data);
+            
+            const musicDisplay = document.getElementById('current-music-display');
+            if (musicDisplay && data.title) {
+                musicDisplay.textContent = `♪ ${data.title}`;
+            }
+            
+            updateSyncStatus(true);
         }
-        
-        updateSyncStatus(true);
-    }
-}, (error) => {
-    console.error('Error listening to music updates:', error);
-});
+    }, (error) => {
+        console.error('Error listening to music updates:', error);
+    });
 
-// Listen for character updates from MC
-const characterRef = ref(database, 'currentCharacter');
-onValue(characterRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        console.log('Character update received:', data);
-        
-        // Update character portrait
-        const charImg = document.getElementById('character-portrait');
-        if (charImg && data.portraitUrl) {
-            charImg.src = data.portraitUrl;
-            charImg.style.display = 'block';
+    // Listen for character updates from MC
+    const characterRef = ref(database, 'currentCharacter');
+    onValue(characterRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            console.log('Character update received:', data);
+            
+            const charImg = document.getElementById('character-portrait');
+            if (charImg && data.portraitUrl) {
+                charImg.src = data.portraitUrl;
+                charImg.style.display = 'block';
+            }
+            
+            const charName = document.getElementById('character-name-display');
+            if (charName && data.name) {
+                charName.textContent = data.name;
+            }
+            
+            updateSyncStatus(true);
         }
-        
-        // Update character name
-        const charName = document.getElementById('character-name-display');
-        if (charName && data.name) {
-            charName.textContent = data.name;
-        }
-        
-        updateSyncStatus(true);
-    }
-}, (error) => {
-    console.error('Error listening to character updates:', error);
-});
+    }, (error) => {
+        console.error('Error listening to character updates:', error);
+    });
 
-// Export database for use in other modules if needed
+    console.log('✓ Firebase listeners active - Player App ready to receive from MC App');
+} else {
+    console.error('✗ Firebase not initialized - sync will not work');
+}
+
+// Export database for use in other modules
 export { database };
-
-console.log('Firebase listeners active - Player App ready to receive from MC App');

@@ -1,3 +1,4 @@
+import { database } from './firebase-config.js';
 // ================================
 // QUEERZ! PLAYER COMPANION APP
 // Main JavaScript
@@ -1043,13 +1044,10 @@ function saveCurrentCharacter() {
 
 function initializeFirebase() {
     // Check if Firebase config is loaded
-    if (typeof initializeApp === 'undefined') {
-        console.log('⚠️ Firebase not configured - running in offline mode');
-        return;
-    }
-    
+
     try {
-        // Firebase initialization will be handled by firebase-config.js
+        // Firebase initialization will be handled by firebase-config
+        // js
         console.log('🔥 Firebase initialization starting...');
         
         // Listen for Firebase ready event
