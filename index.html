@@ -7,176 +7,395 @@
     <link rel="stylesheet" href="styles-player.css">
 </head>
 <body>
-    <!-- Header with Sync Badge -->
-    <header>
-        <h1>QUEERZ! Player Companion</h1>
-        <div id="sync-status-badge">○ Offline</div>
+    <!-- HEADER -->
+    <header class="app-header">
+        <h1 class="app-title">🌈 QUEERZ! Player Companion</h1>
+        <div class="header-controls">
+            <select id="characterSelect" class="character-select">
+                <option value="">Load Character...</option>
+            </select>
+            <label for="characterUpload" class="btn-upload">📁 Upload JSON</label>
+            <input type="file" id="characterUpload" accept=".json" style="display: none;">
+            <button id="portraitToggle" class="btn-toggle">Switch Portrait</button>
+            <button id="saveCharBtn" class="btn-save">💾 Save</button>
+        </div>
+        <div class="sync-status">
+            <span id="syncBadge" class="badge offline">● Offline</span>
+            <span id="mcStatus" class="mc-status">Waiting for MC...</span>
+        </div>
     </header>
 
-    <!-- Main Container -->
-    <div class="container">
+    <!-- MAIN FOLIO LAYOUT -->
+    <main class="folio-container">
         
-        <!-- Scene Display (Firebase Sync) -->
-        <section class="scene-broadcast">
-            <h2 id="current-scene-title">Waiting for MC...</h2>
-            <img id="location-image" class="location-image" style="display: none;">
-            <div id="current-music-display" class="music-display">♪ No music playing</div>
-        </section>
-
-        <!-- Character Loading -->
-        <section class="character-section">
-            <button id="load-character-btn" class="btn-primary">Load Character</button>
-            <input type="file" id="character-file-input" accept=".json" style="display: none;">
-            
-            <div class="character-display">
-                <img id="characterPortrait" class="character-portrait" style="display: none;" alt="Character Portrait">
-                <h2 id="characterName">No Character Loaded</h2>
-                <p id="characterPronouns" class="pronouns">they/them</p>
-            </div>
-        </section>
-
-        <!-- Stats Display -->
-        <section class="stats-section">
-            <div class="stat-box">
-                <span class="stat-label">Juice</span>
-                <span id="juiceCount" class="stat-value">0</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Power</span>
-                <span id="totalPower" class="stat-value">+0</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Roll</span>
-                <span id="rollResult" class="stat-value">—</span>
-            </div>
-        </section>
-
-        <!-- Power Tags -->
-        <section class="tags-section">
-            <h3>Power Tags (Click to Burn for +1 Power)</h3>
-            <div id="power-tags-container" class="tags-container">
-                <p class="empty-message">Load a character to see tags</p>
-            </div>
-        </section>
-
-        <!-- Weakness Tags -->
-        <section class="tags-section">
-            <h3>Weakness Tags (Click to Burn for -1 Power)</h3>
-            <div id="weakness-tags-container" class="tags-container">
-                <p class="empty-message">Load a character to see tags</p>
-            </div>
-        </section>
-
-        <!-- Tag Recovery -->
-        <section class="actions-section">
-            <button id="recover-tags-btn" class="btn-secondary">Recover All Burnt Tags</button>
-        </section>
-
-        <!-- Tag Combos System -->
-        <section class="combos-section">
-            <h3>Create Tag Combo</h3>
-            <div class="combo-creator">
-                <div id="combo-tags-container" class="combo-tags-selector">
-                    <p class="empty-message">Load a character to create combos</p>
+        <!-- LEFT COLUMN: Rainbow Themes 1 & 2 -->
+        <section class="folio-column left-column">
+            <div class="theme-card rainbow-theme" id="theme0">
+                <div class="theme-header">
+                    <div class="theme-type">SIGNATURE / FIGHTING STYLE</div>
+                    <h2 class="theme-name">Theme Name</h2>
                 </div>
-                <div class="combo-inputs">
-                    <input type="text" id="combo-name-input" placeholder="Combo Name" class="combo-input">
-                    <input type="number" id="combo-power-input" placeholder="Bonus Power" min="0" max="5" class="combo-input">
-                    <button id="add-combo-btn" class="btn-primary">Add Combo</button>
+                <div class="growth-track">
+                    <label>GROWTH</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="shade-track">
+                    <label>SHADE</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your runway quote here"</em>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
                 </div>
             </div>
-            
-            <h4>Active Combos</h4>
-            <div id="active-combos-container" class="active-combos">
-                <p class="empty-message">No active combos</p>
+
+            <div class="theme-card rainbow-theme" id="theme1">
+                <div class="theme-header">
+                    <div class="theme-type">FIGHTING STYLE / Q-GEAR</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="growth-track">
+                    <label>GROWTH</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="shade-track">
+                    <label>SHADE</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your runway quote here"</em>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Core Moves Toggle -->
-        <section class="moves-section">
-            <button id="toggle-moves-btn" class="btn-toggle">Show Core Moves</button>
-            <div id="core-moves-panel" class="core-moves-panel" style="display: none;">
-                <h3>QUEERZ! Core Moves</h3>
+        <!-- CENTER COLUMN: Portrait, MC Sync, Roller -->
+        <section class="folio-center">
+            <!-- Character Portrait -->
+            <div class="portrait-container">
+                <img id="characterPortrait" src="" alt="Character Portrait" class="character-portrait">
+                <div class="character-info">
+                    <h2 id="characterName">Character Name</h2>
+                    <p id="characterPronouns" class="pronouns"></p>
+                </div>
+            </div>
+
+            <!-- MC Broadcast Section -->
+            <div class="mc-broadcast">
+                <h3>📡 MC Broadcast</h3>
+                <div class="broadcast-content">
+                    <div class="broadcast-scene">
+                        <strong>Scene:</strong>
+                        <p id="sceneInfo">Waiting for scene...</p>
+                    </div>
+                    <div class="broadcast-music">
+                        <strong>♪ Music:</strong>
+                        <p id="musicInfo">No music playing</p>
+                    </div>
+                    <div class="broadcast-character">
+                        <strong>Spotlight:</strong>
+                        <p id="spotlightInfo">—</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dice Roller -->
+            <div class="dice-roller">
+                <h3>🎲 Roll Dice</h3>
+                <div class="power-display">
+                    <label>Total Power:</label>
+                    <input type="number" id="totalPower" class="power-input" value="0" min="-5" max="10">
+                </div>
+                <button id="rollBtn" class="btn-roll">Roll 2d6 + Power</button>
+                <div id="rollResult" class="roll-result"></div>
+            </div>
+
+            <!-- Juice Tracker -->
+            <div class="juice-tracker">
+                <h3>✨ JUICE</h3>
+                <div class="juice-display">
+                    <button id="juiceDown" class="juice-btn">−</button>
+                    <span id="juiceCount" class="juice-count">0</span>
+                    <button id="juiceUp" class="juice-btn">+</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Rainbow Theme 3 & Realness Theme -->
+        <section class="folio-column right-column">
+            <div class="theme-card rainbow-theme" id="theme2">
+                <div class="theme-header">
+                    <div class="theme-type">Q-GEAR / PERSONALITY</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="growth-track">
+                    <label>GROWTH</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="shade-track">
+                    <label>SHADE</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your runway quote here"</em>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theme-card realness-theme" id="theme3">
+                <div class="theme-header">
+                    <div class="theme-type realness-label">REALNESS THEME</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="crack-track">
+                    <label>CRACK</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your identity statement here"</em>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- STATUS & STORY TAGS SECTION -->
+    <section class="tags-section">
+        <div class="tags-container">
+            <!-- Current Statuses -->
+            <div class="status-panel">
+                <h3>Current Statuses</h3>
+                <div class="status-add">
+                    <input type="text" id="statusName" placeholder="Status name" class="input-small">
+                    <input type="number" id="statusTier" value="1" min="1" max="6" class="input-tiny">
+                    <select id="statusType" class="select-small">
+                        <option value="negative">Negative</option>
+                        <option value="positive">Positive</option>
+                    </select>
+                    <button id="addStatusBtn" class="btn-add">+ Add</button>
+                </div>
+                <div id="statusList" class="tag-display"></div>
+            </div>
+
+            <!-- Story Tags -->
+            <div class="story-panel">
+                <h3>Story Tags</h3>
+                <div class="story-add">
+                    <input type="text" id="storyTagName" placeholder="Story tag" class="input-small">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="storyOngoing">
+                        Ongoing
+                    </label>
+                    <button id="addStoryBtn" class="btn-add">+ Add</button>
+                </div>
+                <div id="storyTagList" class="tag-display"></div>
+            </div>
+
+            <!-- Burnt Tags -->
+            <div class="burnt-panel">
+                <h3>Burnt Tags</h3>
+                <div id="burntTagList" class="tag-display"></div>
+                <button id="recoverBtn" class="btn-recover">Recover All Burnt Tags</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAG COMBOS SECTION -->
+    <section class="combos-section">
+        <div class="combos-container">
+            <div class="combos-panel">
+                <h2>🎯 TAG COMBOS</h2>
+                <p class="combos-subtitle">Create powerful combinations of your tags!</p>
                 
-                <div class="move">
-                    <h4>READ A PERSON</h4>
-                    <p><strong>When you try to understand someone's emotions or motives</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> Ask MC 3 questions from list below</li>
-                        <li><strong>7-9:</strong> Ask MC 1 question from list</li>
-                        <li><strong>6-:</strong> MC tells you what they want you to think</li>
-                    </ul>
-                    <p><em>Questions: What are you really feeling? What do you want from me? What are you hiding? How could I get you to ___?</em></p>
+                <!-- Add New Combo -->
+                <div class="combo-add">
+                    <input type="text" id="comboName" placeholder="Combo name (e.g., 'Get the Drop on a Baddie')" class="input-combo-name">
+                    <div class="combo-tags-input">
+                        <input type="text" id="comboTag1" placeholder="Tag 1" class="input-small">
+                        <input type="text" id="comboTag2" placeholder="Tag 2" class="input-small">
+                        <input type="text" id="comboTag3" placeholder="Tag 3 (optional)" class="input-small">
+                    </div>
+                    <div class="combo-details">
+                        <input type="number" id="comboPower" value="2" min="1" max="5" class="input-tiny" placeholder="Power">
+                        <select id="comboMove" class="select-small">
+                            <option value="">Select Core Move...</option>
+                            <option value="strike-a-pose">Strike a Pose</option>
+                            <option value="slay">Slay</option>
+                            <option value="get-a-clue">Get a Clue</option>
+                            <option value="sneak-and-spy">Sneak and Spy</option>
+                            <option value="care">Care</option>
+                            <option value="be-vulnerable">Be Vulnerable</option>
+                            <option value="resist">Resist</option>
+                        </select>
+                        <button id="addComboBtn" class="btn-add">+ Add Combo</button>
+                    </div>
+                </div>
+                
+                <!-- Combo List -->
+                <div id="comboList" class="combo-display"></div>
+                
+                <!-- Clear Combos Button -->
+                <button id="clearCombosBtn" class="btn-secondary" style="margin-top: 15px;">Clear All Combos</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- CORE MOVES REFERENCE -->
+    <section class="moves-section">
+        <h2>📖 CORE MOVES REFERENCE</h2>
+        <button id="toggleMovesBtn" class="btn-toggle-moves">Show/Hide Moves</button>
+        <div id="movesPanel" class="moves-panel hidden">
+            <div class="moves-grid">
+                <!-- Strike a Pose -->
+                <div class="move-card">
+                    <h3 class="move-name">STRIKE A POSE</h3>
+                    <p class="move-trigger">When you <strong>attempt to give yourself or your allies a positive status</strong>, or <strong>make an impression or influence others</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Choose 2 upgrades</p>
+                        <p><strong>7-9:</strong> Choose 1 upgrade</p>
+                        <p><strong>Miss:</strong> MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting, Contagious</p>
                 </div>
 
-                <div class="move">
-                    <h4>TURN SOMEONE ON</h4>
-                    <p><strong>When you try to seduce, manipulate, or provoke someone</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> They choose: do what you want, or MC gives them Condition</li>
-                        <li><strong>7-9:</strong> Same, but you must promise something or give them String</li>
-                        <li><strong>6-:</strong> They can give you Condition or String on you</li>
-                    </ul>
+                <!-- Slay -->
+                <div class="move-card">
+                    <h3 class="move-name">SLAY</h3>
+                    <p class="move-trigger">When you <strong>give your opponents a negative status or overcome their Ignorance Limit</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Choose 2 upgrades</p>
+                        <p><strong>7-9:</strong> Choose 1 upgrade</p>
+                        <p><strong>Miss:</strong> MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting</p>
                 </div>
 
-                <div class="move">
-                    <h4>SHUT SOMEONE DOWN</h4>
-                    <p><strong>When you dismiss, embarrass, or physically hurt someone</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> Choose 2 from list</li>
-                        <li><strong>7-9:</strong> Choose 1 from list</li>
-                        <li><strong>6-:</strong> They choose 1 against you</li>
-                    </ul>
-                    <p><em>Options: Gain String on them, hurt them (Condition), make them leave, they can't use moves on you this scene</em></p>
+                <!-- Get a Clue -->
+                <div class="move-card">
+                    <h3 class="move-name">GET A CLUE</h3>
+                    <p class="move-trigger">When you <strong>investigate, research, or gather information</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Gain a Story Tag and ask 2 questions</p>
+                        <p><strong>7-9:</strong> Ask 1 question or gain a Story Tag</p>
+                        <p><strong>Miss:</strong> MC makes a move</p>
+                    </div>
                 </div>
 
-                <div class="move">
-                    <h4>HOLD STEADY</h4>
-                    <p><strong>When you face fear, stress, or overwhelming emotion</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> You're good, act with confidence</li>
-                        <li><strong>7-9:</strong> MC chooses: Condition, flee, freeze up, or lash out</li>
-                        <li><strong>6-:</strong> MC makes hard move</li>
-                    </ul>
+                <!-- Sneak and Spy -->
+                <div class="move-card">
+                    <h3 class="move-name">SNEAK AND SPY</h3>
+                    <p class="move-trigger">When you <strong>avoid detection or move unseen</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> You succeed undetected</p>
+                        <p><strong>7-9:</strong> You succeed but choose: leave evidence, take longer, or face a cost</p>
+                        <p><strong>Miss:</strong> You're spotted or trigger danger</p>
+                    </div>
                 </div>
 
-                <div class="move">
-                    <h4>LASH OUT PHYSICALLY</h4>
-                    <p><strong>When you attack someone with violence</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> Inflict harm and choose 1</li>
-                        <li><strong>7-9:</strong> Inflict harm but choose 1 for MC</li>
-                        <li><strong>6-:</strong> You're outmatched, MC makes move</li>
-                    </ul>
-                    <p><em>Your choices: Extra harm, don't take harm back, gain String. MC choices: You take harm, Condition, lose String, terrible position</em></p>
+                <!-- Care -->
+                <div class="move-card">
+                    <h3 class="move-name">CARE</h3>
+                    <p class="move-trigger">When you <strong>help someone with their emotional or physical needs</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Remove a negative status tier or give a positive status</p>
+                        <p><strong>7-9:</strong> As above, but you take a status yourself or mark Growth</p>
+                        <p><strong>Miss:</strong> Your care backfires</p>
+                    </div>
                 </div>
 
-                <div class="move">
-                    <h4>RUN AWAY</h4>
-                    <p><strong>When you flee danger or conflict</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> You get away clean</li>
-                        <li><strong>7-9:</strong> Choose: Condition, leave something behind, or end up somewhere worse</li>
-                        <li><strong>6-:</strong> MC makes move</li>
-                    </ul>
+                <!-- Be Vulnerable -->
+                <div class="move-card">
+                    <h3 class="move-name">BE VULNERABLE</h3>
+                    <p class="move-trigger">When you <strong>open up emotionally or share something difficult</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Mark Growth and choose 2 benefits</p>
+                        <p><strong>7-9:</strong> Mark Growth and choose 1 benefit</p>
+                        <p><strong>Miss:</strong> Mark Growth but MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Benefits:</strong> Gain support, clear a status, earn trust, inspire others</p>
                 </div>
 
-                <div class="move">
-                    <h4>GAZE INTO THE ABYSS</h4>
-                    <p><strong>When you face cosmic horror, supernatural mystery, or darkest truth</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> MC tells you truth and you choose: gain String on someone, avoid Condition, or ask follow-up</li>
-                        <li><strong>7-9:</strong> MC tells you truth, MC gives you Condition</li>
-                        <li><strong>6-:</strong> Truth is worse than you imagined, take -1 ongoing until you process it</li>
-                    </ul>
+                <!-- Resist -->
+                <div class="move-card">
+                    <h3 class="move-name">RESIST</h3>
+                    <p class="move-trigger">When you <strong>fight against a status being applied to you or try to reduce its tier</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Fully resist or reduce by 2 tiers</p>
+                        <p><strong>7-9:</strong> Reduce status by 1 tier</p>
+                        <p><strong>Miss:</strong> Take the full status</p>
+                    </div>
                 </div>
             </div>
-        </section>
+        </div>
+    </section>
 
-    </div>
-
-    <!-- Scripts - Order matters! -->
+    <!-- Firebase Config -->
     <script type="module" src="firebase-config.js"></script>
+    <!-- Main App JavaScript -->
     <script type="module" src="player-app.js"></script>
 </body>
 </html>

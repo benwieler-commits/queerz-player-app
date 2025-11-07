@@ -1,4 +1,7 @@
-// Firebase Configuration for QUEERZ! Player Companion App
+// ================================
+// QUEERZ! PLAYER COMPANION APP
+// Firebase Configuration
+// ================================
 // SYNCED TO: queerz-mc-live (same project as MC App)
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -29,15 +32,24 @@ try {
 
 // Update sync status badge
 function updateSyncStatus(isOnline) {
-    const badge = document.getElementById('sync-status-badge');
+    const badge = document.getElementById('syncBadge');
     if (badge) {
-        badge.textContent = isOnline ? '● Online' : '○ Offline';
-        badge.style.color = isOnline ? '#4ade80' : '#f87171';
+        badge.textContent = isOnline ? '● Online' : '● Offline';
+        badge.className = isOnline ? 'badge online' : 'badge offline';
+    }
+    
+    const mcStatus = document.getElementById('mcStatus');
+    if (mcStatus && isOnline) {
+        mcStatus.textContent = 'Connected to MC';
+    } else if (mcStatus) {
+        mcStatus.textContent = 'Waiting for MC...';
     }
 }
 
 // Only set up listeners if Firebase initialized successfully
 if (database) {
+    console.log('✓ Setting up Firebase listeners...');
+    
     // Listen for scene updates from MC
     const sceneRef = ref(database, 'currentScene');
     onValue(sceneRef, (snapshot) => {
@@ -45,12 +57,12 @@ if (database) {
         if (data) {
             console.log('Scene update received:', data);
             
-            const sceneTitle = document.getElementById('current-scene-title');
+            const sceneTitle = document.getElementById('sceneTitle');
             if (sceneTitle && data.title) {
                 sceneTitle.textContent = data.title;
             }
             
-            const locationImg = document.getElementById('location-image');
+            const locationImg = document.getElementById('locationImage');
             if (locationImg && data.locationImage) {
                 locationImg.src = data.locationImage;
                 locationImg.style.display = 'block';
@@ -70,7 +82,7 @@ if (database) {
         if (data) {
             console.log('Music update received:', data);
             
-            const musicDisplay = document.getElementById('current-music-display');
+            const musicDisplay = document.getElementById('musicTitle');
             if (musicDisplay && data.title) {
                 musicDisplay.textContent = `♪ ${data.title}`;
             }
@@ -81,22 +93,17 @@ if (database) {
         console.error('Error listening to music updates:', error);
     });
 
-    // Listen for character updates from MC
+    // Listen for character updates from MC (spotlight)
     const characterRef = ref(database, 'currentCharacter');
     onValue(characterRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-            console.log('Character update received:', data);
+            console.log('Character spotlight update received:', data);
             
-            const charImg = document.getElementById('character-portrait');
-            if (charImg && data.portraitUrl) {
-                charImg.src = data.portraitUrl;
-                charImg.style.display = 'block';
-            }
-            
-            const charName = document.getElementById('character-name-display');
-            if (charName && data.name) {
-                charName.textContent = data.name;
+            const spotlight = document.getElementById('spotlight');
+            if (spotlight && data.name) {
+                spotlight.textContent = `🎭 Spotlight: ${data.name}`;
+                spotlight.style.display = 'block';
             }
             
             updateSyncStatus(true);
@@ -108,6 +115,7 @@ if (database) {
     console.log('✓ Firebase listeners active - Player App ready to receive from MC App');
 } else {
     console.error('✗ Firebase not initialized - sync will not work');
+    updateSyncStatus(false);
 }
 
 // Export database for use in other modules
