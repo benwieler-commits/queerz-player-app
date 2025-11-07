@@ -79,6 +79,124 @@ document.addEventListener('DOMContentLoaded', () => {
     loadLastCharacter();
     
     // Add test button for debugging (remove in production)
+<<<<<<< HEAD
+=======
+    addTestButton();
+    
+    console.log('✅ App initialization complete!');
+});
+
+// ================================
+// TEST/DEBUG FUNCTIONS
+// ================================
+
+function addTestButton() {
+    // Create a test button to load Luxy without file upload
+    const testBtn = document.createElement('button');
+    testBtn.textContent = '🧪 Test Load Luxy';
+    testBtn.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        background: #FF1493;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        z-index: 9999;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    `;
+    testBtn.onclick = function() {
+        console.log('🧪 TEST BUTTON CLICKED - Loading Luxy Charms...');
+        loadTestCharacter();
+    };
+    document.body.appendChild(testBtn);
+    console.log('🧪 Test button added to page');
+}
+
+function loadTestCharacter() {
+    const luxyData = {
+        "name": "Luxy Charms",
+        "pronouns": "She/Her",
+        "playbook": "Drag Icon",
+        "runway": "Never Following the Path, Always Blazing the Trail",
+        "streetwearPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/luxy-charms-streetwear.png",
+        "qfactorPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/luxy-charms-qfactor.png",
+        "juice": 0,
+        "rainbowThemes": [
+            {
+                "name": "UNWAVERING SENSE OF SELF",
+                "type": "SIGNATURE",
+                "runway": "The fiercest confidence isn't just style—it's survival.",
+                "growth": 0,
+                "shade": 0,
+                "powerTags": [
+                    "You don't get to dull my sparkle",
+                    "I've survived worse than you",
+                    "Watch me shine anyway"
+                ],
+                "weaknessTag": "But was I enough?"
+            },
+            {
+                "name": "CINNAMON TOAST PUNCH!",
+                "type": "FIGHTING STYLE",
+                "runway": "A whirlwind of glitter, heels, and spicy justice.",
+                "growth": 0,
+                "shade": 0,
+                "powerTags": [
+                    "Hot and crunchy!",
+                    "Heels-first entrance!",
+                    "Sugar rush combo!"
+                ],
+                "weaknessTag": "Too flashy for my own good?"
+            },
+            {
+                "name": "PERFECT DEFENSE",
+                "type": "Q-GEAR - Aura of Motherly Love",
+                "runway": "A shimmering bubble weave made from decades of emotional labor turned super-shield.",
+                "growth": 0,
+                "shade": 0,
+                "powerTags": [
+                    "I shield who I love",
+                    "Not today, hatred!",
+                    "My drag babies come first"
+                ],
+                "weaknessTag": "Can I protect myself too?"
+            }
+        ],
+        "realnessThemes": [
+            {
+                "name": "THE LAST CEREAL KILLER CLOWN QUEEN ON EARTH™️",
+                "type": "PERSONALITY / OCCUPATION",
+                "runway": "This city forgot where its heart came from… but Luxy remembers every spilled milkshake, every late-night makeup meltdown before dawn shows.",
+                "crack": 0,
+                "powerTags": [
+                    "Catchphrase saves lives",
+                    "Legendary name recognition",
+                    "Only one left means pressure..."
+                ],
+                "weaknessTag": "Am I truly alone now?"
+            }
+        ],
+        "currentStatuses": [],
+        "storyTags": [
+            {
+                "name": "Echoes Under Static",
+                "ongoing": true,
+                "description": "Can be used once to hear a true memory in corrupted spaces"
+            }
+        ],
+        "burntTags": [],
+        "notes": "Balance: 3 Rainbow Themes, 1 Realness Theme."
+    };
+    
+    console.log('🧪 Test data prepared, calling loadCharacter...');
+    loadCharacter(luxyData);
+}
+
+>>>>>>> cce2147b91e47b82c5417bf65e80b326be8aa360
 // ================================
 // INITIALIZATION (ORIGINAL)
 // ================================
@@ -525,6 +643,7 @@ function togglePortrait() {
 // THEME TAG BURNING & POWER CALCULATION
 // ================================
 
+<<<<<<< HEAD
 
 // ================================
 // BURNT TAGS DISPLAY
@@ -557,6 +676,8 @@ function updateBurntTagsDisplay() {
     }
 }
 
+=======
+>>>>>>> cce2147b91e47b82c5417bf65e80b326be8aa360
 function burnThemeTag(element) {
     const tag = element.dataset.tag;
     const type = element.dataset.type;
@@ -584,9 +705,12 @@ function burnThemeTag(element) {
     // Update power display
     updatePowerCalculation();
     
+<<<<<<< HEAD
     // Update burnt tags display
     updateBurntTagsDisplay();
     
+=======
+>>>>>>> cce2147b91e47b82c5417bf65e80b326be8aa360
     // Disable further clicks
     element.style.cursor = 'not-allowed';
     element.onclick = null;
@@ -673,12 +797,15 @@ function clearAllBurntTags() {
     // Update power
     updatePowerCalculation();
     
+<<<<<<< HEAD
     // Update burnt tags display
     updateBurntTagsDisplay();
     
     // Update burnt tags display
     updateBurntTagsDisplay();
     
+=======
+>>>>>>> cce2147b91e47b82c5417bf65e80b326be8aa360
     console.log('🔄 All burnt tags cleared');
 }
 
@@ -802,9 +929,12 @@ function addStatusPill(status) {
             activeStatusTags.push(`${status.name}-${i+1}`);
         }
         updatePowerCalculation();
+<<<<<<< HEAD
     
     // Update burnt tags display
     updateBurntTagsDisplay();
+=======
+>>>>>>> cce2147b91e47b82c5417bf65e80b326be8aa360
     }
 }
 
@@ -827,9 +957,12 @@ function removeStatus(btn) {
             }
         }
         updatePowerCalculation();
+<<<<<<< HEAD
     
     // Update burnt tags display
     updateBurntTagsDisplay();
+=======
+>>>>>>> cce2147b91e47b82c5417bf65e80b326be8aa360
     }
     
     pill.remove();
