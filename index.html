@@ -19,7 +19,7 @@
         <!-- Scene Display (Firebase Sync) -->
         <section class="scene-broadcast">
             <h2 id="current-scene-title">Waiting for MC...</h2>
-            <img id="location-image" class="location-image" style="display: none;">
+            <img id="location-image" class="location-image" style="display: none;" alt="Location">
             <div id="current-music-display" class="music-display">♪ No music playing</div>
         </section>
 
@@ -55,7 +55,7 @@
         <section class="tags-section">
             <h3>Power Tags (Click to Burn for +1 Power)</h3>
             <div id="power-tags-container" class="tags-container">
-                <p class="empty-message">Load a character to see tags</p>
+                <p class="empty-message">Load a character to see power tags</p>
             </div>
         </section>
 
@@ -63,7 +63,7 @@
         <section class="tags-section">
             <h3>Weakness Tags (Click to Burn for -1 Power)</h3>
             <div id="weakness-tags-container" class="tags-container">
-                <p class="empty-message">Load a character to see tags</p>
+                <p class="empty-message">Load a character to see weakness tags</p>
             </div>
         </section>
 
@@ -80,15 +80,15 @@
                     <p class="empty-message">Load a character to create combos</p>
                 </div>
                 <div class="combo-inputs">
-                    <input type="text" id="combo-name-input" placeholder="Combo Name" class="combo-input">
-                    <input type="number" id="combo-power-input" placeholder="Bonus Power" min="0" max="5" class="combo-input">
+                    <input type="text" id="combo-name-input" placeholder="Combo Name (e.g., 'Tech Savvy Flirt')" class="combo-input">
+                    <input type="number" id="combo-power-input" placeholder="Bonus Power" min="0" max="5" value="0" class="combo-input">
                     <button id="add-combo-btn" class="btn-primary">Add Combo</button>
                 </div>
             </div>
             
             <h4>Active Combos</h4>
             <div id="active-combos-container" class="active-combos">
-                <p class="empty-message">No active combos</p>
+                <p class="empty-message">No active combos yet</p>
             </div>
         </section>
 
@@ -96,78 +96,78 @@
         <section class="moves-section">
             <button id="toggle-moves-btn" class="btn-toggle">Show Core Moves</button>
             <div id="core-moves-panel" class="core-moves-panel" style="display: none;">
-                <h3>QUEERZ! Core Moves</h3>
+                <h3>QUEERZ! Core Moves Reference</h3>
                 
                 <div class="move">
                     <h4>READ A PERSON</h4>
-                    <p><strong>When you try to understand someone's emotions or motives</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> Ask MC 3 questions from list below</li>
-                        <li><strong>7-9:</strong> Ask MC 1 question from list</li>
-                        <li><strong>6-:</strong> MC tells you what they want you to think</li>
+                    <p class="move-trigger"><strong>When you try to understand someone's emotions or motives</strong>, roll+Power.</p>
+                    <ul class="move-outcomes">
+                        <li><strong>10+:</strong> Ask the MC 3 questions from the list below</li>
+                        <li><strong>7-9:</strong> Ask the MC 1 question from the list</li>
+                        <li><strong>6-:</strong> The MC tells you what they want you to think</li>
                     </ul>
-                    <p><em>Questions: What are you really feeling? What do you want from me? What are you hiding? How could I get you to ___?</em></p>
+                    <p class="move-questions"><em>Questions: What are you really feeling? What do you want from me? What are you hiding? How could I get you to ___?</em></p>
                 </div>
 
                 <div class="move">
                     <h4>TURN SOMEONE ON</h4>
-                    <p><strong>When you try to seduce, manipulate, or provoke someone</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> They choose: do what you want, or MC gives them Condition</li>
-                        <li><strong>7-9:</strong> Same, but you must promise something or give them String</li>
-                        <li><strong>6-:</strong> They can give you Condition or String on you</li>
+                    <p class="move-trigger"><strong>When you try to seduce, manipulate, or provoke someone</strong>, roll+Power.</p>
+                    <ul class="move-outcomes">
+                        <li><strong>10+:</strong> They choose: do what you want, or the MC gives them a Condition</li>
+                        <li><strong>7-9:</strong> Same, but you must promise something or give them a String on you</li>
+                        <li><strong>6-:</strong> They can give you a Condition or take a String on you</li>
                     </ul>
                 </div>
 
                 <div class="move">
                     <h4>SHUT SOMEONE DOWN</h4>
-                    <p><strong>When you dismiss, embarrass, or physically hurt someone</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> Choose 2 from list</li>
-                        <li><strong>7-9:</strong> Choose 1 from list</li>
-                        <li><strong>6-:</strong> They choose 1 against you</li>
+                    <p class="move-trigger"><strong>When you dismiss, embarrass, or physically hurt someone</strong>, roll+Power.</p>
+                    <ul class="move-outcomes">
+                        <li><strong>10+:</strong> Choose 2 from the list below</li>
+                        <li><strong>7-9:</strong> Choose 1 from the list</li>
+                        <li><strong>6-:</strong> They choose 1 against you instead</li>
                     </ul>
-                    <p><em>Options: Gain String on them, hurt them (Condition), make them leave, they can't use moves on you this scene</em></p>
+                    <p class="move-questions"><em>Options: Gain a String on them, hurt them (inflict Condition), make them leave the scene, they can't use moves on you this scene</em></p>
                 </div>
 
                 <div class="move">
                     <h4>HOLD STEADY</h4>
-                    <p><strong>When you face fear, stress, or overwhelming emotion</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> You're good, act with confidence</li>
-                        <li><strong>7-9:</strong> MC chooses: Condition, flee, freeze up, or lash out</li>
-                        <li><strong>6-:</strong> MC makes hard move</li>
+                    <p class="move-trigger"><strong>When you face fear, stress, or overwhelming emotion</strong>, roll+Power.</p>
+                    <ul class="move-outcomes">
+                        <li><strong>10+:</strong> You're good - act with confidence</li>
+                        <li><strong>7-9:</strong> The MC chooses: take a Condition, flee the scene, freeze up, or lash out</li>
+                        <li><strong>6-:</strong> The MC makes a hard move</li>
                     </ul>
                 </div>
 
                 <div class="move">
                     <h4>LASH OUT PHYSICALLY</h4>
-                    <p><strong>When you attack someone with violence</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> Inflict harm and choose 1</li>
-                        <li><strong>7-9:</strong> Inflict harm but choose 1 for MC</li>
-                        <li><strong>6-:</strong> You're outmatched, MC makes move</li>
+                    <p class="move-trigger"><strong>When you attack someone with violence</strong>, roll+Power.</p>
+                    <ul class="move-outcomes">
+                        <li><strong>10+:</strong> Inflict harm and choose 1 from your list</li>
+                        <li><strong>7-9:</strong> Inflict harm but the MC chooses 1 from their list</li>
+                        <li><strong>6-:</strong> You're outmatched - the MC makes a move</li>
                     </ul>
-                    <p><em>Your choices: Extra harm, don't take harm back, gain String. MC choices: You take harm, Condition, lose String, terrible position</em></p>
+                    <p class="move-questions"><em>Your choices: Extra harm, don't take harm back, gain a String. MC choices: You take harm, you get a Condition, you lose a String, you end up in a terrible position</em></p>
                 </div>
 
                 <div class="move">
                     <h4>RUN AWAY</h4>
-                    <p><strong>When you flee danger or conflict</strong>, roll+Power.</p>
-                    <ul>
+                    <p class="move-trigger"><strong>When you flee from danger or conflict</strong>, roll+Power.</p>
+                    <ul class="move-outcomes">
                         <li><strong>10+:</strong> You get away clean</li>
-                        <li><strong>7-9:</strong> Choose: Condition, leave something behind, or end up somewhere worse</li>
-                        <li><strong>6-:</strong> MC makes move</li>
+                        <li><strong>7-9:</strong> Choose one: take a Condition, leave something important behind, or end up somewhere worse</li>
+                        <li><strong>6-:</strong> The MC makes a move</li>
                     </ul>
                 </div>
 
                 <div class="move">
                     <h4>GAZE INTO THE ABYSS</h4>
-                    <p><strong>When you face cosmic horror, supernatural mystery, or darkest truth</strong>, roll+Power.</p>
-                    <ul>
-                        <li><strong>10+:</strong> MC tells you truth and you choose: gain String on someone, avoid Condition, or ask follow-up</li>
-                        <li><strong>7-9:</strong> MC tells you truth, MC gives you Condition</li>
-                        <li><strong>6-:</strong> Truth is worse than you imagined, take -1 ongoing until you process it</li>
+                    <p class="move-trigger"><strong>When you face cosmic horror, supernatural mystery, or the darkest truth</strong>, roll+Power.</p>
+                    <ul class="move-outcomes">
+                        <li><strong>10+:</strong> The MC tells you the truth, and you choose: gain a String on someone involved, avoid a Condition, or ask a follow-up question</li>
+                        <li><strong>7-9:</strong> The MC tells you the truth, but gives you a Condition</li>
+                        <li><strong>6-:</strong> The truth is worse than you imagined - take -1 ongoing until you process it</li>
                     </ul>
                 </div>
             </div>
@@ -175,7 +175,7 @@
 
     </div>
 
-    <!-- Scripts - Order matters! -->
+    <!-- Scripts - MUST be in this order! -->
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="player-app.js"></script>
 </body>
