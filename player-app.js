@@ -86,44 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // ⭐ Initialize cloud sync
     initializeCloudSync();
-    // ================================
-// ================================
-// FIXED CLOUD INIT (No Recursion)
-// ================================
-
-// Wait for Firebase to authenticate before initializing sync
-document.addEventListener('firebase-auth-ready', async () => {
-  console.log('🔥 Firebase auth ready - initializing cloud sync...');
-  
-  // Initialize cloud sync once
-  if (typeof initializeCloudSync === 'function') {
-    await initializeCloudSync();
-  }
-
-  // Once authenticated, load characters from Firebase
-  if (typeof window.loadCharactersFromCloud === 'function') {
-    console.log('☁️ Attempting to load characters from Firebase...');
-    const cloudChars = await window.loadCharactersFromCloud();
     
-    if (cloudChars && Object.keys(cloudChars).length > 0) {
-      Object.values(cloudChars).forEach((char) => {
-        characterLibrary[char.name] = char;
-      });
-      updateCharacterDropdown();
-      console.log('✅ Cloud characters synced into dropdown!');
-    } else {
-      console.log('ℹ️ No characters found in Firebase for this user.');
-    }
-  }
-});
-
-// Trigger Firebase initialization on page load
-window.addEventListener('load', () => {
-  if (typeof window.initializeAuth === 'function') {
-    console.log('☁️ Starting Firebase authentication...');
-    window.initializeAuth();
-  }
-});
     console.log('✅ App initialization complete!');
 });
 
