@@ -60,11 +60,17 @@ export function sendCharacterToMC(characterData) {
     return set(charRef, {
         name: characterData.name,
         pronouns: characterData.pronouns || '',
-        look: characterData.look || '',
-        portrait: characterData.portrait || '',
+        look: characterData.runway || characterData.playbook || '',  // Use runway or playbook as look description
+        playbook: characterData.playbook || '',
+        portrait: characterData.streetwearPortrait || characterData.qfactorPortrait || '',
         timestamp: Date.now()
     }).then(() => {
         console.log('✅ Character sent to MC App successfully!');
+        console.log('📦 Character data sent:', {
+            name: characterData.name,
+            pronouns: characterData.pronouns,
+            portrait: characterData.streetwearPortrait || characterData.qfactorPortrait
+        });
     }).catch((error) => {
         console.error('❌ Failed to send character to MC App:', error);
         throw error;
@@ -84,32 +90,28 @@ if (database) {
             
             // Update scene display
             if (data.currentScene) {
-                const sceneTitle = document.getElementById('sceneTitle');
-                if (sceneTitle && data.currentScene.name) {
-                    sceneTitle.textContent = data.currentScene.name;
-                }
-                
-                const locationImg = document.getElementById('locationImage');
-                if (locationImg && data.currentScene.imageUrl) {
-                    locationImg.src = data.currentScene.imageUrl;
-                    locationImg.style.display = 'block';
+                const sceneInfo = document.getElementById('sceneInfo');
+                if (sceneInfo && data.currentScene.name) {
+                    sceneInfo.textContent = data.currentScene.name;
+                    console.log('✅ Scene updated:', data.currentScene.name);
                 }
             }
             
             // Update music display
             if (data.currentMusic) {
-                const musicDisplay = document.getElementById('musicTitle');
-                if (musicDisplay && data.currentMusic.name) {
-                    musicDisplay.textContent = `♪ ${data.currentMusic.name}`;
+                const musicInfo = document.getElementById('musicInfo');
+                if (musicInfo && data.currentMusic.name) {
+                    musicInfo.textContent = data.currentMusic.name;
+                    console.log('✅ Music updated:', data.currentMusic.name);
                 }
             }
             
             // Update character spotlight
             if (data.activeCharacter) {
-                const spotlight = document.getElementById('spotlight');
-                if (spotlight && data.activeCharacter.name) {
-                    spotlight.textContent = `🎭 Spotlight: ${data.activeCharacter.name}`;
-                    spotlight.style.display = 'block';
+                const spotlightInfo = document.getElementById('spotlightInfo');
+                if (spotlightInfo && data.activeCharacter.name) {
+                    spotlightInfo.textContent = data.activeCharacter.name;
+                    console.log('✅ Spotlight updated:', data.activeCharacter.name);
                 }
             }
             
