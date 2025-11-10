@@ -76,6 +76,42 @@ export async function saveCharacterToCloud(characterData) {
   }
 }
 
+export async function saveLastCharacterToCloud(characterName) {
+  if (!database || !currentUserId) return false;
+  try {
+    const lastCharacterRef = ref(database, `users/${currentUserId}/lastCharacter`);
+    await set(lastCharacterRef, characterName || null);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to save last character name:', error);
+    return false;
+  }
+}
+
+export async function loadLastCharacterFromCloud() {
+  if (!database || !currentUserId) return null;
+  try {
+    const lastCharacterRef = ref(database, `users/${currentUserId}/lastCharacter`);
+    const snapshot = await get(lastCharacterRef);
+    return snapshot.exists() ? snapshot.val() : null;
+  } catch (error) {
+    console.error('❌ Failed to load last character name:', error);
+    return null;
+  }
+}
+
+export async function broadcastCharacterToMc(characterData) {
+  if (!database || !currentUserId || !characterData) return false;
+  try {
+    const broadcastRef = ref(database, `mcBroadcast/playerUpdates/${currentUserId}`);
+    await set(broadcastRef, { ...characterData, lastBroadcast: Date.now() });
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to broadcast character to MC:', error);
+    return false;
+  }
+}
+
 export async function loadCharactersFromCloud() {
   if (!database) return null;
   try {
@@ -106,7 +142,10 @@ function initializeBroadcastListener() {
   });
 }
 
-export { database, auth, currentUserId };
+export { database, auth, currentUserId, saveLastCharacterToCloud, loadLastCharacterFromCloud, broadcastCharacterToMc };
 window.initializeAuth = initializeAuth;
 window.saveCharacterToCloud = saveCharacterToCloud;
 window.loadCharactersFromCloud = loadCharactersFromCloud;
+window.saveLastCharacterToCloud = saveLastCharacterToCloud;
+window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
+window.broadcastCharacterToMc = broadcastCharacterToMc;
