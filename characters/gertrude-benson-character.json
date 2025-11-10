@@ -1,0 +1,71 @@
+{
+  "name": "Gertrude Benson",
+  "pronouns": "she/her",
+  "runway": "I Know Who I Am, and You Can't Ever Take That!",
+  "streetwearPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/gertrude-benson-streetwear.png",
+  "qfactorPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/gertrude-benson-qfactor.png",
+  "juice": 0,
+  
+  "rainbowThemes": [
+    {
+      "name": "Self Assurance Isn't Arrogance",
+      "type": "Signature",
+      "runway": "Standing My Ground",
+      "growth": 0,
+      "shade": 0,
+      "powerTags": [
+        "I Know What I'm Talking About",
+        "Check Your Facts",
+        "Explain it Like I'm Five"
+      ],
+      "weaknessTag": "Am I Sure About That?"
+    },
+    {
+      "name": "It Was Never a Phase!",
+      "type": "Fighting Style",
+      "runway": "Standing My Ground",
+      "growth": 0,
+      "shade": 0,
+      "powerTags": [
+        "Have You SCENE These Fists?",
+        "Rant and RAVE",
+        "EMO-tional Damage!"
+      ],
+      "weaknessTag": "Is This Just Another Mask?"
+    },
+    {
+    "name": "What I KNow To Be True",
+      "type": "Q-Factor",
+      "runway": "Standing My Ground",
+      "growth": 0,
+      "shade": 0,
+      "powerTags": [
+        "I've Got Receipts For Days!",
+        "You Can't Tell Me How I Feel",
+        "I'm Just As Valid As You Are"
+      ],
+      "weaknessTag": "What If I Am Too Much?"
+    }
+  ],
+  
+  "realnessThemes": [
+    {
+      "name": "Giving 110% id The Least I Can Do",
+      "type": "Personality",
+      "runway": "I Have To Keep Pushing",
+      "crack": 0,
+      "powerTags": [
+        "Everyone's Working So Hard",
+        "You'd Do The Same in My Shoes",
+        "There's Still Gas in the Tank"
+      ],
+      "weaknessTag": "I'm Not Doing Enough"
+    }
+  ],
+  
+  "currentStatuses": [],
+  "storyTags": [],
+  "burntTags": [],
+  "tagCombos": [],
+  "notes": "Gertrude is a hardworking and determined individual who prides herself on her self-assurance and authenticity. She is passionate about standing her ground and expressing her true feelings, often advocating for herself and others with confidence. Despite her strong exterior, she sometimes grapples with self-doubt, questioning whether she is doing enough or if she is being too much for those around her. Her journey is one of embracing her identity and pushing through challenges with resilience and conviction."
+}
