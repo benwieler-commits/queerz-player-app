@@ -8,6 +8,7 @@ let currentCharacter = null;
 let characterLibrary = {};
 let usingStreerwearPortrait = true;
 let firebaseInitialized = false;
+let selectedMove = null; // Track which core move is selected
 
 // Firebase references (will be set when Firebase initializes)
 let db = null;
@@ -148,6 +149,9 @@ function initializeEventListeners() {
     // Core Moves Toggle
     document.getElementById('toggleMovesBtn').addEventListener('click', toggleMoves);
     
+    // Move Icon Selection
+    initializeMoveIconListeners();
+    
     // Track box clicking for Growth/Shade/Crack
     initializeTrackBoxListeners();
 }
@@ -160,6 +164,28 @@ function initializeTrackBoxListeners() {
             saveCurrentCharacter();
         });
     });
+}
+
+// ================================
+// MOVE ICON SELECTION
+// ================================
+
+function initializeMoveIconListeners() {
+    // Add click listeners to all move icons
+    document.querySelectorAll('.move-icon').forEach(icon => {
+        icon.addEventListener('click', function() {
+            // Remove selection from all icons
+            document.querySelectorAll('.move-icon').forEach(i => i.classList.remove('selected'));
+            
+            // Add selection to clicked icon
+            this.classList.add('selected');
+            
+            // Store selected move
+            selectedMove = this.dataset.move;
+            console.log('✅ Move selected:', selectedMove);
+        });
+    });
+    console.log('✅ Move icon listeners initialized');
 }
 
 // ================================
@@ -408,25 +434,66 @@ function loadCharacter(charData) {
 }
 
 function loadThemes(charData) {
-    // Load Rainbow Themes (0, 1, 2)
+    console.log('🎨 Loading themes with FLEXIBLE display...');
+    
+    // Get all theme card slots
+    const themeSlots = ['theme0', 'theme1', 'theme2', 'theme3'];
+    
+    // Get Rainbow and Realness themes from character data
     const rainbowThemes = charData.rainbowThemes || [];
-    for (let i = 0; i < 3; i++) {
-        const themeCard = document.getElementById(`theme${i}`);
-        if (rainbowThemes[i]) {
+    const realnessThemes = charData.realnessThemes || [];
+    
+    console.log(`📊 Character has ${rainbowThemes.length} Rainbow themes, ${realnessThemes.length} Realness themes`);
+    
+    // Determine which slots to use for each theme type
+    // Strategy: Fill slots 0-2 with Rainbow themes, slot 3 with first Realness theme
+    // If there are extra themes, log a warning
+    
+    let slotIndex = 0;
+    
+    // Load Rainbow themes into first 3 slots
+    for (let i = 0; i < rainbowThemes.length && slotIndex < 3; i++) {
+        const themeCard = document.getElementById(themeSlots[slotIndex]);
+        if (themeCard) {
             populateThemeCard(themeCard, rainbowThemes[i], 'rainbow');
-        } else {
-            clearThemeCard(themeCard);
+            themeCard.style.display = 'block'; // Make sure it's visible
+            console.log(`✅ Loaded Rainbow theme "${rainbowThemes[i].name}" into slot ${slotIndex}`);
         }
+        slotIndex++;
     }
     
-    // Load Realness Theme (3)
-    const realnessThemes = charData.realnessThemes || [];
-    const realnessCard = document.getElementById('theme3');
-    if (realnessThemes[0]) {
-        populateThemeCard(realnessCard, realnessThemes[0], 'realness');
-    } else {
-        clearThemeCard(realnessCard);
+    // Hide unused Rainbow slots
+    while (slotIndex < 3) {
+        const themeCard = document.getElementById(themeSlots[slotIndex]);
+        if (themeCard) {
+            clearThemeCard(themeCard);
+            themeCard.style.display = 'none'; // Hide empty slots
+            console.log(`🔒 Hidden empty slot ${slotIndex}`);
+        }
+        slotIndex++;
     }
+    
+    // Load first Realness theme into slot 3
+    const realnessCard = document.getElementById('theme3');
+    if (realnessThemes.length > 0 && realnessCard) {
+        populateThemeCard(realnessCard, realnessThemes[0], 'realness');
+        realnessCard.style.display = 'block';
+        console.log(`✅ Loaded Realness theme "${realnessThemes[0].name}" into slot 3`);
+    } else if (realnessCard) {
+        clearThemeCard(realnessCard);
+        realnessCard.style.display = 'none';
+        console.log(`🔒 Hidden empty Realness slot`);
+    }
+    
+    // Warn if there are more themes than available slots
+    if (rainbowThemes.length > 3) {
+        console.warn(`⚠️ Character has ${rainbowThemes.length} Rainbow themes, but only 3 slots available. Extra themes not displayed.`);
+    }
+    if (realnessThemes.length > 1) {
+        console.warn(`⚠️ Character has ${realnessThemes.length} Realness themes, but only 1 slot available. Extra themes not displayed.`);
+    }
+    
+    console.log('✅ Theme loading complete with flexible display');
 }
 
 function populateThemeCard(card, themeData, type) {
@@ -709,6 +776,18 @@ function clearAllBurntTags() {
 // ================================
 
 function rollDice() {
+    // Check if a move is selected
+    if (!selectedMove) {
+        const resultDiv = document.getElementById('rollResult');
+        resultDiv.textContent = '⚠️ Please select a Core Move first!';
+        resultDiv.style.color = '#FF6B6B';
+        resultDiv.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            resultDiv.style.transform = 'scale(1)';
+        }, 300);
+        return;
+    }
+    
     const power = parseInt(document.getElementById('totalPower').value) || 0;
     const die1 = Math.floor(Math.random() * 6) + 1;
     const die2 = Math.floor(Math.random() * 6) + 1;
@@ -716,7 +795,12 @@ function rollDice() {
     
     const resultDiv = document.getElementById('rollResult');
     
-    let resultText = `🎲 ${die1} + ${die2}`;
+    // Display which move was used
+    const moveName = selectedMove.split('-').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+    
+    let resultText = `📖 ${moveName}\n🎲 ${die1} + ${die2}`;
     if (power !== 0) {
         resultText += ` ${power >= 0 ? '+' : ''}${power}`;
     }
@@ -725,13 +809,13 @@ function rollDice() {
     // Add result interpretation
     let interpretation = '';
     if (total >= 10) {
-        interpretation = ' ✨ FULL SUCCESS!';
+        interpretation = '\n✨ FULL SUCCESS!';
         resultDiv.style.color = '#4CAF50';
     } else if (total >= 7) {
-        interpretation = ' ⚡ PARTIAL SUCCESS';
+        interpretation = '\n⚡ PARTIAL SUCCESS';
         resultDiv.style.color = '#F4D35E';
     } else {
-        interpretation = ' 💔 MISS';
+        interpretation = '\n💔 MISS';
         resultDiv.style.color = '#E89B9B';
     }
     
@@ -749,11 +833,22 @@ function rollDice() {
 // ================================
 
 function resetDice() {
+    // Clear power
     document.getElementById('totalPower').value = 0;
+    
+    // Clear result display
     const resultDiv = document.getElementById('rollResult');
     resultDiv.textContent = '';
     resultDiv.style.color = '';
     resultDiv.style.transform = 'scale(1)';
+    
+    // Clear move selection
+    selectedMove = null;
+    document.querySelectorAll('.move-icon').forEach(icon => {
+        icon.classList.remove('selected');
+    });
+    
+    console.log('🔄 Dice reset complete');
 }
 
 // ================================
