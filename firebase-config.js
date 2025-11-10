@@ -1,6 +1,7 @@
 // ================================
 // FIREBASE CONFIGURATION
 // Player App - Cloud Sync & Broadcast Receiving
+// ⭐ FIXED: Using real Firebase URL (not broken proxy)
 // ================================
 
 // Import Firebase SDK modules from CDN
@@ -9,10 +10,11 @@ import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/fir
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
 // ⭐ Firebase Configuration (from queerz-mc-live project)
+// ⚠️ FIXED: Using real Firebase database URL instead of broken Cloudflare proxy
 const firebaseConfig = {
   apiKey: "AIzaSyDOeJQjTm0xuFDAhhLaWP6d_kK_hNwRY58",
   authDomain: "queerz-mc-live.firebaseapp.com",
-  databaseURL: "https://queerz-firebase-proxy.benwieler.workers.dev",
+  databaseURL: "https://queerz-mc-live-default-rtdb.firebaseio.com",  // ⭐ REAL Firebase URL
   projectId: "queerz-mc-live",
   storageBucket: "queerz-mc-live.firebasestorage.app",
   messagingSenderId: "155846709409",
@@ -27,7 +29,8 @@ const auth = getAuth(app);
 let currentUserId = null;
 
 console.log('🔥 Firebase initialized for Player App');
-console.log('📡 Listening for broadcasts from MC App...');
+console.log('📡 Database URL:', firebaseConfig.databaseURL);
+console.log('👂 Listening for broadcasts from MC App...');
 
 // ================================
 // AUTHENTICATION (CLOUD SYNC)
