@@ -86,7 +86,29 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // ⭐ Initialize cloud sync
     initializeCloudSync();
-    
+    // ================================
+// FIREBASE CLOUD SYNC INITIALIZATION
+// ================================
+document.addEventListener('firebase-auth-ready', async () => {
+    console.log('🔥 Firebase auth ready - initializing cloud sync...');
+    if (typeof initializeCloudSync === 'function') {
+        await initializeCloudSync();
+    }
+
+    if (typeof window.loadCharactersFromCloud === 'function') {
+        console.log('☁️ Attempting to load characters from Firebase...');
+        const cloudChars = await window.loadCharactersFromCloud();
+        if (cloudChars && Object.keys(cloudChars).length > 0) {
+            Object.values(cloudChars).forEach((char) => {
+                characterLibrary[char.name] = char;
+            });
+            updateCharacterDropdown();
+            console.log('✅ Cloud characters synced into dropdown!');
+        } else {
+            console.log('ℹ️ No characters found in Firebase for this user.');
+        }
+    }
+});    
     console.log('✅ App initialization complete!');
 });
 
