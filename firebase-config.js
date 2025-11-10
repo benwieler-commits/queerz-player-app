@@ -7,25 +7,35 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getDatabase, ref, onValue, set, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDOeJQjTm0xuFDAhhLaWP6d_kK_hNwRY58",
-  authDomain: "queerz-mc-live.firebaseapp.com",
-  databaseURL: "https://queerz-firebase-proxy.benwieler.workers.dev",
-  projectId: "queerz-mc-live",
-  storageBucket: "queerz-mc-live.firebasestorage.app",
-  messagingSenderId: "155846709409",
-  appId: "1:155846709409:web:8c12204dc7d502586a20e0"
-};
+async function loadFirebaseConfig() {
+  const response = await fetch('./config/firebase-config.json', { cache: 'no-cache' });
+  if (!response.ok) {
+    throw new Error(`Unable to load Firebase configuration (${response.status} ${response.statusText})`);
+  }
+  return response.json();
+}
+
+let firebaseConfig;
+
+try {
+  firebaseConfig = await loadFirebaseConfig();
+} catch (error) {
+  console.error('❌ Failed to load Firebase configuration:', error);
+}
 
 let app, database, auth, currentUserId = null;
 
-try {
-  app = initializeApp(firebaseConfig);
-  database = getDatabase(app);
-  auth = getAuth(app);
-  console.log('✅ Firebase initialized successfully - Connected to queerz-mc-live');
-} catch (error) {
-  console.error('❌ Firebase initialization failed:', error);
+if (firebaseConfig) {
+  try {
+    app = initializeApp(firebaseConfig);
+    database = getDatabase(app);
+    auth = getAuth(app);
+    console.log('✅ Firebase initialized successfully - Connected to queerz-mc-live');
+  } catch (error) {
+    console.error('❌ Firebase initialization failed:', error);
+  }
+} else {
+  console.warn('⚠️ Firebase configuration unavailable. Cloud features are disabled until configuration loads.');
 }
 
 export async function initializeAuth() {
