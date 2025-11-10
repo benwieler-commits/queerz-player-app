@@ -1,11 +1,12 @@
 // ================================
 // QUEERZ! PLAYER COMPANION APP
-// Firebase Configuration - FIXED VERSION
+// Firebase Configuration - CLOUD STORAGE VERSION
 // ================================
 // SYNCED TO: queerz-mc-live (same project as MC App)
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getDatabase, ref, onValue, set, get, remove } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 // Firebase configuration - MUST MATCH MC APP
 const firebaseConfig = {
@@ -21,16 +22,199 @@ const firebaseConfig = {
 // Initialize Firebase
 let app;
 let database;
+let auth;
+let currentUserId = null;
 
 try {
     app = initializeApp(firebaseConfig);
     database = getDatabase(app);
+    auth = getAuth(app);
     console.log('✅ Firebase initialized successfully - Connected to queerz-mc-live');
 } catch (error) {
     console.error('❌ Firebase initialization failed:', error);
 }
 
-// Update sync status badge
+// ================================
+// AUTHENTICATION
+// ================================
+
+// Sign in anonymously (no login required!)
+export async function initializeAuth() {
+    if (!auth) {
+        console.error('❌ Firebase Auth not initialized');
+        return false;
+    }
+    
+    try {
+        // Check if already signed in
+        if (auth.currentUser) {
+            currentUserId = auth.currentUser.uid;
+            console.log('✅ Already signed in with user ID:', currentUserId);
+            updateCloudStatus(true);
+            return true;
+        }
+        
+        // Sign in anonymously
+        console.log('🔐 Signing in anonymously...');
+        const userCredential = await signInAnonymously(auth);
+        currentUserId = userCredential.user.uid;
+        console.log('✅ Signed in with user ID:', currentUserId);
+        updateCloudStatus(true);
+        return true;
+    } catch (error) {
+        console.error('❌ Authentication failed:', error);
+        updateCloudStatus(false);
+        return false;
+    }
+}
+
+// Listen for auth state changes
+if (auth) {
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUserId = user.uid;
+            console.log('✅ Auth state changed - User signed in:', currentUserId);
+            updateCloudStatus(true);
+        } else {
+            currentUserId = null;
+            console.log('❌ Auth state changed - User signed out');
+            updateCloudStatus(false);
+        }
+    });
+}
+
+// ================================
+// CLOUD STORAGE FUNCTIONS
+// ================================
+
+// Save character to cloud
+export async function saveCharacterToCloud(characterData) {
+    if (!database || !currentUserId) {
+        console.error('❌ Cannot save to cloud - not authenticated');
+        return false;
+    }
+    
+    try {
+        const characterName = characterData.name;
+        const charRef = ref(database, `users/${currentUserId}/characters/${characterName}`);
+        
+        console.log('☁️ Saving character to cloud:', characterName);
+        await set(charRef, {
+            ...characterData,
+            lastModified: Date.now()
+        });
+        
+        console.log('✅ Character saved to cloud successfully!');
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to save character to cloud:', error);
+        return false;
+    }
+}
+
+// Load all characters from cloud
+export async function loadCharactersFromCloud() {
+    if (!database || !currentUserId) {
+        console.error('❌ Cannot load from cloud - not authenticated');
+        return null;
+    }
+    
+    try {
+        const charsRef = ref(database, `users/${currentUserId}/characters`);
+        console.log('☁️ Loading characters from cloud...');
+        
+        const snapshot = await get(charsRef);
+        
+        if (snapshot.exists()) {
+            const characters = snapshot.val();
+            console.log('✅ Characters loaded from cloud:', Object.keys(characters));
+            return characters;
+        } else {
+            console.log('ℹ️ No characters found in cloud');
+            return {};
+        }
+    } catch (error) {
+        console.error('❌ Failed to load characters from cloud:', error);
+        return null;
+    }
+}
+
+// Delete character from cloud
+export async function deleteCharacterFromCloud(characterName) {
+    if (!database || !currentUserId) {
+        console.error('❌ Cannot delete from cloud - not authenticated');
+        return false;
+    }
+    
+    try {
+        const charRef = ref(database, `users/${currentUserId}/characters/${characterName}`);
+        console.log('☁️ Deleting character from cloud:', characterName);
+        
+        await remove(charRef);
+        console.log('✅ Character deleted from cloud successfully!');
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to delete character from cloud:', error);
+        return false;
+    }
+}
+
+// Save last used character name to cloud
+export async function saveLastCharacterToCloud(characterName) {
+    if (!database || !currentUserId) {
+        console.error('❌ Cannot save last character to cloud - not authenticated');
+        return false;
+    }
+    
+    try {
+        const lastCharRef = ref(database, `users/${currentUserId}/lastCharacter`);
+        await set(lastCharRef, characterName);
+        console.log('✅ Last character saved to cloud:', characterName);
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to save last character to cloud:', error);
+        return false;
+    }
+}
+
+// Load last used character name from cloud
+export async function loadLastCharacterFromCloud() {
+    if (!database || !currentUserId) {
+        console.error('❌ Cannot load last character from cloud - not authenticated');
+        return null;
+    }
+    
+    try {
+        const lastCharRef = ref(database, `users/${currentUserId}/lastCharacter`);
+        const snapshot = await get(lastCharRef);
+        
+        if (snapshot.exists()) {
+            const characterName = snapshot.val();
+            console.log('✅ Last character loaded from cloud:', characterName);
+            return characterName;
+        } else {
+            console.log('ℹ️ No last character found in cloud');
+            return null;
+        }
+    } catch (error) {
+        console.error('❌ Failed to load last character from cloud:', error);
+        return null;
+    }
+}
+
+// ================================
+// STATUS UPDATES
+// ================================
+
+function updateCloudStatus(isOnline) {
+    const cloudBadge = document.getElementById('cloudBadge');
+    if (cloudBadge) {
+        cloudBadge.textContent = isOnline ? '☁️ Cloud' : '☁️ Offline';
+        cloudBadge.className = isOnline ? 'badge cloud-online' : 'badge cloud-offline';
+    }
+}
+
+// Update MC sync status badge
 function updateSyncStatus(isOnline) {
     const badge = document.getElementById('syncBadge');
     if (badge) {
@@ -46,6 +230,10 @@ function updateSyncStatus(isOnline) {
     }
 }
 
+// ================================
+// MC SYNC FUNCTIONS (EXISTING)
+// ================================
+
 // Function to send character data to MC App
 export function sendCharacterToMC(characterData) {
     if (!database) {
@@ -60,7 +248,7 @@ export function sendCharacterToMC(characterData) {
     return set(charRef, {
         name: characterData.name,
         pronouns: characterData.pronouns || '',
-        look: characterData.runway || characterData.playbook || '',  // Use runway or playbook as look description
+        look: characterData.runway || characterData.playbook || '',
         playbook: characterData.playbook || '',
         portrait: characterData.streetwearPortrait || characterData.qfactorPortrait || '',
         timestamp: Date.now()
@@ -77,11 +265,15 @@ export function sendCharacterToMC(characterData) {
     });
 }
 
+// ================================
+// MC BROADCAST LISTENERS (EXISTING)
+// ================================
+
 // Only set up listeners if Firebase initialized successfully
 if (database) {
     console.log('✅ Setting up Firebase listeners...');
     
-    // ⭐ FIXED: Listen to mcBroadcast path (where MC App actually sends data)
+    // Listen to mcBroadcast path (where MC App actually sends data)
     const broadcastRef = ref(database, 'mcBroadcast');
     onValue(broadcastRef, (snapshot) => {
         const data = snapshot.val();
@@ -170,9 +362,19 @@ if (database) {
     updateSyncStatus(false);
 }
 
-// Export database for use in other modules
-export { database };
+// ================================
+// EXPORTS
+// ================================
 
-// Expose sendCharacterToMC globally for non-module scripts
+export { database, auth, currentUserId };
+
+// Expose functions globally for non-module scripts
 window.sendCharacterToMC = sendCharacterToMC;
-console.log('✅ Character sync function ready - use window.sendCharacterToMC(characterData)');
+window.initializeAuth = initializeAuth;
+window.saveCharacterToCloud = saveCharacterToCloud;
+window.loadCharactersFromCloud = loadCharactersFromCloud;
+window.deleteCharacterFromCloud = deleteCharacterFromCloud;
+window.saveLastCharacterToCloud = saveLastCharacterToCloud;
+window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
+
+console.log('✅ Firebase ready - Cloud storage and MC sync available!');
