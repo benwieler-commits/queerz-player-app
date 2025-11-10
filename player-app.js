@@ -811,6 +811,11 @@ function rollDice() {
     if (total >= 10) {
         interpretation = '\n✨ FULL SUCCESS!';
         resultDiv.style.color = '#4CAF50';
+        
+        // AUTO-JUICE: Give 3 juice on 10+ roll!
+        adjustJuice(3);
+        interpretation += '\n🌟 +3 JUICE!';
+        console.log('✨ Full success! Auto-added 3 juice');
     } else if (total >= 7) {
         interpretation = '\n⚡ PARTIAL SUCCESS';
         resultDiv.style.color = '#F4D35E';
@@ -826,6 +831,9 @@ function rollDice() {
     setTimeout(() => {
         resultDiv.style.transform = 'scale(1)';
     }, 300);
+    
+    // Update combo availability after juice change
+    updateComboAvailability();
 }
 
 // ================================
@@ -867,6 +875,9 @@ function adjustJuice(amount) {
         currentCharacter.juice = currentJuice;
         saveCurrentCharacter();
     }
+    
+    // Update combo button states based on new juice amount
+    updateComboAvailability();
 }
 
 // ================================
@@ -1167,9 +1178,14 @@ function renderCombos() {
         return;
     }
     
+    const currentJuice = parseInt(document.getElementById('juiceCount')?.textContent || 0);
+    const canAfford = currentJuice >= 3;
+    
     tagCombos.forEach((combo, index) => {
         const comboCard = document.createElement('div');
         comboCard.className = 'combo-card';
+        comboCard.dataset.comboIndex = index;
+        
         comboCard.innerHTML = `
             <div class="combo-header">
                 <h4 class="combo-name">${combo.name}</h4>
@@ -1182,9 +1198,16 @@ function renderCombos() {
                 <span class="combo-power">⚡ +${combo.power} Power</span>
                 <span class="combo-move">📖 ${combo.move}</span>
             </div>
+            <button class="combo-use-btn ${canAfford ? '' : 'disabled'}" 
+                    onclick="useCombo(${index})"
+                    ${canAfford ? '' : 'disabled'}>
+                💎 USE COMBO (3 Juice)
+            </button>
         `;
         comboList.appendChild(comboCard);
     });
+    
+    console.log(`✅ Rendered ${tagCombos.length} combos (Juice: ${currentJuice}, Can afford: ${canAfford})`);
 }
 
 function removeCombo(index) {
@@ -1210,6 +1233,110 @@ function clearAllCombos() {
 }
 
 // ================================
+// COMBO ACTIVATION SYSTEM
+// ================================
+
+function useCombo(index) {
+    const combo = tagCombos[index];
+    if (!combo) return;
+    
+    const juiceCountEl = document.getElementById('juiceCount');
+    const currentJuice = parseInt(juiceCountEl.textContent) || 0;
+    
+    // Check if player has enough juice
+    if (currentJuice < 3) {
+        alert('❌ Not enough Juice! You need 3 Juice to use a combo.');
+        return;
+    }
+    
+    console.log('🎯 Using combo:', combo.name);
+    console.log('📋 Tags to burn:', combo.tags);
+    console.log('⚡ Power to add:', combo.power);
+    
+    // Subtract 3 juice
+    adjustJuice(-3);
+    console.log('💎 Spent 3 Juice (remaining:', currentJuice - 3, ')');
+    
+    // Auto-burn all tags in the combo
+    let burnedCount = 0;
+    combo.tags.forEach(tagName => {
+        const burned = burnTagByName(tagName);
+        if (burned) {
+            burnedCount++;
+            console.log('🔥 Auto-burned tag:', tagName);
+        } else {
+            console.warn('⚠️ Could not burn tag:', tagName, '(might already be burned or not found)');
+        }
+    });
+    
+    // Add combo power to total power
+    const totalPowerInput = document.getElementById('totalPower');
+    const currentPower = parseInt(totalPowerInput.value) || 0;
+    totalPowerInput.value = currentPower + combo.power;
+    console.log('⚡ Added', combo.power, 'power (total now:', currentPower + combo.power, ')');
+    
+    // Show success feedback
+    const resultDiv = document.getElementById('rollResult');
+    resultDiv.textContent = `🎯 COMBO ACTIVATED: ${combo.name}\n🔥 Burned ${burnedCount} tags\n⚡ +${combo.power} Power added\n💎 -3 Juice (${currentJuice - 3} remaining)`;
+    resultDiv.style.color = '#A78BFA'; // Purple
+    resultDiv.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+        resultDiv.style.transform = 'scale(1)';
+    }, 300);
+    
+    // Update combo button states
+    updateComboAvailability();
+    
+    console.log('✅ Combo activation complete!');
+}
+
+function updateComboAvailability() {
+    const currentJuice = parseInt(document.getElementById('juiceCount')?.textContent || 0);
+    const canAfford = currentJuice >= 3;
+    
+    // Update all combo use buttons
+    document.querySelectorAll('.combo-use-btn').forEach((btn, index) => {
+        if (canAfford) {
+            btn.classList.remove('disabled');
+            btn.disabled = false;
+        } else {
+            btn.classList.add('disabled');
+            btn.disabled = true;
+        }
+    });
+    
+    console.log(`♻️ Updated combo availability (Juice: ${currentJuice}, Can use: ${canAfford})`);
+}
+
+function burnTagByName(tagName) {
+    // Search through all theme cards for this tag
+    const themeCards = document.querySelectorAll('.theme-card');
+    
+    for (let card of themeCards) {
+        // Check power tags
+        const powerTags = card.querySelectorAll('.power-tags .burnable-tag');
+        for (let tagEl of powerTags) {
+            if (tagEl.dataset.tag === tagName && !tagEl.classList.contains('burnt')) {
+                // Found it! Burn this tag
+                burnThemeTag(tagEl);
+                return true;
+            }
+        }
+        
+        // Check weakness tag
+        const weaknessTag = card.querySelector('.weakness-burnable');
+        if (weaknessTag && weaknessTag.dataset.tag === tagName && !weaknessTag.classList.contains('burnt')) {
+            // Found it! Burn this weakness tag
+            burnThemeTag(weaknessTag);
+            return true;
+        }
+    }
+    
+    // Tag not found or already burned
+    return false;
+}
+
+// ================================
 // CORE MOVES TOGGLE
 // ================================
 
@@ -1226,5 +1353,6 @@ function toggleMoves() {
 window.removeStatus = removeStatus;
 window.burnTag = burnTag;
 window.removeCombo = removeCombo;
+window.useCombo = useCombo;
 
 console.log('✅ Player App JavaScript loaded');
