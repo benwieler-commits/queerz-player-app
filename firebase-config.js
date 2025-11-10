@@ -3,6 +3,7 @@
 // Firebase Configuration - CLOUD STORAGE VERSION
 // ================================
 // SYNCED TO: queerz-mc-live (same project as MC App)
+// ⭐ COMPLETE FILE - Just replace your firebase-config.js with this!
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, onValue, set, get, remove } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
