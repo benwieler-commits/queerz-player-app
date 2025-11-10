@@ -485,6 +485,27 @@ body {
     justify-content: center;
 }
 
+.btn-reset {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2rem;
+    background: var(--bg-dark);
+    color: var(--gold-tag);
+    border: 2px solid var(--gold-tag);
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: all 0.3s;
+}
+
+.btn-reset:hover {
+    background: var(--gold-tag);
+    color: var(--bg-dark);
+    transform: scale(1.05);
+    box-shadow: 0 0 20px var(--gold-tag);
+}
+
 /* JUICE TRACKER */
 
 .juice-tracker {
