@@ -1251,3 +1251,67 @@ body {
 .combo-use-btn:not(.disabled) {
     animation: juice-pulse 2s ease-in-out infinite;
 }
+
+/* ================================
+   ⭐ CLOUD SYNC STYLES ADDED BELOW
+   ================================ */
+
+/* Cloud Sync Toggle Button */
+.btn-cloud {
+    padding: 8px 15px;
+    border: 2px solid var(--teal-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.btn-cloud.cloud-disabled {
+    background: transparent;
+    color: var(--gray-neutral);
+    border-color: var(--gray-neutral);
+}
+
+.btn-cloud.cloud-disabled:hover {
+    background: var(--gray-neutral);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-cloud.cloud-enabled {
+    background: var(--teal-primary);
+    color: white;
+    border-color: var(--teal-primary);
+    animation: cloudPulse 2s infinite;
+}
+
+.btn-cloud.cloud-enabled:hover {
+    background: var(--teal-dark);
+    border-color: var(--teal-dark);
+    transform: translateY(-2px);
+}
+
+/* Cloud Status Badges */
+.badge.cloud-offline {
+    background: var(--gray-neutral);
+    color: white;
+}
+
+.badge.cloud-online {
+    background: #2196F3; /* Blue color for cloud */
+    color: white;
+    animation: cloudPulse 2s infinite;
+}
+
+/* Cloud pulse animation */
+@keyframes cloudPulse {
+    0%, 100% { 
+        opacity: 1;
+        box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+    }
+    50% { 
+        opacity: 0.8;
+        box-shadow: 0 0 20px rgba(33, 150, 243, 0.8);
+    }
+}
