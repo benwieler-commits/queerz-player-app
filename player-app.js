@@ -126,6 +126,7 @@ function initializeEventListeners() {
     
     // Dice Roller
     document.getElementById('rollBtn').addEventListener('click', rollDice);
+    document.getElementById('resetBtn').addEventListener('click', resetDice);
     
     // Juice Tracker
     document.getElementById('juiceUp').addEventListener('click', () => adjustJuice(1));
@@ -741,6 +742,18 @@ function rollDice() {
     setTimeout(() => {
         resultDiv.style.transform = 'scale(1)';
     }, 300);
+}
+
+// ================================
+// RESET FUNCTION
+// ================================
+
+function resetDice() {
+    document.getElementById('totalPower').value = 0;
+    const resultDiv = document.getElementById('rollResult');
+    resultDiv.textContent = '';
+    resultDiv.style.color = '';
+    resultDiv.style.transform = 'scale(1)';
 }
 
 // ================================
