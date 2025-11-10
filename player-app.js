@@ -167,6 +167,143 @@ function initializeTrackBoxListeners() {
         });
     });
 }
+// Initialize cloud sync if enabled
+async function initializeCloudSync() {
+    // Check if cloud sync was enabled before
+    const cloudEnabled = localStorage.getItem('queerz_cloud_sync_enabled');
+    if (cloudEnabled === 'true') {
+        cloudSyncEnabled = true;
+        updateCloudToggleUI();
+        
+        // Initialize auth
+        if (window.initializeAuth) {
+            const success = await window.initializeAuth();
+            if (success) {
+                cloudSyncInitialized = true;
+                console.log('✅ Cloud sync initialized and ready!');
+                
+                // Try to load characters from cloud
+                await syncFromCloud();
+            }
+        }
+    }
+}
+
+// Toggle cloud sync on/off
+async function toggleCloudSync() {
+    cloudSyncEnabled = !cloudSyncEnabled;
+    localStorage.setItem('queerz_cloud_sync_enabled', cloudSyncEnabled.toString());
+    updateCloudToggleUI();
+    
+    if (cloudSyncEnabled) {
+        console.log('☁️ Enabling cloud sync...');
+        
+        // Initialize auth if not already done
+        if (!cloudSyncInitialized && window.initializeAuth) {
+            const success = await window.initializeAuth();
+            if (success) {
+                cloudSyncInitialized = true;
+                console.log('✅ Cloud sync enabled!');
+                
+                // Upload current localStorage characters to cloud
+                await syncToCloud();
+            } else {
+                console.error('❌ Failed to enable cloud sync');
+                cloudSyncEnabled = false;
+                localStorage.setItem('queerz_cloud_sync_enabled', 'false');
+                updateCloudToggleUI();
+                alert('Failed to enable cloud sync. Please check your internet connection.');
+            }
+        } else {
+            await syncToCloud();
+        }
+    } else {
+        console.log('ℹ️ Cloud sync disabled - using local storage only');
+        alert('Cloud sync disabled. Characters will only be saved locally.');
+    }
+}
+
+// Update cloud toggle button appearance
+function updateCloudToggleUI() {
+    const toggleBtn = document.getElementById('cloudSyncToggle');
+    if (toggleBtn) {
+        if (cloudSyncEnabled) {
+            toggleBtn.textContent = '☁️ Cloud: ON';
+            toggleBtn.classList.add('cloud-enabled');
+            toggleBtn.classList.remove('cloud-disabled');
+        } else {
+            toggleBtn.textContent = '☁️ Cloud: OFF';
+            toggleBtn.classList.add('cloud-disabled');
+            toggleBtn.classList.remove('cloud-enabled');
+        }
+    }
+}
+
+// Sync characters FROM cloud TO localStorage
+async function syncFromCloud() {
+    if (!cloudSyncEnabled || !window.loadCharactersFromCloud) {
+        return;
+    }
+    
+    console.log('⬇️ Syncing from cloud...');
+    const cloudCharacters = await window.loadCharactersFromCloud();
+    
+    if (cloudCharacters) {
+        // Merge with local characters (cloud takes precedence for newer versions)
+        Object.keys(cloudCharacters).forEach(name => {
+            const cloudChar = cloudCharacters[name];
+            const localChar = characterLibrary[name];
+            
+            // Use cloud version if it's newer or if local doesn't exist
+            if (!localChar || (cloudChar.lastModified && (!localChar.lastModified || cloudChar.lastModified > localChar.lastModified))) {
+                characterLibrary[name] = cloudChar;
+                console.log('⬇️ Synced from cloud:', name);
+            }
+        });
+        
+        // Save merged library to localStorage
+        saveCharacterLibrary();
+        updateCharacterDropdown();
+        
+        console.log('✅ Sync from cloud complete!');
+        return true;
+    }
+    
+    return false;
+}
+
+// Sync characters FROM localStorage TO cloud
+async function syncToCloud() {
+    if (!cloudSyncEnabled || !window.saveCharacterToCloud) {
+        return;
+    }
+    
+    console.log('⬆️ Syncing to cloud...');
+    let successCount = 0;
+    
+    for (const name in characterLibrary) {
+        const character = characterLibrary[name];
+        // Add lastModified if not present
+        if (!character.lastModified) {
+            character.lastModified = Date.now();
+        }
+        
+        const success = await window.saveCharacterToCloud(character);
+        if (success) {
+            successCount++;
+        }
+    }
+    
+    console.log(`✅ Synced ${successCount} characters to cloud`);
+    
+    // Also save last character to cloud
+    const lastCharName = localStorage.getItem('queerz_last_character');
+    if (lastCharName && window.saveLastCharacterToCloud) {
+        await window.saveLastCharacterToCloud(lastCharName);
+    }
+    
+    return successCount > 0;
+}
 
 // ================================
 // MOVE ICON SELECTION
