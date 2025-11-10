@@ -1,13 +1,14 @@
 // ================================
 // QUEERZ! PLAYER COMPANION APP
-// Firebase Configuration - WITH PLAYLIST BROADCASTING
+// Firebase Configuration - COMPLETE VERSION
+// WITH CLOUD CHARACTER SYNC + PLAYLIST BROADCASTING
 // ================================
-// SYNCED TO: queerz-mc-live (same project as MC App)
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getDatabase, ref, onValue, set, get } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
-// Firebase configuration - MUST MATCH MC APP
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDOeJQjTm0xuFDAhhLaWP6d_kK_hNwRY58",
   authDomain: "queerz-mc-live.firebaseapp.com",
@@ -21,11 +22,14 @@ const firebaseConfig = {
 // Initialize Firebase
 let app;
 let database;
+let auth;
+let currentUser = null;
 
 try {
     app = initializeApp(firebaseConfig);
     database = getDatabase(app);
-    console.log('✅ Firebase initialized successfully - Connected to queerz-mc-live');
+    auth = getAuth(app);
+    console.log('✅ Firebase initialized successfully');
 } catch (error) {
     console.error('❌ Firebase initialization failed:', error);
 }
@@ -38,84 +42,148 @@ let currentTrackIndex = 0;
 let isLooping = false;
 let isPlaying = false;
 
-// Update sync status badge
-function updateSyncStatus(isOnline) {
-    const badge = document.getElementById('syncBadge');
-    if (badge) {
-        badge.textContent = isOnline ? '● Online' : '● Offline';
-        badge.className = isOnline ? 'badge online' : 'badge offline';
+// ===================================
+// CLOUD CHARACTER SYNC - Update badges
+// ===================================
+function updateCloudStatus(isOnline) {
+    const cloudBadge = document.getElementById('cloudStatus');
+    if (cloudBadge) {
+        cloudBadge.textContent = isOnline ? '● Online' : '● Offline';
+        cloudBadge.className = isOnline ? 'badge online' : 'badge offline';
+    }
+}
+
+function updateMCStatus(isOnline) {
+    const mcBadge = document.getElementById('syncBadge');
+    if (mcBadge) {
+        mcBadge.textContent = isOnline ? '● Online' : '● Offline';
+        mcBadge.className = isOnline ? 'badge online' : 'badge offline';
     }
     
     const mcStatus = document.getElementById('mcStatus');
-    if (mcStatus && isOnline) {
-        mcStatus.textContent = 'Connected to MC';
-    } else if (mcStatus) {
-        mcStatus.textContent = 'Waiting for MC...';
+    if (mcStatus) {
+        mcStatus.textContent = isOnline ? 'Connected to MC' : 'Waiting for MC...';
     }
 }
+
+// ===================================
+// FIREBASE AUTH - Anonymous Sign-in
+// ===================================
+if (auth) {
+    // Sign in anonymously for cloud character storage
+    signInAnonymously(auth)
+        .then(() => {
+            console.log('✅ Anonymous auth successful');
+        })
+        .catch((error) => {
+            console.error('❌ Auth failed:', error);
+            updateCloudStatus(false);
+        });
+    
+    // Listen for auth state changes
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            console.log('✅ User authenticated:', user.uid);
+            updateCloudStatus(true);
+        } else {
+            currentUser = null;
+            console.log('⚠️ User not authenticated');
+            updateCloudStatus(false);
+        }
+    });
+}
+
+// ===================================
+// CLOUD CHARACTER FUNCTIONS
+// ===================================
+export async function saveCharacterToCloud(characterData) {
+    if (!currentUser || !database) {
+        console.error('❌ Cannot save - not authenticated');
+        throw new Error('Not authenticated');
+    }
+    
+    const charRef = ref(database, `users/${currentUser.uid}/characters/${characterData.name}`);
+    await set(charRef, {
+        ...characterData,
+        lastUpdated: Date.now()
+    });
+    console.log('✅ Character saved to cloud:', characterData.name);
+}
+
+export async function loadCharactersFromCloud() {
+    if (!currentUser || !database) {
+        console.error('❌ Cannot load - not authenticated');
+        return [];
+    }
+    
+    const charsRef = ref(database, `users/${currentUser.uid}/characters`);
+    const snapshot = await get(charsRef);
+    
+    if (snapshot.exists()) {
+        const characters = Object.values(snapshot.val());
+        console.log('✅ Loaded characters from cloud:', characters.length);
+        return characters;
+    }
+    
+    return [];
+}
+
+export async function deleteCharacterFromCloud(characterName) {
+    if (!currentUser || !database) {
+        console.error('❌ Cannot delete - not authenticated');
+        throw new Error('Not authenticated');
+    }
+    
+    const charRef = ref(database, `users/${currentUser.uid}/characters/${characterName}`);
+    await set(charRef, null);
+    console.log('✅ Character deleted from cloud:', characterName);
+}
+
+// Make functions available globally
+window.saveCharacterToCloud = saveCharacterToCloud;
+window.loadCharactersFromCloud = loadCharactersFromCloud;
+window.deleteCharacterFromCloud = deleteCharacterFromCloud;
 
 // ===================================
 // PLAYLIST BROADCAST HANDLER
 // ===================================
 function handlePlaylistBroadcast(data) {
-    console.log('🎵 Playlist broadcast received:', data);
+    console.log('🎵 Playlist broadcast received');
     
-    // Update playlist state
     if (data.playlist && Array.isArray(data.playlist)) {
         currentPlaylist = data.playlist;
         currentTrackIndex = data.currentTrackIndex || 0;
         isLooping = data.isLooping || false;
         isPlaying = data.isPlaying || false;
         
-        console.log(`📋 Playlist: ${currentPlaylist.length} tracks`);
-        console.log(`▶️ Current track: ${currentTrackIndex + 1}/${currentPlaylist.length}`);
-        console.log(`🔁 Loop: ${isLooping ? 'ON' : 'OFF'}`);
-        
-        // Update the playlist display
         renderPlaylistDisplay();
-        
-        // Update the audio player
         updateAudioPlayer();
-    } else {
-        console.log('ℹ️ No playlist in broadcast');
     }
 }
 
-// ===================================
-// RENDER PLAYLIST DISPLAY
-// ===================================
 function renderPlaylistDisplay() {
     const playlistContainer = document.getElementById('playlistDisplay');
     
-    if (!playlistContainer) {
-        console.warn('⚠️ Playlist container not found in HTML');
-        return;
-    }
+    if (!playlistContainer) return;
     
-    // Clear existing content
-    playlistContainer.innerHTML = '';
-    
-    // If no playlist, show message
     if (currentPlaylist.length === 0) {
         playlistContainer.innerHTML = '<p style="color: #999; font-style: italic;">No playlist</p>';
         playlistContainer.style.display = 'none';
         return;
     }
     
-    // Show playlist container
     playlistContainer.style.display = 'block';
+    playlistContainer.innerHTML = '';
     
-    // Create playlist tracks
     currentPlaylist.forEach((track, index) => {
         const trackDiv = document.createElement('div');
         trackDiv.className = 'playlist-track';
         
-        // Highlight current track
         if (index === currentTrackIndex) {
             trackDiv.classList.add('current-track');
         }
         
-        // Track number and name
         const trackInfo = document.createElement('span');
         trackInfo.className = 'track-info';
         trackInfo.textContent = `${index === currentTrackIndex ? '▶ ' : ''}${index + 1}. ${track.name}`;
@@ -124,13 +192,9 @@ function renderPlaylistDisplay() {
         playlistContainer.appendChild(trackDiv);
     });
     
-    // Update loop indicator
     updateLoopIndicator();
 }
 
-// ===================================
-// UPDATE LOOP INDICATOR
-// ===================================
 function updateLoopIndicator() {
     const musicInfo = document.getElementById('musicInfo');
     
@@ -146,128 +210,77 @@ function updateLoopIndicator() {
     }
 }
 
-// ===================================
-// UPDATE AUDIO PLAYER
-// ===================================
 function updateAudioPlayer() {
     const musicPlayer = document.getElementById('musicPlayer');
     
-    if (!musicPlayer) {
-        console.warn('⚠️ Music player element not found');
-        return;
-    }
+    if (!musicPlayer) return;
     
-    // If no tracks, hide player
     if (currentPlaylist.length === 0) {
         musicPlayer.style.display = 'none';
         musicPlayer.pause();
         musicPlayer.src = '';
-        document.getElementById('musicInfo').textContent = 'No music playing';
+        const musicInfo = document.getElementById('musicInfo');
+        if (musicInfo) musicInfo.textContent = 'No music playing';
         return;
     }
     
-    // Get current track
     const currentTrack = currentPlaylist[currentTrackIndex];
+    if (!currentTrack) return;
     
-    if (!currentTrack) {
-        console.warn('⚠️ Invalid track index:', currentTrackIndex);
-        return;
-    }
+    console.log('🎵 Loading track:', currentTrack.name);
     
-    console.log(`🎵 Loading track: ${currentTrack.name}`);
-    
-    // Update audio source
     musicPlayer.src = currentTrack.path;
     musicPlayer.loop = isLooping;
     musicPlayer.style.display = 'block';
     
-    // Update music info
     const loopStatus = isLooping ? ' 🔁' : '';
-    document.getElementById('musicInfo').innerHTML = `♪ ${currentTrack.name}${loopStatus}`;
+    const musicInfo = document.getElementById('musicInfo');
+    if (musicInfo) musicInfo.innerHTML = `♪ ${currentTrack.name}${loopStatus}`;
     
-    // Auto-play if MC is playing
     if (isPlaying) {
         const playPromise = musicPlayer.play();
         if (playPromise !== undefined) {
             playPromise
-                .then(() => {
-                    console.log('✅ Music playing:', currentTrack.name);
-                })
-                .catch(error => {
-                    console.log('ℹ️ Autoplay blocked - user must click play button');
-                });
+                .then(() => console.log('✅ Music playing:', currentTrack.name))
+                .catch(error => console.log('ℹ️ Autoplay blocked'));
         }
     } else {
         musicPlayer.pause();
     }
 }
 
-// ===================================
-// AUTO-ADVANCE TO NEXT TRACK
-// ===================================
 function setupAudioListeners() {
     const musicPlayer = document.getElementById('musicPlayer');
     
     if (!musicPlayer) return;
     
-    // When track ends, advance to next (if not looping)
     musicPlayer.addEventListener('ended', () => {
         console.log('🎵 Track ended');
         
-        // If looping one track, the audio element handles it automatically
-        // If we have a playlist and not looping, advance to next track
         if (currentPlaylist.length > 0 && !isLooping) {
-            // Move to next track
             currentTrackIndex = (currentTrackIndex + 1) % currentPlaylist.length;
-            
-            console.log(`⏭️ Advancing to track ${currentTrackIndex + 1}/${currentPlaylist.length}`);
-            
-            // Update display and player
+            console.log(`⏭️ Advancing to track ${currentTrackIndex + 1}`);
             renderPlaylistDisplay();
             updateAudioPlayer();
         }
     });
     
-    console.log('✅ Audio player listeners set up');
+    console.log('✅ Audio player listeners ready');
 }
 
-// Function to send character data to MC App
-export function sendCharacterToMC(characterData) {
-    if (!database) {
-        console.error('❌ Firebase not initialized - cannot send character data');
-        return Promise.reject(new Error('Firebase not initialized'));
-    }
-    
-    console.log('📤 Sending character to MC App:', characterData.name);
-    
-    // Send to playerCharacters/{characterName}
-    const charRef = ref(database, `playerCharacters/${characterData.name}`);
-    return set(charRef, {
-        name: characterData.name,
-        pronouns: characterData.pronouns || '',
-        look: characterData.look || '',
-        portrait: characterData.portrait || '',
-        timestamp: Date.now()
-    }).then(() => {
-        console.log('✅ Character sent to MC App successfully!');
-    }).catch((error) => {
-        console.error('❌ Failed to send character to MC App:', error);
-        throw error;
-    });
-}
-
-// Only set up listeners if Firebase initialized successfully
+// ===================================
+// MC BROADCAST LISTENER
+// ===================================
 if (database) {
-    console.log('✅ Setting up Firebase listeners...');
+    console.log('✅ Setting up MC broadcast listeners...');
     
-    // Listen to mcBroadcast path (where MC App sends data)
     const broadcastRef = ref(database, 'mcBroadcast');
     onValue(broadcastRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-            console.log('📡 Broadcast received from MC:', data);
+            console.log('📡 Broadcast received from MC');
             
-            // Update scene display
+            // Update scene
             if (data.currentScene) {
                 const sceneInfo = document.getElementById('sceneInfo');
                 if (sceneInfo && data.currentScene.name) {
@@ -283,7 +296,7 @@ if (database) {
                 }
             }
             
-            // 🎵 HANDLE PLAYLIST BROADCAST
+            // Handle playlist broadcast
             if (data.playlist || data.currentMusic) {
                 handlePlaylistBroadcast(data);
             }
@@ -304,25 +317,21 @@ if (database) {
                 }
             }
             
-            updateSyncStatus(true);
+            updateMCStatus(true);
         }
     }, (error) => {
         console.error('❌ Error listening to MC broadcasts:', error);
-        updateSyncStatus(false);
+        updateMCStatus(false);
     });
     
-    // Set up audio player listeners for auto-advance
     setupAudioListeners();
-
-    console.log('✅ Firebase listeners active - Player App ready to receive from MC App');
+    
+    console.log('✅ Player App ready - Cloud Sync + MC Broadcast active');
 } else {
-    console.error('❌ Firebase not initialized - sync will not work');
-    updateSyncStatus(false);
+    console.error('❌ Firebase not initialized');
+    updateMCStatus(false);
+    updateCloudStatus(false);
 }
 
-// Export database for use in other modules
+// Export database for other modules
 export { database };
-
-// Expose sendCharacterToMC globally for non-module scripts
-window.sendCharacterToMC = sendCharacterToMC;
-console.log('✅ Character sync function ready - use window.sendCharacterToMC(characterData)');
