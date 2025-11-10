@@ -388,6 +388,20 @@ function loadCharacter(charData) {
         console.error('❌ Error loading tag combos:', error);
     }
     
+    // Send character to MC App via Firebase (two-way sync)
+    if (typeof window.sendCharacterToMC === 'function') {
+        console.log('📤 Sending character to MC App...');
+        window.sendCharacterToMC(charData)
+            .then(() => {
+                console.log('✅ Character synced to MC App!');
+            })
+            .catch((error) => {
+                console.warn('⚠️ Could not sync character to MC App:', error.message);
+            });
+    } else {
+        console.log('ℹ️ Firebase character sync not available (offline mode)');
+    }
+    
     console.log('✅✅✅ CHARACTER LOADED SUCCESSFULLY ✅✅✅');
     console.log('=== LOAD CHARACTER COMPLETE ===');
 }
@@ -975,73 +989,15 @@ function saveCurrentCharacter() {
 // ================================
 
 function initializeFirebase() {
-    // Check if Firebase config is loaded
-    if (typeof initializeApp === 'undefined') {
-        console.log('⚠️ Firebase not configured - running in offline mode');
-        return;
-    }
-    
-    try {
-        // Firebase initialization will be handled by firebase-config.js
-        console.log('🔥 Firebase initialization starting...');
-        
-        // Listen for Firebase ready event
-        window.addEventListener('firebaseReady', (event) => {
-            db = event.detail.db;
-            realtimeDb = event.detail.realtimeDb;
-            firebaseInitialized = true;
-            
-            console.log('✅ Firebase connected!');
-            document.getElementById('syncBadge').textContent = '● Online';
-            document.getElementById('syncBadge').classList.remove('offline');
-            document.getElementById('syncBadge').classList.add('online');
-            
-            // Start listening for MC broadcasts
-            listenForMCBroadcasts();
-        });
-        
-    } catch (error) {
-        console.error('❌ Firebase initialization error:', error);
-    }
+    // Firebase initialization is handled by firebase-config.js module
+    // This function kept for compatibility but does nothing
+    console.log('ℹ️ Firebase handled by firebase-config.js module');
 }
 
 function listenForMCBroadcasts() {
-    if (!realtimeDb) {
-        console.log('⚠️ Realtime database not available');
-        return;
-    }
-    
-    // Listen for scene updates
-    const sceneRef = realtimeDb.ref('mcBroadcast/currentScene');
-    sceneRef.on('value', (snapshot) => {
-        const sceneData = snapshot.val();
-        if (sceneData) {
-            document.getElementById('sceneInfo').textContent = sceneData.name || 'Unknown Scene';
-            console.log('📍 Scene updated:', sceneData.name);
-        }
-    });
-    
-    // Listen for music updates
-    const musicRef = realtimeDb.ref('mcBroadcast/currentMusic');
-    musicRef.on('value', (snapshot) => {
-        const musicData = snapshot.val();
-        if (musicData) {
-            document.getElementById('musicInfo').textContent = musicData.name || 'Unknown Track';
-            console.log('🎵 Music updated:', musicData.name);
-        }
-    });
-    
-    // Listen for spotlight updates
-    const spotlightRef = realtimeDb.ref('mcBroadcast/activeCharacter');
-    spotlightRef.on('value', (snapshot) => {
-        const charData = snapshot.val();
-        if (charData) {
-            document.getElementById('spotlightInfo').textContent = charData.name || 'Unknown Character';
-            console.log('✨ Spotlight updated:', charData.name);
-        }
-    });
-    
-    console.log('👂 Listening for MC broadcasts...');
+    // Firebase listening is handled by firebase-config.js module
+    // This function kept for compatibility but does nothing
+    console.log('ℹ️ MC broadcast listening handled by firebase-config.js module');
 }
 
 // ================================
