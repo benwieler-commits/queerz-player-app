@@ -1069,3 +1069,111 @@ body {
     opacity: 0.7;
 }
 
+
+/* ================================
+   MOVE ICON SELECTOR
+   ================================ */
+
+.move-selector {
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(75, 0, 130, 0.2));
+    border: 2px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.move-selector h3 {
+    color: var(--text-white);
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.move-hint {
+    color: var(--accent-cyan);
+    font-size: 0.85rem;
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.move-icons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.move-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.move-icon:hover {
+    background: rgba(138, 43, 226, 0.3);
+    border-color: var(--accent-purple);
+    transform: translateY(-3px);
+}
+
+.move-icon.selected {
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.5), rgba(75, 0, 130, 0.5));
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 20px rgba(138, 43, 226, 0.6);
+    transform: scale(1.05);
+}
+
+.move-icon img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.move-icon.selected img {
+    filter: drop-shadow(0 0 10px rgba(138, 43, 226, 0.8));
+}
+
+.move-icon span {
+    font-size: 0.7rem;
+    color: var(--text-white);
+    text-align: center;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+/* Responsive adjustments for move selector */
+@media (max-width: 768px) {
+    .move-icons {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+    
+    .move-icon {
+        padding: 8px;
+    }
+    
+    .move-icon img {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .move-icon span {
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .move-icons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
