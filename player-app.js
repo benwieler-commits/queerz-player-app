@@ -87,34 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ⭐ Initialize cloud sync
     initializeCloudSync();
     
-    // Add test button for debugging (remove in production)
-    
     console.log('✅ App initialization complete!');
 });
-
-// ================================
-
-// ================================
-// INITIALIZATION (ORIGINAL)
-// ================================
-
-/*
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🌈 QUEERZ! Player App Starting...');
-    
-    // Initialize UI event listeners
-    initializeEventListeners();
-    
-    // Load saved character library from localStorage
-    loadCharacterLibrary();
-    
-    // Try to initialize Firebase
-    initializeFirebase();
-    
-    // Load last used character if available
-    loadLastCharacter();
-});
-*/
 
 // ================================
 // EVENT LISTENERS
@@ -419,6 +393,7 @@ async function handleCharacterSelect(event) {
     }
 }
 
+// ⭐ FIXED: Made the reader.onload callback async so file upload works!
 function handleFileUpload(event) {
     console.log('=== FILE UPLOAD STARTED ===');
     const file = event.target.files[0];
@@ -439,6 +414,7 @@ function handleFileUpload(event) {
         alert('Error reading file. Please try again.');
     };
     
+    // ⭐ FIXED: Made this async so await works properly!
     reader.onload = async function(e) {
         console.log('📖 File read successfully');
         console.log('📖 Content length:', e.target.result.length);
@@ -999,40 +975,35 @@ function rollDice() {
     }
     resultText += ` = ${total}`;
     
-    // Add result interpretation
+    // Add result interpretation and AUTO-JUICE
     let interpretation = '';
     if (total >= 10) {
-        interpretation = '\n✨ FULL SUCCESS!';
+        // FULL SUCCESS → +3 Juice
+        adjustJuice(3);
+        interpretation = '\n✨ FULL SUCCESS! 🌟 +3 JUICE!';
         resultDiv.style.color = '#4CAF50';
-        
-        // AUTO-JUICE: Give 3 juice on 10+ roll!
-        if (total >= 10) {
-    // FULL SUCCESS → +3 Juice
-    adjustJuice(3);
-    interpretation = '\n✨ FULL SUCCESS! 🌟 +3 JUICE!';
-    resultDiv.style.color = '#4CAF50';
-    console.log('✨ Full success! Auto-added 3 juice');
-} else if (total >= 7) {
-    // PARTIAL SUCCESS → +1 Juice
-    adjustJuice(1);
-    interpretation = '\n⚡ PARTIAL SUCCESS! ⚡ +1 JUICE!';
-    resultDiv.style.color = '#F4D35E';
-    console.log('⚡ Partial success! Auto-added 1 juice');
-} else {
-    // MISS → 0 Juice
-    interpretation = '\n💔 MISS';
-    resultDiv.style.color = '#E89B9B';
-    console.log('💔 Miss — no juice awarded');
-}
-
-resultDiv.textContent = resultText + interpretation;
-
-// Animate result
-resultDiv.style.transform = 'scale(1.1)';
-setTimeout(() => {
-    resultDiv.style.transform = 'scale(1)';
-}, 300);
-
+        console.log('✨ Full success! Auto-added 3 juice');
+    } else if (total >= 7) {
+        // PARTIAL SUCCESS → +1 Juice
+        adjustJuice(1);
+        interpretation = '\n⚡ PARTIAL SUCCESS! ⚡ +1 JUICE!';
+        resultDiv.style.color = '#F4D35E';
+        console.log('⚡ Partial success! Auto-added 1 juice');
+    } else {
+        // MISS → 0 Juice
+        interpretation = '\n💔 MISS';
+        resultDiv.style.color = '#E89B9B';
+        console.log('💔 Miss — no juice awarded');
+    }
+    
+    resultDiv.textContent = resultText + interpretation;
+    
+    // Animate result
+    resultDiv.style.transform = 'scale(1.1)';
+    setTimeout(() => {
+        resultDiv.style.transform = 'scale(1)';
+    }, 300);
+    
     // Update combo availability after juice change
     updateComboAvailability();
 }
@@ -1056,6 +1027,9 @@ function resetDice() {
     document.querySelectorAll('.move-icon').forEach(icon => {
         icon.classList.remove('selected');
     });
+    
+    // Clear all burnt tags
+    clearAllBurntTags();
     
     console.log('🔄 Dice reset complete');
 }
