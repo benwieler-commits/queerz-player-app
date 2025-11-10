@@ -1,5 +1,6 @@
 // ================================
-// QUEERZ! PLAYER COMPANION APP - CLOUD STORAGE + MC SYNC
+// QUEERZ! PLAYER COMPANION APP
+// Firebase Configuration - Unified Cloud + Broadcast Version
 // ================================
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -19,7 +20,9 @@ const firebaseConfig = {
   appId: "1:155846709409:web:8c12204dc7d502586a20e0"
 };
 
-// Initialize Firebase
+// ================================
+// INITIALIZATION
+// ================================
 let app, database, auth, currentUserId = null;
 
 try {
@@ -46,6 +49,7 @@ export async function initializeAuth() {
             console.log('✅ Already signed in with user ID:', currentUserId);
             updateCloudStatus(true);
             document.dispatchEvent(new Event('firebase-auth-ready'));
+            initializeBroadcastListener();
             return true;
         }
 
@@ -55,6 +59,7 @@ export async function initializeAuth() {
         console.log('✅ Signed in with user ID:', currentUserId);
         updateCloudStatus(true);
         document.dispatchEvent(new Event('firebase-auth-ready'));
+        initializeBroadcastListener();
         return true;
     } catch (error) {
         console.error('❌ Authentication failed:', error);
@@ -70,6 +75,7 @@ if (auth) {
             console.log('✅ Auth state changed - User signed in:', currentUserId);
             updateCloudStatus(true);
             document.dispatchEvent(new Event('firebase-auth-ready'));
+            initializeBroadcastListener();
         } else {
             currentUserId = null;
             console.log('❌ Auth state changed - User signed out');
@@ -79,7 +85,7 @@ if (auth) {
 }
 
 // ================================
-// CLOUD FUNCTIONS
+// CLOUD CHARACTER FUNCTIONS
 // ================================
 export async function saveCharacterToCloud(characterData) {
     if (!database || !currentUserId) {
@@ -126,6 +132,94 @@ export async function loadCharactersFromCloud() {
 }
 
 // ================================
+// MC BROADCAST LISTENER
+// ================================
+function initializeBroadcastListener() {
+    if (!database) {
+        console.error('❌ Firebase not initialized - cannot start MC Broadcast listener');
+        return;
+    }
+
+    console.log('📡 Setting up MC Broadcast listener...');
+    const broadcastRef = ref(database, 'mcBroadcast');
+
+    onValue(broadcastRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        console.log('📡 Broadcast received from MC:', data);
+
+        // Scene updates
+        if (data.currentScene) {
+            const sceneInfo = document.getElementById('sceneInfo');
+            if (sceneInfo && data.currentScene.name)
+                sceneInfo.textContent = data.currentScene.name;
+
+            const sceneImage = document.getElementById('sceneImage');
+            if (sceneImage) {
+                if (data.currentScene.imageUrl) {
+                    sceneImage.src = data.currentScene.imageUrl;
+                    sceneImage.style.display = 'block';
+                } else {
+                    sceneImage.style.display = 'none';
+                }
+            }
+        }
+
+        // Music updates
+        if (data.currentMusic) {
+            const musicInfo = document.getElementById('musicInfo');
+            if (musicInfo && data.currentMusic.name)
+                musicInfo.textContent = data.currentMusic.name;
+
+            const musicPlayer = document.getElementById('musicPlayer');
+            if (musicPlayer) {
+                if (data.currentMusic.url) {
+                    musicPlayer.src = data.currentMusic.url;
+                    musicPlayer.style.display = 'block';
+                    musicPlayer.play().catch(() => {
+                        console.log('ℹ️ Autoplay blocked, user must click play.');
+                    });
+                } else {
+                    musicPlayer.pause();
+                    musicPlayer.style.display = 'none';
+                }
+            }
+        }
+
+        // Spotlight updates
+        if (data.activeCharacter) {
+            const spotlightInfo = document.getElementById('spotlightInfo');
+            if (spotlightInfo)
+                spotlightInfo.textContent = data.activeCharacter.name || '—';
+
+            const spotlightPortrait = document.getElementById('spotlightPortrait');
+            if (spotlightPortrait) {
+                if (data.activeCharacter.imageUrl) {
+                    spotlightPortrait.src = data.activeCharacter.imageUrl;
+                    spotlightPortrait.style.display = 'block';
+                } else {
+                    spotlightPortrait.style.display = 'none';
+                }
+            }
+        }
+
+        updateSyncStatus(true);
+    }, (error) => {
+        console.error('❌ Error listening to MC broadcasts:', error);
+        updateSyncStatus(false);
+    });
+
+    console.log('✅ MC Broadcast listener active');
+}
+
+// Auto-reconnect if auth reconnects
+document.addEventListener('firebase-auth-ready', () => {
+    console.log('🔁 Firebase auth ready - ensuring broadcast listener active');
+    initializeBroadcastListener();
+});
+
+// ================================
 // STATUS BADGES
 // ================================
 function updateCloudStatus(isOnline) {
@@ -136,11 +230,25 @@ function updateCloudStatus(isOnline) {
     }
 }
 
-export { database, auth, currentUserId };
+function updateSyncStatus(isOnline) {
+    const badge = document.getElementById('syncBadge');
+    if (badge) {
+        badge.textContent = isOnline ? '● Online' : '● Offline';
+        badge.className = isOnline ? 'badge online' : 'badge offline';
+    }
 
-// Expose for use in player-app.js
+    const mcStatus = document.getElementById('mcStatus');
+    if (mcStatus) {
+        mcStatus.textContent = isOnline ? 'Connected to MC' : 'Waiting for MC...';
+    }
+}
+
+// ================================
+// EXPORTS
+// ================================
+export { database, auth, currentUserId };
 window.initializeAuth = initializeAuth;
 window.saveCharacterToCloud = saveCharacterToCloud;
 window.loadCharactersFromCloud = loadCharactersFromCloud;
 
-console.log('✅ Firebase ready - Cloud storage + MC sync available!');
+console.log('✅ Firebase unified config loaded - Cloud + Broadcast operational');
