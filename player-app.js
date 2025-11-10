@@ -1,6 +1,7 @@
 // ================================
 // QUEERZ! PLAYER COMPANION APP
-// Main JavaScript
+// Main JavaScript - CLOUD SYNC INTEGRATED
+// ⭐ COMPLETE FILE - Just replace your player-app.js with this!
 // ================================
 
 // Global State
@@ -9,6 +10,8 @@ let characterLibrary = {};
 let usingStreerwearPortrait = true;
 let firebaseInitialized = false;
 let selectedMove = null; // Track which core move is selected
+
+// ⭐ CLOUD SYNC STATE
 let cloudSyncEnabled = false;
 let cloudSyncInitialized = false;
 
@@ -81,6 +84,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load last used character if available
     loadLastCharacter();
     
+    // ⭐ Initialize cloud sync
+    initializeCloudSync();
+    
     // Add test button for debugging (remove in production)
     
     console.log('✅ App initialization complete!');
@@ -127,6 +133,9 @@ function initializeEventListeners() {
     // Save Character
     document.getElementById('saveCharBtn').addEventListener('click', saveCurrentCharacter);
     
+    // ⭐ Cloud Sync Toggle
+    document.getElementById('cloudSyncToggle').addEventListener('click', toggleCloudSync);
+    
     // Dice Roller
     document.getElementById('rollBtn').addEventListener('click', rollDice);
     document.getElementById('resetBtn').addEventListener('click', resetDice);
@@ -167,6 +176,11 @@ function initializeTrackBoxListeners() {
         });
     });
 }
+
+// ================================
+// ⭐ CLOUD SYNC FUNCTIONS
+// ================================
+
 // Initialize cloud sync if enabled
 async function initializeCloudSync() {
     // Check if cloud sync was enabled before
@@ -331,26 +345,51 @@ function initializeMoveIconListeners() {
 // CHARACTER DATA MANAGEMENT
 // ================================
 
-function loadCharacterLibrary() {
+// ⭐ UPDATED: Now supports cloud sync
+async function loadCharacterLibrary() {
+    // Always load from localStorage first
     const saved = localStorage.getItem('queerz_character_library');
     if (saved) {
         try {
             characterLibrary = JSON.parse(saved);
-            updateCharacterDropdown();
-            console.log('✅ Loaded character library:', Object.keys(characterLibrary));
+            console.log('✅ Loaded character library from localStorage:', Object.keys(characterLibrary));
         } catch (error) {
             console.error('❌ Error loading character library:', error);
         }
     }
+    
+    // If cloud sync enabled, also load from cloud and merge
+    if (cloudSyncEnabled && cloudSyncInitialized) {
+        await syncFromCloud();
+    }
+    
+    updateCharacterDropdown();
 }
 
-function saveCharacterLibrary() {
+// ⭐ UPDATED: Now supports cloud sync
+async function saveCharacterLibrary() {
+    // Always save to localStorage
     localStorage.setItem('queerz_character_library', JSON.stringify(characterLibrary));
-    console.log('💾 Character library saved');
+    console.log('💾 Character library saved to localStorage');
+    
+    // If cloud sync enabled, also save to cloud
+    if (cloudSyncEnabled && cloudSyncInitialized) {
+        await syncToCloud();
+    }
 }
 
-function loadLastCharacter() {
-    const lastCharName = localStorage.getItem('queerz_last_character');
+// ⭐ UPDATED: Now supports cloud sync
+async function loadLastCharacter() {
+    let lastCharName = localStorage.getItem('queerz_last_character');
+    
+    // If cloud sync enabled, check cloud for last character
+    if (cloudSyncEnabled && cloudSyncInitialized && window.loadLastCharacterFromCloud) {
+        const cloudLastChar = await window.loadLastCharacterFromCloud();
+        if (cloudLastChar) {
+            lastCharName = cloudLastChar;
+        }
+    }
+    
     if (lastCharName && characterLibrary[lastCharName]) {
         loadCharacter(characterLibrary[lastCharName]);
     }
@@ -372,10 +411,11 @@ function updateCharacterDropdown() {
 // CHARACTER LOADING
 // ================================
 
-function handleCharacterSelect(event) {
+// ⭐ UPDATED: Now async to support cloud sync
+async function handleCharacterSelect(event) {
     const charName = event.target.value;
     if (charName && characterLibrary[charName]) {
-        loadCharacter(characterLibrary[charName]);
+        await loadCharacter(characterLibrary[charName]);
     }
 }
 
@@ -399,7 +439,7 @@ function handleFileUpload(event) {
         alert('Error reading file. Please try again.');
     };
     
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         console.log('📖 File read successfully');
         console.log('📖 Content length:', e.target.result.length);
         
@@ -420,12 +460,12 @@ function handleFileUpload(event) {
             
             // Load the character
             console.log('📥 Loading character into app...');
-            loadCharacter(data);
+            await loadCharacter(data);
             
             // Add to library
             if (data.name) {
                 characterLibrary[data.name] = data;
-                saveCharacterLibrary();
+                await saveCharacterLibrary();
                 updateCharacterDropdown();
                 console.log('💾 Character saved to library');
             }
@@ -447,7 +487,8 @@ function handleFileUpload(event) {
     reader.readAsText(file);
 }
 
-function loadCharacter(charData) {
+// ⭐ UPDATED: Now async and supports cloud sync
+async function loadCharacter(charData) {
     console.log('=== LOAD CHARACTER STARTED ===');
     console.log('📋 Character data received:', charData);
     console.log('📋 Character name:', charData.name);
@@ -461,9 +502,14 @@ function loadCharacter(charData) {
     currentCharacter = charData;
     console.log('✅ Set currentCharacter');
     
-    // Save as last used character
+    // Save as last used character (localStorage)
     localStorage.setItem('queerz_last_character', charData.name);
     console.log('💾 Saved to localStorage');
+    
+    // ⭐ Also save to cloud if enabled
+    if (cloudSyncEnabled && cloudSyncInitialized && window.saveLastCharacterToCloud) {
+        await window.saveLastCharacterToCloud(charData.name);
+    }
     
     // Update portrait and basic info
     try {
@@ -1248,14 +1294,28 @@ function recoverAllTags() {
 // SAVE CURRENT CHARACTER
 // ================================
 
-function saveCurrentCharacter() {
+// ⭐ UPDATED: Now async with save feedback and cloud sync
+async function saveCurrentCharacter() {
     if (!currentCharacter) return;
+    
+    // Add lastModified timestamp
+    currentCharacter.lastModified = Date.now();
     
     // Update character library
     characterLibrary[currentCharacter.name] = currentCharacter;
-    saveCharacterLibrary();
+    await saveCharacterLibrary();
     
     console.log('💾 Current character saved:', currentCharacter.name);
+    
+    // Show success feedback
+    const saveBtn = document.getElementById('saveCharBtn');
+    if (saveBtn) {
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = '✅ Saved!';
+        setTimeout(() => {
+            saveBtn.textContent = originalText;
+        }, 1500);
+    }
 }
 
 // ================================
