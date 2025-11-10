@@ -1031,12 +1031,6 @@ function resetDice() {
     console.log('🔄 Dice reset complete');
 }
 
-// Add listener for Reset All Burnt Tags
-document.getElementById('resetAllBurntTagsBtn').addEventListener('click', () => {
-    clearAllBurntTags();
-    console.log('🔥 Burnt tags manually reset');
-});
-
 // ================================
 // JUICE MANAGEMENT
 // ================================
