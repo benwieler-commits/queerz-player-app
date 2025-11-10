@@ -821,25 +821,33 @@ function rollDice() {
         resultDiv.style.color = '#4CAF50';
         
         // AUTO-JUICE: Give 3 juice on 10+ roll!
-        adjustJuice(3);
-        interpretation += '\n🌟 +3 JUICE!';
-        console.log('✨ Full success! Auto-added 3 juice');
-    } else if (total >= 7) {
-        interpretation = '\n⚡ PARTIAL SUCCESS';
-        resultDiv.style.color = '#F4D35E';
-    } else {
-        interpretation = '\n💔 MISS';
-        resultDiv.style.color = '#E89B9B';
-    }
-    
-    resultDiv.textContent = resultText + interpretation;
-    
-    // Animate result
-    resultDiv.style.transform = 'scale(1.1)';
-    setTimeout(() => {
-        resultDiv.style.transform = 'scale(1)';
-    }, 300);
-    
+        if (total >= 10) {
+    // FULL SUCCESS → +3 Juice
+    adjustJuice(3);
+    interpretation = '\n✨ FULL SUCCESS! 🌟 +3 JUICE!';
+    resultDiv.style.color = '#4CAF50';
+    console.log('✨ Full success! Auto-added 3 juice');
+} else if (total >= 7) {
+    // PARTIAL SUCCESS → +1 Juice
+    adjustJuice(1);
+    interpretation = '\n⚡ PARTIAL SUCCESS! ⚡ +1 JUICE!';
+    resultDiv.style.color = '#F4D35E';
+    console.log('⚡ Partial success! Auto-added 1 juice');
+} else {
+    // MISS → 0 Juice
+    interpretation = '\n💔 MISS';
+    resultDiv.style.color = '#E89B9B';
+    console.log('💔 Miss — no juice awarded');
+}
+
+resultDiv.textContent = resultText + interpretation;
+
+// Animate result
+resultDiv.style.transform = 'scale(1.1)';
+setTimeout(() => {
+    resultDiv.style.transform = 'scale(1)';
+}, 300);
+
     // Update combo availability after juice change
     updateComboAvailability();
 }
