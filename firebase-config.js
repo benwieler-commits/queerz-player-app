@@ -95,14 +95,46 @@ if (database) {
                     sceneInfo.textContent = data.currentScene.name;
                     console.log('✅ Scene updated:', data.currentScene.name);
                 }
+                
+                // Display scene image
+                const sceneImage = document.getElementById('sceneImage');
+                if (sceneImage && data.currentScene.imageUrl) {
+                    sceneImage.src = data.currentScene.imageUrl;
+                    sceneImage.style.display = 'block';
+                    console.log('🖼️ Scene image displayed:', data.currentScene.imageUrl);
+                } else if (sceneImage) {
+                    sceneImage.style.display = 'none';
+                }
             }
             
-            // Update music display
+            // Update music display and play audio
             if (data.currentMusic) {
                 const musicInfo = document.getElementById('musicInfo');
                 if (musicInfo && data.currentMusic.name) {
                     musicInfo.textContent = data.currentMusic.name;
                     console.log('✅ Music updated:', data.currentMusic.name);
+                }
+                
+                // Play music
+                const musicPlayer = document.getElementById('musicPlayer');
+                if (musicPlayer && data.currentMusic.url) {
+                    musicPlayer.src = data.currentMusic.url;
+                    musicPlayer.style.display = 'block';
+                    
+                    // Auto-play with error handling
+                    const playPromise = musicPlayer.play();
+                    if (playPromise !== undefined) {
+                        playPromise
+                            .then(() => {
+                                console.log('🎵 Music playing:', data.currentMusic.name);
+                            })
+                            .catch(error => {
+                                console.log('ℹ️ Autoplay blocked - user must click play button');
+                            });
+                    }
+                } else if (musicPlayer) {
+                    musicPlayer.pause();
+                    musicPlayer.style.display = 'none';
                 }
             }
             
@@ -112,6 +144,16 @@ if (database) {
                 if (spotlightInfo && data.activeCharacter.name) {
                     spotlightInfo.textContent = data.activeCharacter.name;
                     console.log('✅ Spotlight updated:', data.activeCharacter.name);
+                }
+                
+                // Display spotlight character portrait
+                const spotlightPortrait = document.getElementById('spotlightPortrait');
+                if (spotlightPortrait && data.activeCharacter.imageUrl) {
+                    spotlightPortrait.src = data.activeCharacter.imageUrl;
+                    spotlightPortrait.style.display = 'block';
+                    console.log('🎭 Spotlight portrait displayed:', data.activeCharacter.imageUrl);
+                } else if (spotlightPortrait) {
+                    spotlightPortrait.style.display = 'none';
                 }
             }
             
