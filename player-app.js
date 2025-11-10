@@ -9,6 +9,8 @@ let characterLibrary = {};
 let usingStreerwearPortrait = true;
 let firebaseInitialized = false;
 let selectedMove = null; // Track which core move is selected
+let cloudSyncEnabled = false;
+let cloudSyncInitialized = false;
 
 // Firebase references (will be set when Firebase initializes)
 let db = null;
