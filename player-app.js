@@ -437,7 +437,7 @@ function loadThemes(charData) {
     console.log('🎨 Loading themes with FLEXIBLE display...');
     
     // Get all theme card slots
-    const themeSlots = ['theme0', 'theme1', 'theme2', 'theme3'];
+    const themeSlots = ['theme0', 'theme1', 'theme2', 'theme3', 'theme4'];
     
     // Get Rainbow and Realness themes from character data
     const rainbowThemes = charData.rainbowThemes || [];
@@ -445,13 +445,11 @@ function loadThemes(charData) {
     
     console.log(`📊 Character has ${rainbowThemes.length} Rainbow themes, ${realnessThemes.length} Realness themes`);
     
-    // Determine which slots to use for each theme type
-    // Strategy: Fill slots 0-2 with Rainbow themes, slot 3 with first Realness theme
-    // If there are extra themes, log a warning
+    // Strategy: Fill slots 0-2 with Rainbow themes, slots 3-4 with Realness themes
     
     let slotIndex = 0;
     
-    // Load Rainbow themes into first 3 slots
+    // Load Rainbow themes into first 3 slots (theme0, theme1, theme2)
     for (let i = 0; i < rainbowThemes.length && slotIndex < 3; i++) {
         const themeCard = document.getElementById(themeSlots[slotIndex]);
         if (themeCard) {
@@ -468,32 +466,42 @@ function loadThemes(charData) {
         if (themeCard) {
             clearThemeCard(themeCard);
             themeCard.style.display = 'none'; // Hide empty slots
-            console.log(`🔒 Hidden empty slot ${slotIndex}`);
+            console.log(`🔒 Hidden empty Rainbow slot ${slotIndex}`);
         }
         slotIndex++;
     }
     
-    // Load first Realness theme into slot 3
-    const realnessCard = document.getElementById('theme3');
-    if (realnessThemes.length > 0 && realnessCard) {
-        populateThemeCard(realnessCard, realnessThemes[0], 'realness');
-        realnessCard.style.display = 'block';
-        console.log(`✅ Loaded Realness theme "${realnessThemes[0].name}" into slot 3`);
-    } else if (realnessCard) {
-        clearThemeCard(realnessCard);
-        realnessCard.style.display = 'none';
-        console.log(`🔒 Hidden empty Realness slot`);
+    // Load Realness themes into slots 3 and 4 (up to 2 Realness themes)
+    for (let i = 0; i < realnessThemes.length && i < 2; i++) {
+        const realnessSlot = 3 + i; // theme3 or theme4
+        const realnessCard = document.getElementById(themeSlots[realnessSlot]);
+        if (realnessCard && realnessThemes[i]) {
+            populateThemeCard(realnessCard, realnessThemes[i], 'realness');
+            realnessCard.style.display = 'block';
+            console.log(`✅ Loaded Realness theme "${realnessThemes[i].name}" into slot ${realnessSlot}`);
+        }
+    }
+    
+    // Hide unused Realness slots
+    for (let i = realnessThemes.length; i < 2; i++) {
+        const realnessSlot = 3 + i; // theme3 or theme4
+        const realnessCard = document.getElementById(themeSlots[realnessSlot]);
+        if (realnessCard) {
+            clearThemeCard(realnessCard);
+            realnessCard.style.display = 'none';
+            console.log(`🔒 Hidden empty Realness slot ${realnessSlot}`);
+        }
     }
     
     // Warn if there are more themes than available slots
     if (rainbowThemes.length > 3) {
         console.warn(`⚠️ Character has ${rainbowThemes.length} Rainbow themes, but only 3 slots available. Extra themes not displayed.`);
     }
-    if (realnessThemes.length > 1) {
-        console.warn(`⚠️ Character has ${realnessThemes.length} Realness themes, but only 1 slot available. Extra themes not displayed.`);
+    if (realnessThemes.length > 2) {
+        console.warn(`⚠️ Character has ${realnessThemes.length} Realness themes, but only 2 slots available. Extra themes not displayed.`);
     }
     
-    console.log('✅ Theme loading complete with flexible display');
+    console.log('✅ Theme loading complete with flexible display (supports up to 3 Rainbow + 2 Realness)');
 }
 
 function populateThemeCard(card, themeData, type) {
