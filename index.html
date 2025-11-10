@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles-player.css">
 </head>
 <body>
-    <!-- HEADER - ⭐ CLOUD SYNC ADDED -->
+    <!-- HEADER -->
     <header class="app-header">
         <h1 class="app-title">🌈 QUEERZ! Player Companion</h1>
         <div class="header-controls">
@@ -17,12 +17,12 @@
             <label for="characterUpload" class="btn-upload">📁 Upload JSON</label>
             <input type="file" id="characterUpload" accept=".json" style="display: none;">
             <button id="portraitToggle" class="btn-toggle">Switch Portrait</button>
-            <!-- ⭐ NEW: Cloud Sync Toggle Button -->
+            <!-- ⭐ CLOUD SYNC TOGGLE BUTTON -->
             <button id="cloudSyncToggle" class="btn-cloud cloud-disabled">☁️ Cloud: OFF</button>
             <button id="saveCharBtn" class="btn-save">💾 Save</button>
         </div>
         <div class="sync-status">
-            <!-- ⭐ NEW: Cloud Status Badge -->
+            <!-- ⭐ CLOUD STATUS BADGE -->
             <span id="cloudBadge" class="badge cloud-offline">☁️ Offline</span>
             <span id="syncBadge" class="badge offline">● Offline</span>
             <span id="mcStatus" class="mc-status">Waiting for MC...</span>
@@ -501,6 +501,6 @@
     <!-- Firebase Config -->
     <script type="module" src="firebase-config.js"></script>
     <!-- Main App JavaScript -->
-    <script src="player-app.js"></script>
+    <script type="module" src="player-app.js"></script>
 </body>
 </html>
