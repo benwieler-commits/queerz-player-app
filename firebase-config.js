@@ -1,11 +1,11 @@
 // ================================
 // QUEERZ! PLAYER COMPANION APP
-// Firebase Configuration
+// Firebase Configuration - FIXED VERSION
 // ================================
 // SYNCED TO: queerz-mc-live (same project as MC App)
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
 // Firebase configuration - MUST MATCH MC APP
 const firebaseConfig = {
@@ -25,9 +25,9 @@ let database;
 try {
     app = initializeApp(firebaseConfig);
     database = getDatabase(app);
-    console.log('✓ Firebase initialized successfully - Connected to queerz-mc-live');
+    console.log('✅ Firebase initialized successfully - Connected to queerz-mc-live');
 } catch (error) {
-    console.error('✗ Firebase initialization failed:', error);
+    console.error('❌ Firebase initialization failed:', error);
 }
 
 // Update sync status badge
@@ -46,77 +46,89 @@ function updateSyncStatus(isOnline) {
     }
 }
 
+// Function to send character data to MC App
+export function sendCharacterToMC(characterData) {
+    if (!database) {
+        console.error('❌ Firebase not initialized - cannot send character data');
+        return Promise.reject(new Error('Firebase not initialized'));
+    }
+    
+    console.log('📤 Sending character to MC App:', characterData.name);
+    
+    // Send to playerCharacters/{characterName}
+    const charRef = ref(database, `playerCharacters/${characterData.name}`);
+    return set(charRef, {
+        name: characterData.name,
+        pronouns: characterData.pronouns || '',
+        look: characterData.look || '',
+        portrait: characterData.portrait || '',
+        timestamp: Date.now()
+    }).then(() => {
+        console.log('✅ Character sent to MC App successfully!');
+    }).catch((error) => {
+        console.error('❌ Failed to send character to MC App:', error);
+        throw error;
+    });
+}
+
 // Only set up listeners if Firebase initialized successfully
 if (database) {
-    console.log('✓ Setting up Firebase listeners...');
+    console.log('✅ Setting up Firebase listeners...');
     
-    // Listen for scene updates from MC
-    const sceneRef = ref(database, 'currentScene');
-    onValue(sceneRef, (snapshot) => {
+    // ⭐ FIXED: Listen to mcBroadcast path (where MC App actually sends data)
+    const broadcastRef = ref(database, 'mcBroadcast');
+    onValue(broadcastRef, (snapshot) => {
         const data = snapshot.val();
         if (data) {
-            console.log('Scene update received:', data);
+            console.log('📡 Broadcast received from MC:', data);
             
-            const sceneTitle = document.getElementById('sceneTitle');
-            if (sceneTitle && data.title) {
-                sceneTitle.textContent = data.title;
+            // Update scene display
+            if (data.currentScene) {
+                const sceneTitle = document.getElementById('sceneTitle');
+                if (sceneTitle && data.currentScene.name) {
+                    sceneTitle.textContent = data.currentScene.name;
+                }
+                
+                const locationImg = document.getElementById('locationImage');
+                if (locationImg && data.currentScene.imageUrl) {
+                    locationImg.src = data.currentScene.imageUrl;
+                    locationImg.style.display = 'block';
+                }
             }
             
-            const locationImg = document.getElementById('locationImage');
-            if (locationImg && data.locationImage) {
-                locationImg.src = data.locationImage;
-                locationImg.style.display = 'block';
+            // Update music display
+            if (data.currentMusic) {
+                const musicDisplay = document.getElementById('musicTitle');
+                if (musicDisplay && data.currentMusic.name) {
+                    musicDisplay.textContent = `♪ ${data.currentMusic.name}`;
+                }
+            }
+            
+            // Update character spotlight
+            if (data.activeCharacter) {
+                const spotlight = document.getElementById('spotlight');
+                if (spotlight && data.activeCharacter.name) {
+                    spotlight.textContent = `🎭 Spotlight: ${data.activeCharacter.name}`;
+                    spotlight.style.display = 'block';
+                }
             }
             
             updateSyncStatus(true);
         }
     }, (error) => {
-        console.error('Error listening to scene updates:', error);
+        console.error('❌ Error listening to MC broadcasts:', error);
         updateSyncStatus(false);
     });
 
-    // Listen for music updates from MC
-    const musicRef = ref(database, 'currentMusic');
-    onValue(musicRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            console.log('Music update received:', data);
-            
-            const musicDisplay = document.getElementById('musicTitle');
-            if (musicDisplay && data.title) {
-                musicDisplay.textContent = `♪ ${data.title}`;
-            }
-            
-            updateSyncStatus(true);
-        }
-    }, (error) => {
-        console.error('Error listening to music updates:', error);
-    });
-
-    // Listen for character updates from MC (spotlight)
-    const characterRef = ref(database, 'currentCharacter');
-    onValue(characterRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            console.log('Character spotlight update received:', data);
-            
-            const spotlight = document.getElementById('spotlight');
-            if (spotlight && data.name) {
-                spotlight.textContent = `🎭 Spotlight: ${data.name}`;
-                spotlight.style.display = 'block';
-            }
-            
-            updateSyncStatus(true);
-        }
-    }, (error) => {
-        console.error('Error listening to character updates:', error);
-    });
-
-    console.log('✓ Firebase listeners active - Player App ready to receive from MC App');
+    console.log('✅ Firebase listeners active - Player App ready to receive from MC App');
 } else {
-    console.error('✗ Firebase not initialized - sync will not work');
+    console.error('❌ Firebase not initialized - sync will not work');
     updateSyncStatus(false);
 }
 
 // Export database for use in other modules
 export { database };
+
+// Expose sendCharacterToMC globally for non-module scripts
+window.sendCharacterToMC = sendCharacterToMC;
+console.log('✅ Character sync function ready - use window.sendCharacterToMC(characterData)');
