@@ -10,7 +10,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gsta
 const firebaseConfig = {
   apiKey: "AIzaSyDOeJQjTm0xuFDAhhLaWP6d_kK_hNwRY58",
   authDomain: "queerz-mc-live.firebaseapp.com",
-  databaseURL: "https://queerz-mc-live-default-rtdb.firebaseio.com",
+  databaseURL: "https://queerz-firebase-proxy.benwieler.workers.dev",
   projectId: "queerz-mc-live",
   storageBucket: "queerz-mc-live.firebasestorage.app",
   messagingSenderId: "155846709409",
