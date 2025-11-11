@@ -1,9 +1,8 @@
 // ================================
 // FIREBASE CONFIGURATION
 // Player App - Cloud Sync & Broadcast Receiving
-// ⭐ FIXED v4: Exported 'forceSignInAnonymously' for player-app.js import
-// ⭐ FIXED: BroadcastChannel warning - disabled for cross-origin (use Firebase only)
-// ⭐ ADDED: Initial cloud load on auth; auto-toggle button to 'ON' after sign-in
+// ⭐ FIXED v5: Added back & exported 'broadcastCharacterToMc' for player-app.js
+// ⭐ FIXED: Ensured all imports from player-app.js are available
 // ================================
 
 // Import Firebase SDK modules from CDN
@@ -19,7 +18,7 @@ const firebaseConfig = {
   projectId: "queerz-mc-live",
   storageBucket: "queerz-mc-live.firebasestorage.app",
   messagingSenderId: "155846709409",
-  appId: "1:155846709409:web:8c12204dc7d502586a20e0"
+  appId: "1:155846709:web:8c12204dc7d502586a20e0"
 };
 
 // Initialize Firebase
@@ -167,6 +166,31 @@ function updateBroadcastStatus(isActive) {
 }
 
 // ================================
+// CHARACTER BROADCAST TO MC (LEGACY SUPPORT)
+// ================================
+
+async function broadcastCharacterToMc(characterData) {
+  if (!database || !currentUserId || !characterData) {
+    console.warn('⚠️ Cannot broadcast: Missing data/auth');
+    return false;
+  }
+  
+  try {
+    const broadcastRef = ref(database, `mcBroadcast/playerUpdates/${currentUserId}`);
+    await set(broadcastRef, { 
+      ...characterData, 
+      lastBroadcast: Date.now() 
+    });
+    
+    console.log('📤 Broadcast to MC:', characterData.name);
+    return true;
+  } catch (error) {
+    console.error('❌ Broadcast failed:', error);
+    return false;
+  }
+}
+
+// ================================
 // CLOUD SYNC
 // ================================
 
@@ -296,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ================================
-// EXPORTS (ADDED forceSignInAnonymously)
+// EXPORTS (FULL SET FOR PLAYER-APP.JS)
 // ================================
 
 window.forceSignInAnonymously = forceSignInAnonymously;
@@ -305,16 +329,18 @@ window.loadCharactersFromCloud = loadCharactersFromCloud;
 window.saveLastCharacterToCloud = saveLastCharacterToCloud;
 window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
 window.toggleCloudSync = toggleCloudSync;
+window.broadcastCharacterToMc = broadcastCharacterToMc; // ⭐ ADDED: For render
 
 export {
   database, auth, currentUserId,
-  forceSignInAnonymously, // ⭐ FIXED: Exported for player-app.js
+  forceSignInAnonymously,
   saveCharacterToCloud, loadCharactersFromCloud,
   saveLastCharacterToCloud, loadLastCharacterFromCloud,
   toggleCloudSync,
+  broadcastCharacterToMc, // ⭐ FIXED: Exported for import
   ref, set, get, onValue, off
 };
 
-console.log('✅ Config v4 loaded - Exported forceSignInAnonymously');
-console.log('💡 Broadcast receiving via Firebase (cross-origin success)');
-console.log('💡 No chars? Upload/save one or check legacy /playerCharacters');
+console.log('✅ Config v5 loaded - All exports ready (incl. broadcastCharacterToMc)');
+console.log('💡 Broadcast receiving via Firebase');
+console.log('💡 Upload/save to populate cloud—GitHub fallback for missing');
