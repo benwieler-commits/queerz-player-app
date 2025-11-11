@@ -1,6 +1,6 @@
 // ===================================
 // QUEERZ! PLAYER COMPANION APP
-// Updated 2025-11-11 v2 (Enhanced Upload/GitHub Error Handling)
+// Updated 2025-11-11 v3 (Loop Guards + Throttled Loads)
 // ===================================
 
 import {
@@ -23,12 +23,13 @@ console.log("✅ Player App Loaded");
 // ================================
 // GLOBAL STATE
 // ================================
-const characterLibrary = {}; // Local cache of all characters
-let activeCharacter = null; // Current active character name
-let cloudCharacters = {}; // Cache for cloud-loaded characters
+const characterLibrary = {}; // Local cache
+let activeCharacter = null;
+let cloudCharacters = {}; // Cache
+let isLoading = false; // ⭐ NEW: Guard for recursive loads
 
 // ================================
-// GITHUB CHARACTER LOADING (FALLBACK w/ Better Errors)
+// GITHUB LOADING
 // ================================
 async function loadCharacterFromGitHub(characterName) {
   const url = `https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/characters/${characterName}-character.json`;
@@ -36,12 +37,10 @@ async function loadCharacterFromGitHub(characterName) {
 
   try {
     const response = await fetch(url);
-    console.log("🌐 Fetch status:", response.status, response.statusText);
+    console.log("🌐 Fetch status:", response.status);
     if (!response.ok) {
       if (response.status === 404) {
-        console.warn(`⚠️ 404: No file at ${url}. Add '${characterName}-character.json' to repo /characters/.`);
-      } else {
-        console.error(`❌ GitHub fetch failed (${response.status}):`, response.statusText);
+        console.warn(`⚠️ 404: Add '${characterName}-character.json' to /characters in repo`);
       }
       return null;
     }
@@ -50,13 +49,13 @@ async function loadCharacterFromGitHub(characterName) {
     data.lastModified = Date.now();
     return data;
   } catch (err) {
-    console.error("❌ GitHub network/parse error:", err.message);
+    console.error("❌ GitHub error:", err.message);
     return null;
   }
 }
 
 // ================================
-// CLOUD SAVE / LOAD
+// CLOUD SAVE/LOAD
 // ================================
 async function saveActiveCharacterToCloud() {
   if (!activeCharacter || !characterLibrary[activeCharacter]) {
@@ -68,23 +67,25 @@ async function saveActiveCharacterToCloud() {
   if (success) {
     await saveLastCharacterToCloud(activeCharacter);
     console.log(`✅ Cloud save complete: ${activeCharacter}`);
-    // Refresh library to include it
-    await loadAllCharactersFromCloud();
-  } else {
-    console.error("❌ Cloud save failed—check console/auth/rules");
+    // Guarded refresh
+    if (!isLoading) await loadAllCharactersFromCloud();
   }
   return success;
 }
 
 async function loadAllCharactersFromCloud() {
+  if (isLoading) {
+    console.log("⏳ Load skipped—already loading");
+    return {};
+  }
+  isLoading = true;
   try {
     cloudCharacters = await loadCharactersFromCloud() || {};
-    console.log("☁️ Cloud library loaded:", Object.keys(cloudCharacters).length, "characters");
+    console.log("☁️ Cloud library loaded:", Object.keys(cloudCharacters).length);
 
-    // Populate select dropdown
     const select = document.getElementById("characterSelect");
     if (select) {
-      const currentValue = select.value; // Preserve selection
+      const currentValue = select.value;
       select.innerHTML = '<option value="">Load Character...</option>';
       Object.keys(cloudCharacters).forEach(name => {
         const option = document.createElement("option");
@@ -92,9 +93,8 @@ async function loadAllCharactersFromCloud() {
         option.textContent = name;
         select.appendChild(option);
       });
-      select.value = currentValue; // Restore if possible
+      select.value = currentValue;
       
-      // Auto-load last if no selection
       if (!select.value) {
         const lastChar = await loadLastCharacterFromCloud();
         if (lastChar && cloudCharacters[lastChar]) {
@@ -104,60 +104,63 @@ async function loadAllCharactersFromCloud() {
       }
     }
     
-    // Merge with local
     Object.assign(characterLibrary, cloudCharacters);
     return cloudCharacters;
   } catch (err) {
     console.error("❌ Cloud load error:", err);
     return {};
+  } finally {
+    isLoading = false;
   }
 }
 
 // ================================
-// LOAD SINGLE CHARACTER
+// LOAD SINGLE
 // ================================
 async function loadCharacter(characterName) {
-  if (!characterName) return;
-  
+  if (!characterName || isLoading) return;
+  isLoading = true;
   console.log("📥 Loading:", characterName);
   
-  // Check cache first
   if (characterLibrary[characterName]) {
     activeCharacter = characterName;
     renderCharacterSheet(characterLibrary[characterName]);
+    isLoading = false;
     return;
   }
   
-  // Try cloud (via library)
   let data = cloudCharacters[characterName];
   if (!data) {
-    console.log("☁️ Not in cloud—trying GitHub fallback");
+    console.log("☁️ Not in cloud—GitHub fallback");
     data = await loadCharacterFromGitHub(characterName);
     if (data) {
       characterLibrary[characterName] = data;
-      await saveActiveCharacterToCloud(); // Cache to cloud
+      await saveActiveCharacterToCloud();
     } else {
-      console.error(`❌ Load failed for ${characterName}—add to GitHub or upload JSON`);
+      console.error(`❌ Load failed for ${characterName}`);
+      isLoading = false;
       return;
     }
   } else {
     characterLibrary[characterName] = data;
   }
   
-  if (data) {
-    activeCharacter = characterName;
-    renderCharacterSheet(data);
-    console.log(`✅ Loaded & rendered: ${characterName}`);
-  }
+  activeCharacter = characterName;
+  renderCharacterSheet(data);
+  console.log(`✅ Loaded: ${characterName}`);
+  isLoading = false;
 }
 
 // ================================
-// LIVE CLOUD SYNC
+// LIVE SYNC (GUARDED)
 // ================================
 function setupCloudSyncListeners() {
+  let updateCount = 0; // Throttle
   document.addEventListener('cloud-characters-updated', (e) => {
+    updateCount++;
+    if (updateCount % 5 !== 0) return; // Log every 5th
+    console.log(`🔄 Cloud update #${updateCount} merged`);
     const updatedChars = e.detail;
-    console.log("🔄 Cloud update merged:", Object.keys(updatedChars).length);
     Object.assign(cloudCharacters, updatedChars);
     Object.assign(characterLibrary, updatedChars);
     
@@ -165,19 +168,18 @@ function setupCloudSyncListeners() {
       renderCharacterSheet(characterLibrary[activeCharacter]);
     }
     
-    // Refresh select
-    loadAllCharactersFromCloud();
+    loadAllCharactersFromCloud(); // Safe with guard
   });
   
   document.addEventListener('cloud-characters-loaded', (e) => {
-    loadAllCharactersFromCloud();
+    if (!isLoading) loadAllCharactersFromCloud();
   });
   
-  console.log("✅ Cloud listeners active");
+  console.log("✅ Cloud listeners active (guarded)");
 }
 
 // ================================
-// RENDER CHARACTER SHEET
+// RENDER
 // ================================
 function renderCharacterSheet(data) {
   console.log("🎨 Rendering:", data.name);
@@ -190,26 +192,23 @@ function renderCharacterSheet(data) {
   if (nameField) nameField.textContent = data.name || "Unknown Hero";
   if (pronounsField) pronounsField.textContent = data.pronouns || "";
   if (portrait) {
-    portrait.src = data.streetwearPortrait || data.portrait || ""; // Fallback
+    portrait.src = data.streetwearPortrait || data.portrait || "";
     portrait.alt = data.name || "Portrait";
   }
   if (juiceDisplay) juiceDisplay.textContent = data.juice || 0;
   
-  // Broadcast to MC
   if (window.broadcastCharacterToMc) {
     broadcastCharacterToMc(data);
   }
-  
-  // TODO: Add renderThemes, renderTags, etc. here
 }
 
 // ================================
-// UI EVENT HANDLERS
+// EVENTS
 // ================================
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🚀 DOM ready - Wiring events");
   
-  // Character select
+  // Select
   const characterSelect = document.getElementById("characterSelect");
   if (characterSelect) {
     characterSelect.addEventListener("change", async (e) => {
@@ -222,9 +221,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   
-  // Upload JSON (Enhanced Logging)
+  // Upload (Enhanced)
   const uploadInput = document.getElementById("characterUpload");
-  const uploadLabel = document.querySelector("label[for='characterUpload']"); // Target label properly
+  const uploadLabel = document.querySelector("label[for='characterUpload']");
   if (uploadInput && uploadLabel) {
     uploadLabel.addEventListener("click", (e) => {
       console.log("📁 Upload label clicked");
@@ -237,9 +236,9 @@ document.addEventListener("DOMContentLoaded", () => {
       
       try {
         const text = await file.text();
-        console.log("📁 Raw file content length:", text.length);
+        console.log("📁 Content length:", text.length);
         const data = JSON.parse(text);
-        console.log("✅ JSON parsed:", data.name || "Unnamed");
+        console.log("✅ Parsed:", data.name || "Unnamed");
         
         const name = data.name || file.name.replace('.json', '') || "Uploaded Character";
         characterLibrary[name] = { ...data, source: 'upload' };
@@ -257,60 +256,51 @@ document.addEventListener("DOMContentLoaded", () => {
           select.value = name;
         }
         
-        // Save to cloud
+        // Save
         const saveSuccess = await saveActiveCharacterToCloud();
-        console.log("☁️ Upload save result:", saveSuccess ? "Success" : "Failed—check auth");
+        console.log("☁️ Upload save:", saveSuccess ? "Success" : "Failed");
       } catch (err) {
         console.error("❌ Upload error:", err.message);
-        if (err.name === 'SyntaxError') console.error("💡 JSON invalid—check file format");
       }
-      // Reset input
       uploadInput.value = '';
     });
-    console.log("✅ Upload handler wired");
-  } else {
-    console.warn("⚠️ Upload elements not found");
+    console.log("✅ Upload wired");
   }
   
-  // Save button
+  // Save btn
   const saveBtn = document.getElementById("saveCharBtn");
   if (saveBtn) {
     saveBtn.addEventListener("click", () => {
-      console.log("💾 Save button clicked");
+      console.log("💾 Save clicked");
       saveActiveCharacterToCloud();
     });
   }
   
-  // Juice controls
+  // Juice
   document.addEventListener("click", (e) => {
     if (e.target.id === "juiceUp" || e.target.id === "juiceDown") {
-      if (!activeCharacter) {
-        console.warn("⚠️ No active char for juice update");
-        return;
-      }
+      if (!activeCharacter) return console.warn("⚠️ No char for juice");
       const delta = e.target.id === "juiceUp" ? 1 : -1;
-      const currentJuice = characterLibrary[activeCharacter].juice || 0;
-      characterLibrary[activeCharacter].juice = Math.max(0, currentJuice + delta);
-      console.log("🥤 Juice updated:", characterLibrary[activeCharacter].juice);
+      const current = characterLibrary[activeCharacter].juice || 0;
+      characterLibrary[activeCharacter].juice = Math.max(0, current + delta);
+      console.log("🥤 Juice:", characterLibrary[activeCharacter].juice);
       renderCharacterSheet(characterLibrary[activeCharacter]);
       saveActiveCharacterToCloud();
     }
   });
   
-  // Dice roller (basic)
+  // Roller
   const rollBtn = document.getElementById("rollBtn");
   if (rollBtn) {
     rollBtn.addEventListener("click", () => {
       const power = parseInt(document.getElementById("totalPower").value) || 0;
-      const dice1 = Math.floor(Math.random() * 6) + 1;
-      const dice2 = Math.floor(Math.random() * 6) + 1;
-      const total = dice1 + dice2 + power;
-      const resultEl = document.getElementById("rollResult");
-      resultEl.innerHTML = `
-        <p><strong>${dice1} + ${dice2} + ${power} = ${total}</strong></p>
-        <p>${total >= 10 ? '10+ Success!' : total >= 7 ? '7-9 Partial' : 'Miss :('}</p>
+      const d1 = Math.floor(Math.random() * 6) + 1;
+      const d2 = Math.floor(Math.random() * 6) + 1;
+      const total = d1 + d2 + power;
+      document.getElementById("rollResult").innerHTML = `
+        <p><strong>${d1} + ${d2} + ${power} = ${total}</strong></p>
+        <p>${total >= 10 ? '10+!' : total >= 7 ? '7-9' : 'Miss'}</p>
       `;
-      console.log("🎲 Roll result:", total);
     });
   }
   
@@ -320,8 +310,4 @@ document.addEventListener("DOMContentLoaded", () => {
   setupCloudSyncListeners();
 });
 
-// ================================
-// INIT COMPLETE
-// ================================
-console.log("🎮 App ready—Test upload/GitHub with sample JSON!");
-console.log("💡 GitHub tip: Add files to /characters in repo for auto-pull.");
+console.log("🎮 App ready—no loops!");
