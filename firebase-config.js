@@ -195,7 +195,7 @@ export async function loadLastCharacterFromCloud() {
  * @param {Object} characterData - Complete character object
  * @returns {Boolean} Success status
  */
-export async function broadcastCharacterToMc(characterData) {
+async function broadcastCharacterToMc(characterData) {
   if (!database || !currentUserId || !characterData) {
     return false;
   }
