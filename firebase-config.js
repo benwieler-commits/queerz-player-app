@@ -349,7 +349,7 @@ window.loadCharactersFromCloud = loadCharactersFromCloud;
 window.saveLastCharacterToCloud = saveLastCharacterToCloud;
 window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
 window.broadcastCharacterToMc = broadcastCharacterToMc;
-
+window.initializeBroadcastListener = initializeBroadcastListener;
 // Export for module imports (single source of truth)
 export {
   // core initialized objects
