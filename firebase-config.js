@@ -40,7 +40,7 @@ console.log('👂 Listening for broadcasts from MC App...');
  * Initialize Firebase Authentication (anonymous)
  * Required for cloud character storage
  */
-export async function initializeAuth() {
+async function initializeAuth() {
   try {
     // Sign in anonymously
     const userCredential = await signInAnonymously(auth);
@@ -91,7 +91,7 @@ if (auth) {
  * @param {Object} characterData - Complete character object
  * @returns {Boolean} Success status
  */
-export async function saveCharacterToCloud(characterData) {
+async function saveCharacterToCloud(characterData) {
   if (!database || !currentUserId) {
     console.warn('⚠️ Cannot save to cloud: Not authenticated');
     return false;
@@ -116,7 +116,7 @@ export async function saveCharacterToCloud(characterData) {
  * Load all characters from Firebase cloud storage
  * @returns {Object|null} Characters object or null
  */
-export async function loadCharactersFromCloud() {
+async function loadCharactersFromCloud() {
   if (!database) {
     console.warn('⚠️ Cannot load from cloud: Database not initialized');
     return null;
@@ -156,7 +156,7 @@ export async function loadCharactersFromCloud() {
  * @param {String} characterName - Name of last loaded character
  * @returns {Boolean} Success status
  */
-export async function saveLastCharacterToCloud(characterName) {
+async function saveLastCharacterToCloud(characterName) {
   if (!database || !currentUserId) {
     return false;
   }
@@ -175,7 +175,7 @@ export async function saveLastCharacterToCloud(characterName) {
  * Load last character name from cloud
  * @returns {String|null} Last character name or null
  */
-export async function loadLastCharacterFromCloud() {
+async function loadLastCharacterFromCloud() {
   if (!database || !currentUserId) {
     return null;
   }
