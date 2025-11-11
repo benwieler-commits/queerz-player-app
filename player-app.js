@@ -3,7 +3,7 @@
 // Updated 2025-11-10
 // ===================================
 
-import { db } from "./firebase-config.js";
+import { database as db, ref, set, get, onValue } from "./firebase-config.js";
 import { ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 console.log("✅ Player App Loaded");
