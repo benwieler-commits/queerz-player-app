@@ -348,12 +348,15 @@ window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
 window.broadcastCharacterToMc = broadcastCharacterToMc;
 
 // Export for module imports
-export { database, auth, currentUserId };
+
 // Export for module imports (single source of truth)
 export {
+  // core initialized objects
   database,
   auth,
   currentUserId,
+
+  // auth / storage helpers
   initializeAuth,
   saveCharacterToCloud,
   loadCharactersFromCloud,
@@ -361,11 +364,11 @@ export {
   loadLastCharacterFromCloud,
   broadcastCharacterToMc,
   initializeBroadcastListener,
-  // re-export database helpers from the SDK so other modules don't import the SDK directly
+
+  // re-export database helper functions from the SDK for other modules
   ref,
   set,
   get,
   onValue
 };
-
 console.log('✅ Firebase config loaded - functions available on window object');
