@@ -145,4 +145,222 @@ async function loadCharacter(characterName) {
     data = await loadCharacterFromGitHub(characterName);
     if (data) {
       characterLibrary[characterName] = data;
-      await saveActive
+      await saveActiveCharacterToCloud();
+    } else {
+      console.error(`❌ Load failed for ${characterName}`);
+      loadingChars.delete(characterName);
+      isGlobalLoading = false;
+      return;
+    }
+  } else {
+    characterLibrary[characterName] = data;
+  }
+  
+  activeCharacter = characterName;
+  renderCharacterSheet(data);
+  console.log(`✅ Loaded: ${characterName}`);
+  loadingChars.delete(characterName);
+  isGlobalLoading = false;
+}
+
+// ================================
+// FULL RENDER (FLEXIBLE-v2)
+// ================================
+function renderCharacterSheet(data) {
+  console.log("🎨 Full render:", data.name);
+  
+  // Basics
+  document.getElementById("characterName").textContent = data.name || "Unnamed Hero";
+  document.querySelector(".pronouns").textContent = data.pronouns || "";
+  const portrait = document.querySelector(".character-portrait");
+  portrait.src = (currentPortraitMode === 'qfactor' ? data.qfactorPortrait : data.streetwearPortrait) || "";
+  portrait.alt = data.name || "Portrait";
+  document.querySelector(".juice-count").textContent = data.juice || 0;
+  
+  // Themes: rainbow + realness → up to 5 slots
+  const allThemes = [...(data.rainbowThemes || []), ...(data.realnessThemes || [])];
+  allThemes.forEach((theme, index) => {
+    if (index > 4) return;
+    const themeEl = document.getElementById(`theme${index}`);
+    if (!themeEl) return;
+    
+    // Header
+    themeEl.querySelector(".theme-name").textContent = theme.name || "";
+    themeEl.querySelector(".theme-type").textContent = theme.type || "";
+    
+    // Tracks
+    if (theme.type === "REALNESS THEME") {
+      renderTrack(themeEl.querySelector(".crack-track .track-boxes"), theme.crack || 0, 3);
+      themeEl.querySelector(".shade-track, .growth-track").forEach(el => el.style.display = 'none');
+    } else {
+      renderTrack(themeEl.querySelector(".growth-track .track-boxes"), theme.growth || 0, 3);
+      renderTrack(themeEl.querySelector(".shade-track .track-boxes"), theme.shade || 0, 3);
+      themeEl.querySelector(".crack-track").style.display = 'none';
+    }
+    
+    // Quote
+    themeEl.querySelector(".runway-quote em").textContent = theme.runway || "";
+    
+    // Power tags
+    const powerList = themeEl.querySelector(".tag-list");
+    powerList.innerHTML = '';
+    (theme.powerTags || []).filter(tag => tag.trim()).forEach(tag => {
+      const li = document.createElement("li");
+      li.textContent = tag;
+      li.classList.add("tag-item");
+      li.onclick = () => burnTag(tag, "power");
+      powerList.appendChild(li);
+    });
+    
+    // Weakness
+    themeEl.querySelector(".weakness-text").textContent = theme.weaknessTag || "";
+  });
+  
+  // Hide empty themes
+  for (let i = 0; i < 5; i++) {
+    const themeEl = document.getElementById(`theme${i}`);
+    if (themeEl && !allThemes[i]?.name) themeEl.style.display = 'none';
+  }
+  
+  // Lists
+  renderTagList("statusList", data.currentStatuses || [], "status-tag", addStatus);
+  renderTagList("storyTagList", data.storyTags || [], "story-tag", addStoryTag);
+  renderTagList("burntTagList", data.burntTags || [], "burnt-tag");
+  
+  // Combos
+  const comboList = document.getElementById("comboList");
+  if (comboList) {
+    comboList.innerHTML = '';
+    (data.tagCombos || []).forEach(combo => {
+      const div = document.createElement("div");
+      div.classList.add("combo-item");
+      div.innerHTML = `
+        <strong>${combo.name}</strong> (Tags: ${(combo.tags || []).join(", ")}) - Power: ${combo.power} - Move: ${combo.move}
+        <button onclick="this.parentElement.remove(); if (activeCharacter) saveActiveCharacterToCloud();">×</button>
+      `;
+      comboList.appendChild(div);
+    });
+  }
+  
+  // Notes
+  if (data.notes && document.getElementById("notes")) document.getElementById("notes").textContent = data.notes;
+  
+  // Broadcast
+  if (window.broadcastCharacterToMc) broadcastCharacterToMc(data);
+  
+  console.log("✅ Render complete for:", data.name);
+}
+
+// ================================
+// HELPERS
+// ================================
+function renderTrack(container, filledCount, total) {
+  if (!container) return;
+  container.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const box = document.createElement("div");
+    box.classList.add("track-box");
+    if (i < filledCount) box.classList.add("filled");
+    box.onclick = () => {
+      box.classList.toggle("filled");
+      if (activeCharacter) saveActiveCharacterToCloud();
+    };
+    container.appendChild(box);
+  }
+}
+
+function renderTagList(containerId, tags, className, addFn) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  tags.forEach(tag => {
+    const div = document.createElement("div");
+    div.classList.add(className);
+    div.textContent = `${tag.name || tag} ${tag.tier ? `(Tier ${tag.tier})` : ''} ${tag.type ? `(${tag.type})` : ''} ${tag.ongoing ? '(Ongoing)' : ''}`;
+    if (addFn !== addStatus && addFn !== addStoryTag) div.onclick = () => burnTag(tag.name || tag, containerId);
+    container.appendChild(div);
+  });
+}
+
+function burnTag(tag, type) {
+  if (!activeCharacter) return;
+  const char = characterLibrary[activeCharacter];
+  if (!char.burntTags) char.burntTags = [];
+  if (!char.burntTags.includes(tag)) {
+    char.burntTags.push(tag);
+    renderCharacterSheet(char);
+    saveActiveCharacterToCloud();
+  }
+}
+
+function recoverBurntTags() {
+  if (!activeCharacter) return;
+  characterLibrary[activeCharacter].burntTags = [];
+  renderCharacterSheet(characterLibrary[activeCharacter]);
+  saveActiveCharacterToCloud();
+}
+
+function addStatus() {
+  const name = document.getElementById("statusName").value;
+  const tier = parseInt(document.getElementById("statusTier").value);
+  const type = document.getElementById("statusType").value;
+  if (name && activeCharacter) {
+    if (!characterLibrary[activeCharacter].currentStatuses) characterLibrary[activeCharacter].currentStatuses = [];
+    characterLibrary[activeCharacter].currentStatuses.push({name, tier, type});
+    document.getElementById("statusName").value = '';
+    renderCharacterSheet(characterLibrary[activeCharacter]);
+    saveActiveCharacterToCloud();
+  }
+}
+
+function addStoryTag() {
+  const name = document.getElementById("storyTagName").value;
+  const ongoing = document.getElementById("storyOngoing").checked;
+  if (name && activeCharacter) {
+    if (!characterLibrary[activeCharacter].storyTags) characterLibrary[activeCharacter].storyTags = [];
+    characterLibrary[activeCharacter].storyTags.push({name, ongoing});
+    document.getElementById("storyTagName").value = '';
+    document.getElementById("storyOngoing").checked = false;
+    renderCharacterSheet(characterLibrary[activeCharacter]);
+    saveActiveCharacterToCloud();
+  }
+}
+
+// ================================
+// LIVE SYNC
+// ================================
+function setupCloudSyncListeners() {
+  let updateCount = 0;
+  document.addEventListener('cloud-characters-updated', (e) => {
+    updateCount++;
+    if (updateCount % 5 !== 0) return;
+    console.log(`🔄 Cloud update #${updateCount}`);
+    const updatedChars = e.detail;
+    Object.assign(cloudCharacters, updatedChars);
+    Object.assign(characterLibrary, updatedChars);
+    
+    if (activeCharacter && characterLibrary[activeCharacter]) {
+      renderCharacterSheet(characterLibrary[activeCharacter]);
+    }
+    
+    if (!isGlobalLoading) loadAllCharactersFromCloud();
+  });
+  
+  document.addEventListener('cloud-characters-loaded', (e) => {
+    if (!isGlobalLoading) loadAllCharactersFromCloud();
+  });
+  
+  console.log("✅ Cloud listeners active");
+}
+
+// ================================
+// EVENTS
+// ================================
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 DOM ready");
+  
+  // Select (Debounced)
+  const characterSelect = document.getElementById("characterSelect");
+  if (characterSelect) {
+    characterSelect.addEventListener("change", async (e) => {
+      const selected = e.target.value
