@@ -11,356 +11,298 @@ import {
   onValue,
   forceSignInAnonymously as initializeAuth,
   saveCharacterToCloud,
-  loadCharactersFromCloud,
-  loadLastCharacterFromCloud,
-  saveLastCharacterToCloud,
-  toggleCloudSync,
-  broadcastCharacterToMc
-} from "./firebase-config.js";
+  loadCharacters
+} from './firebase-config.js';
 
-console.log("✅ Player App Loaded");
+// Global State
+let characters = {}; // {id: {name, json, ...}}
+let currentCharacterId = null;
+let currentCharacter = null;
+let isInitialized = false;
+let themeCache = {}; // For quick theme lookups
+let tagCache = {}; // For tag filtering
 
-// ================================
-// GLOBAL STATE
-// ================================
-const characterLibrary = {};
-let activeCharacter = null;
-let cloudCharacters = {};
-let isGlobalLoading = false;
-const loadingChars = new Set();
-let currentPortraitMode = 'streetwear';
+// DOM Elements Cache (for performance)
+const elements = {
+  fileInput: document.getElementById('file-upload'),
+  dropdown: document.getElementById('character-select'),
+  renderArea: document.getElementById('character-render'),
+  uploadBtn: document.getElementById('upload-btn'),
+  portraitImg: document.getElementById('portrait'),
+  themeSelect: document.getElementById('theme-dropdown'),
+  tagFilter: document.getElementById('tag-filter'),
+  consoleLog: document.getElementById('console') // Hidden debug div
+};
 
-// ================================
-// GITHUB LOADING
-// ================================
-async function loadCharacterFromGitHub(characterName) {
-  const url = `https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/characters/${characterName}-character.json`;
-  console.log("🌐 Attempting GitHub fetch:", url);
+// Utility: Log to console + on-page (for debug)
+const log = (msg, type = 'info') => {
+  console[type](`[Queerz] ${msg}`);
+  if (elements.consoleLog) {
+    elements.consoleLog.innerHTML += `<div class="${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+  }
+};
 
-  try {
-    const response = await fetch(url);
-    console.log("🌐 Fetch status:", response.status);
-    if (!response.ok) {
-      if (response.status === 404) {
-        console.warn(`⚠️ 404: Add '${characterName}-character.json' to /characters in repo`);
-        alert(`GitHub file not found for ${characterName}. Upload JSON instead!`);
+// Error Handler
+window.onerror = (msg, url, line) => {
+  log(`❌ Error: ${msg} at ${url}:${line}`, 'error');
+  alert(`Debug error: ${msg}. Check console.`);
+};
+// ===================================
+// CORE FUNCTIONS
+// ===================================
+
+// Parse JSON File & Validate
+const parseCharacterJson = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target.result);
+        if (!json.name || !json.description || !json.tags) {
+          throw new Error('Missing required fields: name, description, tags');
+        }
+        log(`✅ Parsed: ${json.name}`);
+        resolve(json);
+      } catch (err) {
+        log(`❌ Parse Error: ${err.message}`, 'error');
+        reject(err);
       }
-      return null;
+    };
+    reader.readAsText(file);
+  });
+};
+
+// Render Character (FLEXIBLE-v2: Themes, Tags, Portrait)
+const renderCharacter = (char) => {
+  if (!char || !elements.renderArea) return;
+
+  log(`🎨 Rendering: ${char.name}`);
+  
+  // Clear previous render
+  elements.renderArea.innerHTML = '';
+
+  // Portrait
+  if (char.portrait && elements.portraitImg) {
+    elements.portraitImg.src = char.portrait;
+    elements.portraitImg.alt = `${char.name} portrait`;
+    elements.portraitImg.style.display = 'block';
+  }
+
+  // Themes (Dynamic CSS injection for queerz vibes)
+  const themeStyle = document.createElement('style');
+  const theme = char.theme || 'default';
+  themeStyle.textContent = `
+    #character-render { 
+      background: ${themeCache[theme]?.bg || '#f0f8ff'}; 
+      color: ${themeCache[theme]?.text || '#333'}; 
+      border: 2px solid ${themeCache[theme]?.accent || '#ff69b4'};
+      padding: 20px; 
+      border-radius: 10px; 
     }
-    const data = await response.json();
-    console.log("✅ GitHub fetched:", data.name || characterName);
-    data.lastModified = Date.now();
-    return data;
-  } catch (err) {
-    console.error("❌ GitHub error:", err.message);
-    alert("GitHub fetch failed—check console or upload JSON");
-    return null;
-  }
-}
+    .tag { background: ${themeCache[theme]?.accent || '#ff69b4'}; }
+  `;
+  document.head.appendChild(themeStyle);
 
-// ================================
-// CLOUD SAVE/LOAD
-// ================================
-async function saveActiveCharacterToCloud() {
-  if (!activeCharacter || !characterLibrary[activeCharacter]) {
-    console.warn("⚠️ No active character to save");
-    return false;
-  }
-  console.log("☁️ Saving to cloud:", activeCharacter);
-  const success = await saveCharacterToCloud(characterLibrary[activeCharacter]);
-  if (success) {
-    await saveLastCharacterToCloud(activeCharacter);
-    console.log(`✅ Cloud save complete: ${activeCharacter}`);
-    if (!isGlobalLoading) await loadAllCharactersFromCloud();
-  } else {
-    alert("Save failed—check console/auth/rules");
-  }
-  return success;
-}
+  // Main Content
+  const content = document.createElement('div');
+  content.innerHTML = `
+    <h2>${char.name}</h2>
+    <p><strong>Description:</strong> ${char.description}</p>
+    <div class="tags">
+      <strong>Tags:</strong> 
+      ${char.tags.map(tag => `<span class="tag">${tag}</span>`).join(' ')}
+    </div>
+    ${char.personality ? `<p><strong>Personality:</strong> ${char.personality}</p>` : ''}
+    ${char.scenarios ? `<details><summary>Scenarios</summary><ul>${char.scenarios.map(s => `<li>${s}</li>`).join('')}</ul></details>` : ''}
+  `;
+  elements.renderArea.appendChild(content);
 
-async function loadAllCharactersFromCloud() {
-  if (isGlobalLoading) {
-    console.log("⏳ Global load skipped");
-    return {};
+  // Filter Tags (if active)
+  if (elements.tagFilter && elements.tagFilter.value) {
+    const filterTag = elements.tagFilter.value.toLowerCase();
+    const tagElements = content.querySelectorAll('.tag');
+    tagElements.forEach(el => {
+      el.style.display = el.textContent.toLowerCase().includes(filterTag) ? 'inline' : 'none';
+    });
   }
-  isGlobalLoading = true;
+};
+
+// Load Characters from Cloud/DB
+const loadAllCharacters = async () => {
   try {
-    cloudCharacters = await loadCharactersFromCloud() || {};
-    console.log("☁️ Cloud library loaded:", Object.keys(cloudCharacters).length);
+    const snapshot = await get(ref(db, 'characters'));
+    if (snapshot.exists()) {
+      characters = snapshot.val() || {};
+      log(`📥 Loaded ${Object.keys(characters).length} characters`);
+      populateDropdown();
+    } else {
+      log('📭 No characters found in DB');
+    }
+  } catch (err) {
+    log(`❌ Load Error: ${err.message}`, 'error');
+  }
+};
 
-    const select = document.getElementById("characterSelect");
-    if (select) {
-      const currentValue = select.value;
-      select.innerHTML = '<option value="">Load Character...</option>';
-      Object.keys(cloudCharacters).forEach(name => {
-        const option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-        select.appendChild(option);
-      });
-      select.value = currentValue;
-      
-      if (!select.value) {
-        const lastChar = await loadLastCharacterFromCloud();
-        if (lastChar && cloudCharacters[lastChar]) {
-          select.value = lastChar;
-          setTimeout(() => loadCharacter(lastChar), 100); // Debounce auto-load
+// Populate Dropdown
+const populateDropdown = () => {
+  if (!elements.dropdown) return;
+  elements.dropdown.innerHTML = '<option value="">Select Character...</option>';
+  Object.entries(characters).forEach(([id, char]) => {
+    const option = document.createElement('option');
+    option.value = id;
+    option.textContent = char.name;
+    elements.dropdown.appendChild(option);
+  });
+  log('🔽 Dropdown populated');
+};
+
+// Upload Character to Cloud
+const uploadCharacter = async (char, fileName) => {
+  try {
+    const id = char.name.toLowerCase().replace(/\s+/g, '-');
+    await saveCharacterToCloud(char, id);
+    characters[id] = { ...char, id, uploadedAt: Date.now(), fileName };
+    populateDropdown();
+    alert(`Uploaded ${char.name}!`);
+    log(`☁️ Uploaded: ${id}`);
+    if (currentCharacterId === id) renderCharacter(char);
+  } catch (err) {
+    log(`❌ Upload Error: ${err.message}`, 'error');
+    alert(`Upload failed: ${err.message}`);
+  }
+};
+
+// Change Theme (Global or Per-Char)
+const changeTheme = (themeName) => {
+  themeCache[themeName] = {
+    bg: themes[themeName]?.bg || '#f0f8ff',
+    text: themes[themeName]?.text || '#333',
+    accent: themes[themeName]?.accent || '#ff69b4'
+  };
+  if (currentCharacter) renderCharacter(currentCharacter);
+  log(`🎨 Theme: ${themeName}`);
+};
+
+// Predefined Themes (Queerz Flex)
+const themes = {
+  rainbow: { bg: 'linear-gradient(45deg, #ff0000, #ff8000, #ffff00, #80ff00, #00ff00, #00ff80, #00ffff, #0080ff, #0000ff, #8000ff, #ff00ff, #ff0080)', text: '#fff', accent: '#ff69b4' },
+  neon: { bg: '#000', text: '#fff', accent: '#00ffff' },
+  pastel: { bg: '#ffe4e1', text: '#333', accent: '#ffb6c1' },
+  default: { bg: '#f0f8ff', text: '#333', accent: '#ff69b4' }
+};
+
+// Tag Filter Update
+const updateTagFilter = (filterValue) => {
+  tagCache[filterValue] = filterValue ? characters : Object.fromEntries(
+    Object.entries(characters).filter(([id, char]) => char.tags.some(t => t.toLowerCase().includes(filterValue.toLowerCase())))
+  );
+  if (currentCharacter) renderCharacter(currentCharacter); // Re-render with filter
+  log(`🏷️ Filtered by: ${filterValue}`);
+};
+// ===================================
+// EVENT LISTENERS & INIT
+// ===================================
+
+// File Upload Handler
+if (elements.fileInput) {
+  elements.fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const char = await parseCharacterJson(file);
+      await uploadCharacter(char, file.name);
+      currentCharacter = char;
+      currentCharacterId = char.name.toLowerCase().replace(/\s+/g, '-');
+      renderCharacter(char);
+    } catch (err) {
+      log(`❌ Upload Parse Error: ${err.message}`, 'error');
+    }
+  });
+}
+
+// Dropdown Select Handler
+if (elements.dropdown) {
+  elements.dropdown.addEventListener('change', (e) => {
+    const id = e.target.value;
+    log('🔽 Select changed', 'info');
+    if (id && characters[id]) {
+      currentCharacterId = id;
+      currentCharacter = characters[id];
+      renderCharacter(currentCharacter);
+      log('✅ Loaded', 'success');
+    } else {
+      currentCharacterId = null;
+      currentCharacter = null;
+      elements.renderArea.innerHTML = '<p>Select a character to render!</p>';
+    }
+  });
+}
+
+// Theme Dropdown Handler
+if (elements.themeSelect) {
+  elements.themeSelect.addEventListener('change', (e) => {
+    changeTheme(e.target.value);
+  });
+}
+
+// Tag Filter Handler
+if (elements.tagFilter) {
+  elements.tagFilter.addEventListener('input', (e) => {
+    updateTagFilter(e.target.value);
+  });
+}
+
+// Upload Button (Manual Trigger)
+if (elements.uploadBtn) {
+  elements.uploadBtn.addEventListener('click', () => {
+    elements.fileInput.click();
+  });
+}
+
+// ===================================
+// INITIALIZATION
+// ===================================
+const initApp = async () => {
+  if (isInitialized) return;
+  
+  try {
+    log('🚀 Initializing Queerz Player...');
+    
+    // Auth
+    await initializeAuth();
+    log('🔐 Auth initialized');
+    
+    // Load Data
+    await loadAllCharacters();
+    
+    // Cache Themes
+    Object.keys(themes).forEach(key => changeTheme(key)); // Pre-cache
+    
+    // Real-time Listener (Optional: Sync on changes)
+    onValue(ref(db, 'characters'), (snapshot) => {
+      if (snapshot.exists()) {
+        characters = snapshot.val();
+        populateDropdown();
+        if (currentCharacterId && characters[currentCharacterId]) {
+          renderCharacter(characters[currentCharacterId]);
         }
       }
-    }
+    });
     
-    Object.assign(characterLibrary, cloudCharacters);
-    return cloudCharacters;
+    log('✅ Player App Loaded');
+    isInitialized = true;
   } catch (err) {
-    console.error("❌ Cloud load error:", err);
-    return {};
-  } finally {
-    isGlobalLoading = false;
+    log(`❌ Init Error: ${err.message}`, 'error');
+    alert('App failed to load—check console.');
   }
+};
+
+// Auto-init on DOM Ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
 }
 
-// ================================
-// LOAD SINGLE (Debounced + Guarded)
-// ================================
-async function loadCharacter(characterName) {
-  if (!characterName || loadingChars.has(characterName)) {
-    console.log(`⏳ ${characterName} skipped—already loading`);
-    return;
-  }
-  loadingChars.add(characterName);
-  isGlobalLoading = true;
-  console.log("📥 Loading:", characterName);
-  
-  if (characterLibrary[characterName]) {
-    activeCharacter = characterName;
-    renderCharacterSheet(characterLibrary[characterName]);
-    loadingChars.delete(characterName);
-    isGlobalLoading = false;
-    return;
-  }
-  
-  let data = cloudCharacters[characterName];
-  if (!data) {
-    console.log("☁️ Not in cloud—GitHub fallback");
-    data = await loadCharacterFromGitHub(characterName);
-    if (data) {
-      characterLibrary[characterName] = data;
-      await saveActiveCharacterToCloud();
-    } else {
-      console.error(`❌ Load failed for ${characterName}`);
-      loadingChars.delete(characterName);
-      isGlobalLoading = false;
-      return;
-    }
-  } else {
-    characterLibrary[characterName] = data;
-  }
-  
-  activeCharacter = characterName;
-  renderCharacterSheet(data);
-  console.log(`✅ Loaded: ${characterName}`);
-  loadingChars.delete(characterName);
-  isGlobalLoading = false;
-}
-
-// ================================
-// FULL RENDER (FLEXIBLE-v2)
-// ================================
-function renderCharacterSheet(data) {
-  console.log("🎨 Full render:", data.name);
-  
-  // Basics
-  document.getElementById("characterName").textContent = data.name || "Unnamed Hero";
-  document.querySelector(".pronouns").textContent = data.pronouns || "";
-  const portrait = document.querySelector(".character-portrait");
-  portrait.src = (currentPortraitMode === 'qfactor' ? data.qfactorPortrait : data.streetwearPortrait) || "";
-  portrait.alt = data.name || "Portrait";
-  document.querySelector(".juice-count").textContent = data.juice || 0;
-  
-  // Themes: rainbow + realness → up to 5 slots
-  const allThemes = [...(data.rainbowThemes || []), ...(data.realnessThemes || [])];
-  allThemes.forEach((theme, index) => {
-    if (index > 4) return;
-    const themeEl = document.getElementById(`theme${index}`);
-    if (!themeEl) return;
-    
-    // Header
-    themeEl.querySelector(".theme-name").textContent = theme.name || "";
-    themeEl.querySelector(".theme-type").textContent = theme.type || "";
-    
-    // Tracks
-    if (theme.type === "REALNESS THEME") {
-      renderTrack(themeEl.querySelector(".crack-track .track-boxes"), theme.crack || 0, 3);
-      themeEl.querySelector(".shade-track, .growth-track").forEach(el => el.style.display = 'none');
-    } else {
-      renderTrack(themeEl.querySelector(".growth-track .track-boxes"), theme.growth || 0, 3);
-      renderTrack(themeEl.querySelector(".shade-track .track-boxes"), theme.shade || 0, 3);
-      themeEl.querySelector(".crack-track").style.display = 'none';
-    }
-    
-    // Quote
-    themeEl.querySelector(".runway-quote em").textContent = theme.runway || "";
-    
-    // Power tags
-    const powerList = themeEl.querySelector(".tag-list");
-    powerList.innerHTML = '';
-    (theme.powerTags || []).filter(tag => tag.trim()).forEach(tag => {
-      const li = document.createElement("li");
-      li.textContent = tag;
-      li.classList.add("tag-item");
-      li.onclick = () => burnTag(tag, "power");
-      powerList.appendChild(li);
-    });
-    
-    // Weakness
-    themeEl.querySelector(".weakness-text").textContent = theme.weaknessTag || "";
-  });
-  
-  // Hide empty themes
-  for (let i = 0; i < 5; i++) {
-    const themeEl = document.getElementById(`theme${i}`);
-    if (themeEl && !allThemes[i]?.name) themeEl.style.display = 'none';
-  }
-  
-  // Lists
-  renderTagList("statusList", data.currentStatuses || [], "status-tag", addStatus);
-  renderTagList("storyTagList", data.storyTags || [], "story-tag", addStoryTag);
-  renderTagList("burntTagList", data.burntTags || [], "burnt-tag");
-  
-  // Combos
-  const comboList = document.getElementById("comboList");
-  if (comboList) {
-    comboList.innerHTML = '';
-    (data.tagCombos || []).forEach(combo => {
-      const div = document.createElement("div");
-      div.classList.add("combo-item");
-      div.innerHTML = `
-        <strong>${combo.name}</strong> (Tags: ${(combo.tags || []).join(", ")}) - Power: ${combo.power} - Move: ${combo.move}
-        <button onclick="this.parentElement.remove(); if (activeCharacter) saveActiveCharacterToCloud();">×</button>
-      `;
-      comboList.appendChild(div);
-    });
-  }
-  
-  // Notes
-  if (data.notes && document.getElementById("notes")) document.getElementById("notes").textContent = data.notes;
-  
-  // Broadcast
-  if (window.broadcastCharacterToMc) broadcastCharacterToMc(data);
-  
-  console.log("✅ Render complete for:", data.name);
-}
-
-// ================================
-// HELPERS
-// ================================
-function renderTrack(container, filledCount, total) {
-  if (!container) return;
-  container.innerHTML = '';
-  for (let i = 0; i < total; i++) {
-    const box = document.createElement("div");
-    box.classList.add("track-box");
-    if (i < filledCount) box.classList.add("filled");
-    box.onclick = () => {
-      box.classList.toggle("filled");
-      if (activeCharacter) saveActiveCharacterToCloud();
-    };
-    container.appendChild(box);
-  }
-}
-
-function renderTagList(containerId, tags, className, addFn) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = '';
-  tags.forEach(tag => {
-    const div = document.createElement("div");
-    div.classList.add(className);
-    div.textContent = `${tag.name || tag} ${tag.tier ? `(Tier ${tag.tier})` : ''} ${tag.type ? `(${tag.type})` : ''} ${tag.ongoing ? '(Ongoing)' : ''}`;
-    if (addFn !== addStatus && addFn !== addStoryTag) div.onclick = () => burnTag(tag.name || tag, containerId);
-    container.appendChild(div);
-  });
-}
-
-function burnTag(tag, type) {
-  if (!activeCharacter) return;
-  const char = characterLibrary[activeCharacter];
-  if (!char.burntTags) char.burntTags = [];
-  if (!char.burntTags.includes(tag)) {
-    char.burntTags.push(tag);
-    renderCharacterSheet(char);
-    saveActiveCharacterToCloud();
-  }
-}
-
-function recoverBurntTags() {
-  if (!activeCharacter) return;
-  characterLibrary[activeCharacter].burntTags = [];
-  renderCharacterSheet(characterLibrary[activeCharacter]);
-  saveActiveCharacterToCloud();
-}
-
-function addStatus() {
-  const name = document.getElementById("statusName").value;
-  const tier = parseInt(document.getElementById("statusTier").value);
-  const type = document.getElementById("statusType").value;
-  if (name && activeCharacter) {
-    if (!characterLibrary[activeCharacter].currentStatuses) characterLibrary[activeCharacter].currentStatuses = [];
-    characterLibrary[activeCharacter].currentStatuses.push({name, tier, type});
-    document.getElementById("statusName").value = '';
-    renderCharacterSheet(characterLibrary[activeCharacter]);
-    saveActiveCharacterToCloud();
-  }
-}
-
-function addStoryTag() {
-  const name = document.getElementById("storyTagName").value;
-  const ongoing = document.getElementById("storyOngoing").checked;
-  if (name && activeCharacter) {
-    if (!characterLibrary[activeCharacter].storyTags) characterLibrary[activeCharacter].storyTags = [];
-    characterLibrary[activeCharacter].storyTags.push({name, ongoing});
-    document.getElementById("storyTagName").value = '';
-    document.getElementById("storyOngoing").checked = false;
-    renderCharacterSheet(characterLibrary[activeCharacter]);
-    saveActiveCharacterToCloud();
-  }
-}
-
-// ================================
-// LIVE SYNC
-// ================================
-function setupCloudSyncListeners() {
-  let updateCount = 0;
-  document.addEventListener('cloud-characters-updated', (e) => {
-    updateCount++;
-    if (updateCount % 5 !== 0) return;
-    console.log(`🔄 Cloud update #${updateCount}`);
-    const updatedChars = e.detail;
-    Object.assign(cloudCharacters, updatedChars);
-    Object.assign(characterLibrary, updatedChars);
-    
-    if (activeCharacter && characterLibrary[activeCharacter]) {
-      renderCharacterSheet(characterLibrary[activeCharacter]);
-    }
-    
-    if (!isGlobalLoading) loadAllCharactersFromCloud();
-  });
-  
-  document.addEventListener('cloud-characters-loaded', (e) => {
-    if (!isGlobalLoading) loadAllCharactersFromCloud();
-  });
-  
-  console.log("✅ Cloud listeners active");
-}
-
-// ================================
-// EVENTS
-// ================================
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 DOM ready");
-  
-  // Select (Debounced)
-  const characterSelect = document.getElementById("characterSelect");
-  if (characterSelect) {
-    characterSelect.addEventListener("change", async (e) => {
-      const selected = e.target.value
+// Export for Testing (if needed)
+window.QueerzDebug = { characters, renderCharacter, loadAllCharacters };
