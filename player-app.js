@@ -1,6 +1,6 @@
 // ===================================
 // QUEERZ! PLAYER COMPANION APP
-// Updated 2025-11-11 v6 (FLEXIBLE-v2 Render + Fixed Upload/Select)
+// Updated 2025-11-11 v6.1 (Removed unused loadCharacters import)
 // ===================================
 
 import {
@@ -10,8 +10,7 @@ import {
   get,
   onValue,
   forceSignInAnonymously as initializeAuth,
-  saveCharacterToCloud,
-  loadCharacters
+  saveCharacterToCloud
 } from './firebase-config.js';
 
 // Global State
@@ -46,19 +45,7 @@ const log = (msg, type = 'info') => {
 window.onerror = (msg, url, line) => {
   log(`❌ Error: ${msg} at ${url}:${line}`, 'error');
   alert(`Debug error: ${msg}. Check console.`);
-};
-// ===================================
-// CORE FUNCTIONS
-// ===================================
-
-// Parse JSON File & Validate
-const parseCharacterJson = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const json = JSON.parse(e.target.result);
-        if (!json.name || !json.description || !json.tags) {
+};        if (!json.name || !json.description || !json.tags) {
           throw new Error('Missing required fields: name, description, tags');
         }
         log(`✅ Parsed: ${json.name}`);
