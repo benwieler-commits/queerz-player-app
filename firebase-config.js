@@ -7,7 +7,7 @@
 // Import Firebase SDK modules from CDN
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-ready.js';
 
 // ⭐ Firebase Configuration (from queerz-mc-live project)
 // ⚠️ FIXED: Using real Firebase database URL instead of broken Cloudflare proxy
