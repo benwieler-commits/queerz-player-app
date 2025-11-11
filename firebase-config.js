@@ -1,8 +1,8 @@
 // ================================
 // FIREBASE CONFIGURATION
 // Player App - Cloud Sync & Broadcast Receiving
-// ⭐ FIXED v5: Added back & exported 'broadcastCharacterToMc' for player-app.js
-// ⭐ FIXED: Ensured all imports from player-app.js are available
+// ⭐ FIXED v6: Added event guards to prevent dispatch loops/freezes
+// ⭐ FIXED: Throttled logs; one-time initial dispatch
 // ================================
 
 // Import Firebase SDK modules from CDN
@@ -32,6 +32,7 @@ window.currentUserId = currentUserId;
 let cloudSyncActive = false;
 window.cloudSyncActive = cloudSyncActive;
 let charactersListener = null;
+let isInitialLoad = true; // ⭐ NEW: Guard for one-time initial dispatch
 
 console.log('🔥 Firebase initialized');
 console.log('📡 URL:', firebaseConfig.databaseURL);
@@ -104,7 +105,7 @@ function initializeBroadcastListener() {
   
   onValue(broadcastRef, (snapshot) => {
     const data = snapshot.val();
-    console.log('📡 Broadcast data:', data ? 'YES' : 'EMPTY');
+    if (data) console.log('📡 Broadcast data received'); // Throttled log
     
     if (!data) return;
     
@@ -166,7 +167,7 @@ function updateBroadcastStatus(isActive) {
 }
 
 // ================================
-// CHARACTER BROADCAST TO MC (LEGACY SUPPORT)
+// CHARACTER BROADCAST TO MC
 // ================================
 
 async function broadcastCharacterToMc(characterData) {
@@ -191,7 +192,7 @@ async function broadcastCharacterToMc(characterData) {
 }
 
 // ================================
-// CLOUD SYNC
+// CLOUD SYNC (LOOP-GUARDED)
 // ================================
 
 function startCloudCharacterListener() {
@@ -199,15 +200,18 @@ function startCloudCharacterListener() {
   const charsRef = ref(database, `users/${currentUserId}/characters`);
   charactersListener = onValue(charsRef, (snapshot) => {
     const chars = snapshot.exists() ? snapshot.val() : {};
-    console.log('🔄 Live chars:', Object.keys(chars).length);
+    if (Object.keys(chars).length > 0) console.log('🔄 Live chars updated:', Object.keys(chars).length); // Throttled
     document.dispatchEvent(new CustomEvent('cloud-characters-updated', { detail: chars }));
     updateCloudStatus(true);
   }, (error) => {
     console.error('❌ Listener error:', error);
     updateCloudStatus(false);
   });
-  // Trigger initial load event
-  document.dispatchEvent(new CustomEvent('cloud-characters-loaded', { detail: {} }));
+  // Initial load: Dispatch only once
+  if (isInitialLoad) {
+    document.dispatchEvent(new CustomEvent('cloud-characters-loaded', { detail: {} }));
+    isInitialLoad = false;
+  }
   console.log('✅ Cloud listener on');
 }
 
@@ -249,7 +253,10 @@ async function loadCharactersFromCloud() {
       if (legacySnap.exists()) chars = legacySnap.val();
     }
     console.log('✅ Loaded:', Object.keys(chars).length);
-    document.dispatchEvent(new CustomEvent('cloud-characters-loaded', { detail: chars }));
+    // Dispatch only if not initial (guard against loop)
+    if (!isInitialLoad) {
+      document.dispatchEvent(new CustomEvent('cloud-characters-loaded', { detail: chars }));
+    }
     return chars;
   } catch (error) {
     console.error('❌ Load failed:', error);
@@ -320,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ================================
-// EXPORTS (FULL SET FOR PLAYER-APP.JS)
+// EXPORTS
 // ================================
 
 window.forceSignInAnonymously = forceSignInAnonymously;
@@ -329,7 +336,7 @@ window.loadCharactersFromCloud = loadCharactersFromCloud;
 window.saveLastCharacterToCloud = saveLastCharacterToCloud;
 window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
 window.toggleCloudSync = toggleCloudSync;
-window.broadcastCharacterToMc = broadcastCharacterToMc; // ⭐ ADDED: For render
+window.broadcastCharacterToMc = broadcastCharacterToMc;
 
 export {
   database, auth, currentUserId,
@@ -337,10 +344,9 @@ export {
   saveCharacterToCloud, loadCharactersFromCloud,
   saveLastCharacterToCloud, loadLastCharacterFromCloud,
   toggleCloudSync,
-  broadcastCharacterToMc, // ⭐ FIXED: Exported for import
+  broadcastCharacterToMc,
   ref, set, get, onValue, off
 };
 
-console.log('✅ Config v5 loaded - All exports ready (incl. broadcastCharacterToMc)');
-console.log('💡 Broadcast receiving via Firebase');
-console.log('💡 Upload/save to populate cloud—GitHub fallback for missing');
+console.log('✅ Config v6 loaded - Loop guards added');
+console.log('💡 Initial load guarded—no infinite dispatches');
