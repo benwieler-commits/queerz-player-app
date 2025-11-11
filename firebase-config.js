@@ -349,5 +349,23 @@ window.broadcastCharacterToMc = broadcastCharacterToMc;
 
 // Export for module imports
 export { database, auth, currentUserId };
+// Export for module imports (single source of truth)
+export {
+  database,
+  auth,
+  currentUserId,
+  initializeAuth,
+  saveCharacterToCloud,
+  loadCharactersFromCloud,
+  saveLastCharacterToCloud,
+  loadLastCharacterFromCloud,
+  broadcastCharacterToMc,
+  initializeBroadcastListener,
+  // re-export database helpers from the SDK so other modules don't import the SDK directly
+  ref,
+  set,
+  get,
+  onValue
+};
 
 console.log('✅ Firebase config loaded - functions available on window object');
