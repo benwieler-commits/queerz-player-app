@@ -7,7 +7,7 @@
 // Import Firebase SDK modules from CDN
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-.js';
 
 // ⭐ Firebase Configuration (from queerz-mc-live project)
 // ⚠️ FIXED: Using real Firebase database URL instead of broken Cloudflare proxy
@@ -25,8 +25,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 const auth = getAuth(app);
-
+window.auth = auth;
 let currentUserId = null;
+window.currentUserId = currentUserId;
 
 console.log('🔥 Firebase initialized for Player App');
 console.log('📡 Database URL:', firebaseConfig.databaseURL);
@@ -45,6 +46,7 @@ async function initializeAuth() {
     // Sign in anonymously
     const userCredential = await signInAnonymously(auth);
     currentUserId = userCredential.user.uid;
+window.currentUserId = currentUserId;
     
     console.log('✅ Firebase Auth initialized (Anonymous)');
     console.log('👤 User ID:', currentUserId);
@@ -65,21 +67,22 @@ async function initializeAuth() {
 // Monitor auth state changes
 if (auth) {
   onAuthStateChanged(auth, (user) => {
-    if (user) {
-      currentUserId = user.uid;
-      console.log('✅ User authenticated:', currentUserId);
-      
-      // Start broadcast listener if not already active
-      if (!initializeBroadcastListener._active) {
-        initializeBroadcastListener();
-      }
-      
-      document.dispatchEvent(new Event('firebase-auth-ready'));
-    } else {
-      currentUserId = null;
-      console.log('⚠️ User signed out');
+  if (user) {
+    currentUserId = user.uid;
+    window.currentUserId = currentUserId;
+    console.log('✅ User authenticated:', currentUserId);
+
+    if (!initializeBroadcastListener._active) {
+      initializeBroadcastListener();
     }
-  });
+
+    document.dispatchEvent(new Event('firebase-auth-ready'));
+  } else {
+    currentUserId = null;
+    window.currentUserId = null;
+    console.log('⚠️ User signed out');
+  }
+});
 }
 
 // ================================
