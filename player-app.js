@@ -3,8 +3,17 @@
 // Updated 2025-11-10
 // ===================================
 
-import { database as db, initializeAuth, broadcastCharacterToMc } from "./firebase-config.js";
-console.log("✅ Player App Loaded");
+import {
+  database as db,
+  ref,
+  set,
+  get,
+  onValue,
+  initializeAuth,
+  broadcastCharacterToMc
+} from "./firebase-config.js";
+
+console.log("✅ Player App Loaded");console.log("✅ Player App Loaded");
 
 // ================================
 // GLOBAL STATE
