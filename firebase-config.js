@@ -347,8 +347,6 @@ window.saveLastCharacterToCloud = saveLastCharacterToCloud;
 window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
 window.broadcastCharacterToMc = broadcastCharacterToMc;
 
-// Export for module imports
-
 // Export for module imports (single source of truth)
 export {
   // core initialized objects
