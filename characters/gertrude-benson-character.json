@@ -1,6 +1,11 @@
 {
+  "_INSTRUCTIONS": "This is a FLEXIBLE character template. You can have 1-3 Rainbow themes and 0-2 Realness themes. Delete unused themes below!",
+  "_THEME_OPTIONS": "Keep only the number of themes you want. Empty slots will automatically hide in the Player App.",
+  "_NEW_FEATURE": "You can now have UP TO 2 REALNESS THEMES! Perfect for complex identities and dual natures.",
+  
   "name": "Gertrude Benson",
   "pronouns": "she/her",
+  "playbook": "FLEXIBLE",
   "runway": "I Know Who I Am, and You Can't Ever Take That!",
   "streetwearPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/gertrude-benson-streetwear.png",
   "qfactorPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/gertrude-benson-qfactor.png",
@@ -8,6 +13,7 @@
   
   "rainbowThemes": [
     {
+      "_COMMENT": "Rainbow Theme 1 - REQUIRED (Signature/Fighting Style)",
       "name": "Self Assurance Isn't Arrogance",
       "type": "Signature",
       "runway": "Standing My Ground",
@@ -21,6 +27,7 @@
       "weaknessTag": "Am I Sure About That?"
     },
     {
+      "_COMMENT": "Rainbow Theme 2 - OPTIONAL (Fighting Style/Q_Gear) - DELETE THIS ENTIRE BLOCK IF NOT USING",
       "name": "It Was Never a Phase!",
       "type": "Fighting Style",
       "runway": "Standing My Ground",
@@ -32,25 +39,13 @@
         "EMO-tional Damage!"
       ],
       "weaknessTag": "Is This Just Another Mask?"
-    },
-    {
-    "name": "What I KNow To Be True",
-      "type": "Q-Factor",
-      "runway": "Standing My Ground",
-      "growth": 0,
-      "shade": 0,
-      "powerTags": [
-        "I've Got Receipts For Days!",
-        "You Can't Tell Me How I Feel",
-        "I'm Just As Valid As You Are"
-      ],
-      "weaknessTag": "What If I Am Too Much?"
     }
   ],
   
   "realnessThemes": [
     {
-      "name": "Giving 110% id The Least I Can Do",
+      "_COMMENT": "Realness Theme 1 - OPTIONAL - DELETE THIS ENTIRE BLOCK IF NOT USING",
+      "name": "Giving 110% is The Least I Can Do",
       "type": "Personality",
       "runway": "I Have To Keep Pushing",
       "crack": 0,
@@ -60,6 +55,22 @@
         "There's Still Gas in the Tank"
       ],
       "weaknessTag": "I'm Not Doing Enough"
+    },
+    
+    {   
+    "_COMMENT": "Realness Theme 2 - OPTIONAL - DELETE THIS ENTIRE BLOCK IF NOT USING",
+    "name": "Communities and Pillars Support Each Other",
+    "type": "Life Lesson",
+    "runway": "We're Stronger Together, Unified We're Unstoppable",
+    "growth": 0,
+    "shade": 0,
+    "powerTags": [
+        "Kindness costs nothing",
+        "EVen unhoused, you have a home here",
+        "Social placement is not your worth"
+      ],
+      "weaknessTag": "Will I ever be accepted?"
+    
     }
   ],
   
@@ -69,3 +80,4 @@
   "tagCombos": [],
   "notes": "Gertrude is a hardworking and determined individual who prides herself on her self-assurance and authenticity. She is passionate about standing her ground and expressing her true feelings, often advocating for herself and others with confidence. Despite her strong exterior, she sometimes grapples with self-doubt, questioning whether she is doing enough or if she is being too much for those around her. Her journey is one of embracing her identity and pushing through challenges with resilience and conviction."
 }
+
