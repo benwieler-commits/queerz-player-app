@@ -45,18 +45,6 @@ const log = (msg, type = 'info') => {
 window.onerror = (msg, url, line) => {
   log(`❌ Error: ${msg} at ${url}:${line}`, 'error');
   alert(`Debug error: ${msg}. Check console.`);
-};        if (!json.name || !json.description || !json.tags) {
-          throw new Error('Missing required fields: name, description, tags');
-        }
-        log(`✅ Parsed: ${json.name}`);
-        resolve(json);
-      } catch (err) {
-        log(`❌ Parse Error: ${err.message}`, 'error');
-        reject(err);
-      }
-    };
-    reader.readAsText(file);
-  });
 };
 
 // Render Character (FLEXIBLE-v2: Themes, Tags, Portrait)
