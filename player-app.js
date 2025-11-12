@@ -202,7 +202,12 @@ function renderCharacterSheet(data) {
     // Power tags
     const powerList = themeEl.querySelector(".tag-list");
     powerList.innerHTML = '';
-    (theme.powerTags || []).filter(tag => tag.trim()).forEach(tag => {
+
+    // Use Object.values() to safely convert the Firebase object into an array
+    const tags = Object.values(theme.powerTags || {})
+      .filter(tag => tag && tag.trim()); // Safely filter out any empty/null tags
+    
+    tags.forEach(tag => {
       const li = document.createElement("li");
       li.textContent = tag;
       li.classList.add("tag-item");
@@ -212,8 +217,6 @@ function renderCharacterSheet(data) {
     
     // Weakness
     themeEl.querySelector(".weakness-text").textContent = theme.weaknessTag || "";
-  });
-  
   // Hide empty themes
   for (let i = 0; i < 5; i++) {
     const themeEl = document.getElementById(`theme${i}`);
