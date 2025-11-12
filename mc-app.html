@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUEERZ! MC Control Panel</title>
+    <link rel="stylesheet" href="styles-mc.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="mc-header">
+        <h1 class="mc-title">🎭 QUEERZ! MC Control Panel</h1>
+        <div class="header-controls">
+            <select id="campaignSelect" class="campaign-select">
+                <option value="">Select Campaign...</option>
+            </select>
+            <button id="createCampaignBtn" class="btn-create">+ Create Campaign</button>
+            <button id="toggleScriptBtn" class="btn-toggle-script">📜 Show Script</button>
+            <span id="authStatus" class="auth-status">● Connecting...</span>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="mc-container">
+
+        <!-- LEFT PANEL: Campaign Info & Scene Control -->
+        <section class="left-panel">
+            <div class="campaign-info">
+                <h2 id="campaignName">No Campaign Loaded</h2>
+                <p id="campaignDescription"></p>
+                <div class="campaign-stats">
+                    <span>Chapter: <strong id="currentChapter">-</strong></span>
+                    <span>Arc: <strong id="currentArc">-</strong></span>
+                    <span>Players: <strong id="playerCount">0</strong></span>
+                </div>
+            </div>
+
+            <!-- Scene Broadcaster -->
+            <div class="scene-broadcaster">
+                <h3>🎬 Scene Broadcaster</h3>
+                <div class="broadcast-controls">
+                    <select id="sceneSelect" class="scene-select">
+                        <option value="">Select Scene...</option>
+                    </select>
+                    <button id="broadcastSceneBtn" class="btn-broadcast">Broadcast Scene</button>
+                </div>
+
+                <div class="current-scene-display">
+                    <h4>Current Scene</h4>
+                    <p id="currentSceneName">None</p>
+                    <p id="currentSceneDesc" class="scene-desc"></p>
+                </div>
+
+                <!-- Quick Scene Add -->
+                <div class="quick-scene-add">
+                    <h4>Quick Add Scene</h4>
+                    <input type="text" id="quickSceneName" placeholder="Scene name">
+                    <textarea id="quickSceneDesc" placeholder="Scene description" rows="2"></textarea>
+                    <button id="addSceneBtn" class="btn-add">+ Add Scene</button>
+                </div>
+            </div>
+
+            <!-- Session Controls -->
+            <div class="session-controls">
+                <h3>📊 Session Control</h3>
+                <button id="startSessionBtn" class="btn-session">Start Session</button>
+                <button id="endSessionBtn" class="btn-session" disabled>End Session</button>
+                <p id="sessionStatus">No active session</p>
+            </div>
+        </section>
+
+        <!-- CENTER PANEL: Players & Real-Time Updates -->
+        <section class="center-panel">
+            <div class="players-panel">
+                <h3>👥 Active Players</h3>
+                <div id="playersList" class="players-list">
+                    <p class="empty-state">No players connected</p>
+                </div>
+            </div>
+
+            <!-- Branch Voting Display -->
+            <div class="voting-panel">
+                <h3>🗳️ Current Vote</h3>
+                <div id="currentVote" class="vote-display">
+                    <p class="empty-state">No active vote</p>
+                </div>
+            </div>
+
+            <!-- Chapter Progress -->
+            <div class="chapter-panel">
+                <h3>📖 Chapter Progress</h3>
+                <div class="chapter-info">
+                    <p><strong>Current:</strong> <span id="chapterTitle">-</span></p>
+                    <div id="chapterScript" class="chapter-script-mini"></div>
+                    <button id="nextChapterBtn" class="btn-next-chapter">▶ Next Chapter</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT PANEL: Campaign Management -->
+        <section class="right-panel">
+            <div class="management-panel">
+                <h3>⚙️ Campaign Management</h3>
+
+                <!-- Add Chapter -->
+                <div class="add-chapter-section">
+                    <h4>Add Chapter</h4>
+                    <input type="number" id="chapterNumber" placeholder="Chapter #" min="1">
+                    <input type="text" id="chapterName" placeholder="Chapter name">
+                    <textarea id="chapterScript" placeholder="Chapter script..." rows="4"></textarea>
+                    <button id="addChapterBtn" class="btn-add">+ Add Chapter</button>
+                </div>
+
+                <!-- Branch Point Creator -->
+                <div class="branch-creator">
+                    <h4>Create Branch Point</h4>
+                    <input type="text" id="branchQuestion" placeholder="Choice question">
+                    <div id="branchOptions">
+                        <input type="text" class="branch-option" placeholder="Option 1">
+                        <input type="text" class="branch-option" placeholder="Option 2">
+                    </div>
+                    <button id="addOptionBtn" class="btn-small">+ Option</button>
+                    <button id="createBranchBtn" class="btn-add">Create Branch</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- OVERLAY SIDEBAR: Script & Checkboxes -->
+    <aside id="scriptOverlay" class="script-overlay">
+        <div class="overlay-header">
+            <h2>📜 Script & Choices</h2>
+            <button id="closeScriptBtn" class="btn-close">×</button>
+        </div>
+
+        <div class="overlay-content">
+            <!-- Chapter Script Display -->
+            <div class="script-section">
+                <h3>Chapter <span id="overlayChapterNum">1</span>: <span id="overlayChapterName">-</span></h3>
+                <div id="scriptDisplay" class="script-text">
+                    No script loaded. Select a campaign with chapters.
+                </div>
+            </div>
+
+            <!-- Choice Checkboxes -->
+            <div class="choices-section">
+                <h3>Player Choices</h3>
+                <p class="choices-hint">Check off choices as players make them. Choices auto-save.</p>
+                <div id="choicesCheckboxes" class="choices-list">
+                    <p class="empty-state">No branch points in current chapter</p>
+                </div>
+            </div>
+
+            <!-- Auto-Progress Section -->
+            <div class="progress-section">
+                <h3>Chapter Completion</h3>
+                <div id="completionStatus" class="completion-display">
+                    <p>Progress: <span id="progressPercent">0%</span></p>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+                <button id="autoProgressBtn" class="btn-auto-progress">
+                    ▶ Auto-Progress to Next Chapter
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CREATE CAMPAIGN MODAL -->
+    <div id="createCampaignModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Create New Campaign</h2>
+            <form id="createCampaignForm">
+                <label for="newCampaignName">Campaign Name:</label>
+                <input type="text" id="newCampaignName" required>
+
+                <label for="newCampaignDesc">Description:</label>
+                <textarea id="newCampaignDesc" rows="3"></textarea>
+
+                <label for="startingArc">Starting Arc:</label>
+                <input type="text" id="startingArc" value="arc-1">
+
+                <button type="submit" class="btn-submit">Create Campaign</button>
+            </form>
+            <div id="campaignIdDisplay" style="display: none;">
+                <h3>Campaign Created! 🎉</h3>
+                <p>Campaign ID (share with players):</p>
+                <input type="text" id="createdCampaignId" readonly>
+                <button id="copyCampaignId" class="btn-copy">Copy ID</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase & App Scripts -->
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="mc-app.js"></script>
+</body>
+</html>
