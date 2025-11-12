@@ -70,7 +70,6 @@ async function saveActiveCharacterToCloud() {
   if (success) {
     await saveLastCharacterToCloud(activeCharacter);
     console.log(`✅ Cloud save complete: ${activeCharacter}`);
-    if (!isGlobalLoading) await loadAllCharactersFromCloud();
   } else {
     alert("Save failed—check console/auth/rules");
   }
@@ -127,39 +126,36 @@ async function loadCharacter(characterName) {
     return;
   }
   loadingChars.add(characterName);
-  isGlobalLoading = true;
   console.log("📥 Loading:", characterName);
-  
+
   if (characterLibrary[characterName]) {
     activeCharacter = characterName;
     renderCharacterSheet(characterLibrary[characterName]);
     loadingChars.delete(characterName);
-    isGlobalLoading = false;
     return;
   }
-  
+
   let data = cloudCharacters[characterName];
   if (!data) {
     console.log("☁️ Not in cloud—GitHub fallback");
     data = await loadCharacterFromGitHub(characterName);
     if (data) {
       characterLibrary[characterName] = data;
+      activeCharacter = characterName;
       await saveActiveCharacterToCloud();
     } else {
       console.error(`❌ Load failed for ${characterName}`);
       loadingChars.delete(characterName);
-      isGlobalLoading = false;
       return;
     }
   } else {
     characterLibrary[characterName] = data;
+    activeCharacter = characterName;
   }
-  
-  activeCharacter = characterName;
+
   renderCharacterSheet(data);
   console.log(`✅ Loaded: ${characterName}`);
   loadingChars.delete(characterName);
-  isGlobalLoading = false;
 }
 // ================================
 // FULL RENDER (FLEXIBLE-v2)
@@ -189,7 +185,7 @@ function renderCharacterSheet(data) {
     // Tracks
     if (theme.type === "REALNESS THEME") {
       renderTrack(themeEl.querySelector(".crack-track .track-boxes"), theme.crack || 0, 3);
-      themeEl.querySelector(".shade-track, .growth-track").forEach(el => el.style.display = 'none');
+      themeEl.querySelectorAll(".shade-track, .growth-track").forEach(el => el.style.display = 'none');
     } else {
       renderTrack(themeEl.querySelector(".growth-track .track-boxes"), theme.growth || 0, 3);
       renderTrack(themeEl.querySelector(".shade-track .track-boxes"), theme.shade || 0, 3);
@@ -217,11 +213,13 @@ function renderCharacterSheet(data) {
     
     // Weakness
     themeEl.querySelector(".weakness-text").textContent = theme.weaknessTag || "";
+  });
+
   // Hide empty themes
   for (let i = 0; i < 5; i++) {
     const themeEl = document.getElementById(`theme${i}`);
     if (themeEl && !allThemes[i]?.name) themeEl.style.display = 'none';
-  };
+  }
   
   // Lists
   renderTagList("statusList", data.currentStatuses || [], "status-tag", addStatus);
@@ -339,18 +337,17 @@ function setupCloudSyncListeners() {
     const updatedChars = e.detail;
     Object.assign(cloudCharacters, updatedChars);
     Object.assign(characterLibrary, updatedChars);
-    
-    if (activeCharacter && characterLibrary[activeCharacter]) {
+
+    // Only re-render if active character was updated
+    if (activeCharacter && updatedChars[activeCharacter]) {
       renderCharacterSheet(characterLibrary[activeCharacter]);
     }
-    
-    if (!isGlobalLoading) loadAllCharactersFromCloud();
   });
-  
+
   document.addEventListener('cloud-characters-loaded', (e) => {
     if (!isGlobalLoading) loadAllCharactersFromCloud();
   });
-  
+
   console.log("✅ Cloud listeners active");
 }
 
