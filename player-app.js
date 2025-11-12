@@ -199,10 +199,13 @@ function renderCharacterSheet(data) {
     const powerList = themeEl.querySelector(".tag-list");
     powerList.innerHTML = '';
 
-    // Use Object.values() to safely convert the Firebase object into an array
-    const tags = Object.values(theme.powerTags || {})
-      .filter(tag => tag && tag.trim()); // Safely filter out any empty/null tags
-    
+    // Handle both array and object formats from Firebase
+    let tags = theme.powerTags || [];
+    if (!Array.isArray(tags)) {
+      tags = Object.values(tags); // Convert Firebase object to array
+    }
+    tags = tags.filter(tag => tag && typeof tag === 'string' && tag.trim());
+
     tags.forEach(tag => {
       const li = document.createElement("li");
       li.textContent = tag;
@@ -218,7 +221,13 @@ function renderCharacterSheet(data) {
   // Hide empty themes
   for (let i = 0; i < 5; i++) {
     const themeEl = document.getElementById(`theme${i}`);
-    if (themeEl && !allThemes[i]?.name) themeEl.style.display = 'none';
+    if (themeEl) {
+      if (!allThemes[i]?.name) {
+        themeEl.style.display = 'none';
+      } else {
+        themeEl.style.display = 'block';
+      }
+    }
   }
   
   // Lists
@@ -230,13 +239,54 @@ function renderCharacterSheet(data) {
   const comboList = document.getElementById("comboList");
   if (comboList) {
     comboList.innerHTML = '';
-    (data.tagCombos || []).forEach(combo => {
+    (data.tagCombos || []).forEach((combo, index) => {
       const div = document.createElement("div");
       div.classList.add("combo-item");
+      div.style.cursor = 'pointer';
       div.innerHTML = `
-        <strong>${combo.name}</strong> (Tags: ${(combo.tags || []).join(", ")}) - Power: ${combo.power} - Move: ${combo.move}
-        <button onclick="this.parentElement.remove(); if (activeCharacter) saveActiveCharacterToCloud();">×</button>
+        <strong>${combo.name}</strong> (Tags: ${(combo.tags || []).join(", ")}) - Power: +${combo.power} - Move: ${combo.move}
+        <span class="juice-req">Requires ${combo.tags.length} Juice</span>
+        <button class="combo-delete-btn" onclick="event.stopPropagation(); this.parentElement.remove(); if (activeCharacter) { characterLibrary[activeCharacter].tagCombos.splice(${index}, 1); saveActiveCharacterToCloud(); }">×</button>
       `;
+
+      // Click to use combo
+      div.addEventListener("click", () => {
+        if (!activeCharacter) return alert("No active character!");
+
+        const char = characterLibrary[activeCharacter];
+        const requiredJuice = combo.tags.length;
+
+        // Check juice requirement
+        if ((char.juice || 0) < requiredJuice) {
+          alert(`Not enough Juice! Need ${requiredJuice}, have ${char.juice || 0}`);
+          return;
+        }
+
+        // Spend juice
+        char.juice = (char.juice || 0) - requiredJuice;
+
+        // Burn all tags in the combo
+        if (!char.burntTags) char.burntTags = [];
+        combo.tags.forEach(tag => {
+          if (tag && !char.burntTags.includes(tag)) {
+            char.burntTags.push(tag);
+          }
+        });
+
+        // Set power in dice roller
+        document.getElementById("totalPower").value = combo.power || 2;
+
+        // Visual feedback
+        div.style.backgroundColor = '#90EE90';
+        setTimeout(() => div.style.backgroundColor = '', 500);
+
+        // Re-render and save
+        renderCharacterSheet(char);
+        saveActiveCharacterToCloud();
+
+        console.log(`✅ Combo used: ${combo.name}, -${requiredJuice} Juice, +${combo.power} Power`);
+      });
+
       comboList.appendChild(div);
     });
   }
@@ -244,10 +294,22 @@ function renderCharacterSheet(data) {
   // Notes
   if (data.notes && document.getElementById("notes")) document.getElementById("notes").textContent = data.notes;
   
-  // Broadcast
-  if (window.broadcastCharacterToMc) broadcastCharacterToMc(data);
-  
+  // Broadcast to MC
+  if (window.broadcastCharacterToMc) {
+    broadcastCharacterToMc(data);
+    updatePlayerStatus(data.name);
+  }
+
   console.log("✅ Render complete for:", data.name);
+}
+
+// Update player status display
+function updatePlayerStatus(characterName) {
+  const mcStatus = document.getElementById("mcStatus");
+  if (mcStatus && window.currentUserId) {
+    mcStatus.textContent = `Broadcasting: ${characterName}`;
+    mcStatus.style.color = '#4CAF50';
+  }
 }
 
 // ================================
@@ -383,34 +445,64 @@ document.addEventListener("DOMContentLoaded", () => {
       const file = e.target.files[0];
       console.log("📁 File selected:", file ? file.name : "None");
       if (!file) return;
-      
+
       try {
         const text = await file.text();
         console.log("📁 Content length:", text.length);
         const data = JSON.parse(text);
-        console.log("✅ Parsed:", data.name || "Unnamed");
-        
-        const name = data.name || file.name.replace('.json', '') || "Uploaded";
-        characterLibrary[name] = { ...data, source: 'upload' };
+        console.log("✅ Parsed data:", data);
+
+        // Validate required fields
+        if (!data.name) {
+          throw new Error("Missing 'name' field in JSON");
+        }
+
+        // Ensure arrays exist
+        if (!data.rainbowThemes) data.rainbowThemes = [];
+        if (!data.realnessThemes) data.realnessThemes = [];
+        if (!data.currentStatuses) data.currentStatuses = [];
+        if (!data.storyTags) data.storyTags = [];
+        if (!data.burntTags) data.burntTags = [];
+        if (!data.tagCombos) data.tagCombos = [];
+        if (data.juice === undefined) data.juice = 0;
+
+        // Normalize theme data
+        [...data.rainbowThemes, ...data.realnessThemes].forEach(theme => {
+          if (theme && theme.powerTags) {
+            // Ensure powerTags is always an array
+            if (!Array.isArray(theme.powerTags)) {
+              theme.powerTags = Object.values(theme.powerTags);
+            }
+          }
+        });
+
+        const name = data.name;
+        characterLibrary[name] = { ...data, source: 'upload', lastModified: Date.now() };
         activeCharacter = name;
-        
+
+        console.log("✅ Character loaded:", name);
         renderCharacterSheet(characterLibrary[name]);
-        
+
         const select = document.getElementById("characterSelect");
-        if (select && !select.querySelector(`option[value="${name}"]`)) {
+        if (select) {
+          // Remove existing option if present
+          const existingOption = select.querySelector(`option[value="${name}"]`);
+          if (existingOption) existingOption.remove();
+
+          // Add new option
           const option = document.createElement("option");
           option.value = name;
           option.textContent = name;
           select.appendChild(option);
           select.value = name;
         }
-        
+
         const saveSuccess = await saveActiveCharacterToCloud();
         console.log("☁️ Upload save:", saveSuccess ? "Success" : "Failed");
-        alert(saveSuccess ? `Uploaded & saved ${name}!` : "Uploaded but save failed—check console");
+        alert(saveSuccess ? `✅ Uploaded & saved ${name}!` : `⚠️ ${name} loaded but cloud save failed—check console`);
       } catch (err) {
-        console.error("❌ Upload error:", err.message);
-        alert("Upload failed: Invalid JSON—check format");
+        console.error("❌ Upload error:", err.message, err);
+        alert(`Upload failed: ${err.message}\n\nCheck console for details and ensure JSON format is correct.`);
       }
       uploadInput.value = '';
     });
@@ -439,6 +531,10 @@ document.addEventListener("DOMContentLoaded", () => {
   if (addStatusBtn) addStatusBtn.addEventListener("click", addStatus);
   const addStoryBtn = document.getElementById("addStoryBtn");
   if (addStoryBtn) addStoryBtn.addEventListener("click", addStoryTag);
+
+  // Recover burnt tags button
+  const recoverBtn = document.getElementById("recoverBtn");
+  if (recoverBtn) recoverBtn.addEventListener("click", recoverBurntTags);
   
   // Clear combos
   const clearCombosBtn = document.getElementById("clearCombosBtn");
@@ -491,10 +587,51 @@ document.addEventListener("DOMContentLoaded", () => {
       const d1 = Math.floor(Math.random() * 6) + 1;
       const d2 = Math.floor(Math.random() * 6) + 1;
       const total = d1 + d2 + power;
+
+      // Determine result and auto-add juice
+      let result = 'Miss';
+      let juiceToAdd = 0;
+      if (total >= 10) {
+        result = '10+!';
+        juiceToAdd = 3;
+      } else if (total >= 7) {
+        result = '7-9';
+        juiceToAdd = 1;
+      }
+
+      // Add juice if active character exists
+      if (activeCharacter && characterLibrary[activeCharacter]) {
+        const current = characterLibrary[activeCharacter].juice || 0;
+        characterLibrary[activeCharacter].juice = current + juiceToAdd;
+        document.querySelector(".juice-count").textContent = characterLibrary[activeCharacter].juice;
+        saveActiveCharacterToCloud();
+      }
+
       document.getElementById("rollResult").innerHTML = `
         <p><strong>${d1} + ${d2} + ${power} = ${total}</strong></p>
-        <p>${total >= 10 ? '10+!' : total >= 7 ? '7-9' : 'Miss'}</p>
+        <p>${result}${juiceToAdd > 0 ? ` (+${juiceToAdd} Juice!)` : ''}</p>
       `;
+    });
+  }
+
+  // Reset button
+  const resetBtn = document.getElementById("resetBtn");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      // Clear roll result
+      document.getElementById("rollResult").innerHTML = '';
+
+      // Reset power to 0
+      document.getElementById("totalPower").value = 0;
+
+      // Recover all burnt tags
+      if (activeCharacter && characterLibrary[activeCharacter]) {
+        characterLibrary[activeCharacter].burntTags = [];
+        renderCharacterSheet(characterLibrary[activeCharacter]);
+        saveActiveCharacterToCloud();
+      }
+
+      console.log("🔄 Dice reset - tags recovered");
     });
   }
   
