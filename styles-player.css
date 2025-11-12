@@ -11,13 +11,24 @@
     --cream-light: #F5EFE6;
     --gold-tag: #F4D35E;
     --gray-neutral: #64666B;
-    
+
     /* UI Colors */
     --bg-dark: #1a1a1a;
     --bg-card: #2a2a2a;
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-white: #ffffff;
     --border-color: rgba(255, 255, 255, 0.2);
+    --glass-border: rgba(255, 255, 255, 0.3);
+
+    /* Accent Colors */
+    --accent-purple: #A78BFA;
+    --accent-cyan: #67E8F9;
+    --success-green: #4ADE80;
+    --danger-red: #EF4444;
+
+    /* Character Theme Color (Dynamic) */
+    --character-theme-color: var(--teal-primary);
 }
 
 * {
@@ -418,10 +429,11 @@ body {
 
 .portrait-container {
     background: var(--bg-card);
-    border: 3px solid var(--teal-primary);
+    border: 3px solid var(--character-theme-color);
     border-radius: 15px;
     padding: 20px;
     text-align: center;
+    transition: border-color 0.3s ease;
 }
 
 .character-portrait {
@@ -429,9 +441,10 @@ body {
     max-width: 400px;
     height: auto;
     border-radius: 50%;
-    border: 5px solid var(--coral-accent);
+    border: 5px solid var(--character-theme-color);
     box-shadow: 0 0 20px rgba(232, 155, 155, 0.5);
     margin-bottom: 15px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .character-info {
@@ -839,17 +852,36 @@ body {
     margin-top: 20px;
 }
 
-.combo-card {
-    background: rgba(244, 211, 94, 0.1);
-    border: 2px solid var(--gold-tag);
-    border-radius: 10px;
+.combo-item {
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.8), rgba(50, 30, 70, 0.8));
+    border: 2px solid var(--glass-border);
+    border-radius: 12px;
     padding: 15px;
-    transition: all 0.3s;
+    margin-bottom: 15px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.combo-item:hover {
+    border-color: var(--accent-purple);
+    box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+    transform: translateY(-2px);
+}
+
+.combo-card {
+    background: linear-gradient(135deg, rgba(30, 30, 50, 0.8), rgba(50, 30, 70, 0.8));
+    border: 2px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
 }
 
 .combo-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 15px rgba(244, 211, 94, 0.3);
+    border-color: var(--accent-purple);
+    box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+    transform: translateY(-2px);
 }
 
 .combo-header {

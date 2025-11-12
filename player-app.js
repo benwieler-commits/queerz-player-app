@@ -29,6 +29,7 @@ let cloudCharacters = {};
 let isGlobalLoading = false;
 const loadingChars = new Set();
 let currentPortraitMode = 'streetwear';
+let selectedCoreMove = null;
 
 // ================================
 // GITHUB LOADING
@@ -176,6 +177,17 @@ function renderCharacterSheet(data) {
     portrait.alt = data.name || "Portrait";
   }
 
+  // Apply Q-Factor outfit color theming
+  if (data.qfactorOutfitColor) {
+    const portraitContainer = document.querySelector(".portrait-container");
+    if (portraitContainer) {
+      portraitContainer.style.borderColor = data.qfactorOutfitColor;
+    }
+    document.documentElement.style.setProperty('--character-theme-color', data.qfactorOutfitColor);
+  } else {
+    document.documentElement.style.removeProperty('--character-theme-color');
+  }
+
   const juiceCount = document.querySelector(".juice-count");
   if (juiceCount) juiceCount.textContent = data.juice || 0;
   
@@ -238,18 +250,47 @@ function renderCharacterSheet(data) {
       }
       tags = tags.filter(tag => tag && typeof tag === 'string' && tag.trim());
 
+      const burntTags = data.burntTags || [];
+
       tags.forEach(tag => {
         const li = document.createElement("li");
         li.textContent = tag;
         li.classList.add("tag-item");
-        li.onclick = () => burnTag(tag, "power");
+
+        // Check if tag is burnt
+        if (burntTags.includes(tag)) {
+          li.classList.add("burnt");
+          li.style.opacity = '0.3';
+          li.style.cursor = 'not-allowed';
+          li.style.pointerEvents = 'none';
+        } else {
+          li.onclick = () => burnTag(tag, "power");
+        }
+
         powerList.appendChild(li);
       });
     }
 
     // Weakness
     const weaknessText = themeEl.querySelector(".weakness-text");
-    if (weaknessText) weaknessText.textContent = theme.weaknessTag || "";
+    if (weaknessText) {
+      weaknessText.textContent = theme.weaknessTag || "";
+
+      // Check if weakness tag is burnt
+      const burntTags = data.burntTags || [];
+      if (theme.weaknessTag && burntTags.includes(theme.weaknessTag)) {
+        weaknessText.classList.add("burnt");
+        weaknessText.style.opacity = '0.3';
+        weaknessText.style.cursor = 'not-allowed';
+        weaknessText.style.pointerEvents = 'none';
+      } else {
+        weaknessText.classList.remove("burnt");
+        weaknessText.style.opacity = '1';
+        weaknessText.style.cursor = 'pointer';
+        weaknessText.style.pointerEvents = 'auto';
+        weaknessText.onclick = () => burnTag(theme.weaknessTag, "weakness");
+      }
+    }
   });
 
   // Hide empty themes
@@ -275,16 +316,47 @@ function renderCharacterSheet(data) {
     comboList.innerHTML = '';
     (data.tagCombos || []).forEach((combo, index) => {
       const div = document.createElement("div");
-      div.classList.add("combo-item");
-      div.style.cursor = 'pointer';
+      div.classList.add("combo-card");
+
       div.innerHTML = `
-        <strong>${combo.name}</strong> (Tags: ${(combo.tags || []).join(", ")}) - Power: +${combo.power} - Move: ${combo.move}
-        <span class="juice-req">Requires ${combo.tags.length} Juice</span>
-        <button class="combo-delete-btn" onclick="event.stopPropagation(); this.parentElement.remove(); if (activeCharacter) { characterLibrary[activeCharacter].tagCombos.splice(${index}, 1); saveActiveCharacterToCloud(); }">×</button>
+        <div class="combo-header">
+          <h3 class="combo-name">${combo.name}</h3>
+          <button class="combo-remove-btn" onclick="event.stopPropagation(); this.parentElement.parentElement.remove(); if (activeCharacter) { characterLibrary[activeCharacter].tagCombos.splice(${index}, 1); saveActiveCharacterToCloud(); }">×</button>
+        </div>
+        <div class="combo-tags">
+          <span>Tags:</span>
+          ${(combo.tags || []).map(tag => `<span class="combo-tag-pill">${tag}</span>`).join('')}
+        </div>
+        <div class="combo-details">
+          <span class="combo-power">Power: +${combo.power}</span>
+          <span class="combo-move">Move: ${combo.move || 'None'}</span>
+        </div>
+        <button class="combo-use-btn">
+          Use Combo (${combo.tags.length} Juice)
+        </button>
       `;
 
+      // Get the use button
+      const useBtn = div.querySelector(".combo-use-btn");
+
+      // Update button state based on juice availability
+      const updateButtonState = () => {
+        const char = characterLibrary[activeCharacter];
+        const requiredJuice = combo.tags.length;
+        if ((char.juice || 0) < requiredJuice) {
+          useBtn.classList.add("disabled");
+          useBtn.textContent = `Need ${requiredJuice} Juice (Have ${char.juice || 0})`;
+        } else {
+          useBtn.classList.remove("disabled");
+          useBtn.textContent = `Use Combo (${requiredJuice} Juice)`;
+        }
+      };
+
+      updateButtonState();
+
       // Click to use combo
-      div.addEventListener("click", () => {
+      useBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
         if (!activeCharacter) return alert("No active character!");
 
         const char = characterLibrary[activeCharacter];
@@ -310,15 +382,32 @@ function renderCharacterSheet(data) {
         // Set power in dice roller
         document.getElementById("totalPower").value = combo.power || 2;
 
+        // Set the core move from combo
+        if (combo.move) {
+          selectedCoreMove = combo.move;
+          // Update visual selection
+          document.querySelectorAll(".move-icon").forEach(icon => {
+            if (icon.dataset.move === combo.move) {
+              icon.classList.add("selected");
+            } else {
+              icon.classList.remove("selected");
+            }
+          });
+        }
+
         // Visual feedback
-        div.style.backgroundColor = '#90EE90';
-        setTimeout(() => div.style.backgroundColor = '', 500);
+        div.style.transform = 'scale(1.05)';
+        div.style.boxShadow = '0 0 30px rgba(167, 139, 250, 0.8)';
+        setTimeout(() => {
+          div.style.transform = '';
+          div.style.boxShadow = '';
+        }, 500);
 
         // Re-render and save
         renderCharacterSheet(char);
         saveActiveCharacterToCloud();
 
-        console.log(`✅ Combo used: ${combo.name}, -${requiredJuice} Juice, +${combo.power} Power`);
+        console.log(`✅ Combo used: ${combo.name}, -${requiredJuice} Juice, +${combo.power} Power, Move: ${combo.move}`);
       });
 
       comboList.appendChild(div);
@@ -614,10 +703,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   
+  // Core move selection
+  document.querySelectorAll(".move-icon").forEach(icon => {
+    icon.addEventListener("click", () => {
+      selectedCoreMove = icon.dataset.move;
+      // Update visual selection
+      document.querySelectorAll(".move-icon").forEach(i => i.classList.remove("selected"));
+      icon.classList.add("selected");
+      console.log(`✅ Core move selected: ${selectedCoreMove}`);
+    });
+  });
+
   // Roller
   const rollBtn = document.getElementById("rollBtn");
   if (rollBtn) {
     rollBtn.addEventListener("click", () => {
+      // Check if core move is selected
+      if (!selectedCoreMove) {
+        alert("Please select a Core Move before rolling!");
+        return;
+      }
+
       const power = parseInt(document.getElementById("totalPower").value) || 0;
       const d1 = Math.floor(Math.random() * 6) + 1;
       const d2 = Math.floor(Math.random() * 6) + 1;
@@ -643,7 +749,13 @@ document.addEventListener("DOMContentLoaded", () => {
         saveActiveCharacterToCloud();
       }
 
+      // Format move name for display
+      const moveDisplayName = selectedCoreMove.split('-').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+
       document.getElementById("rollResult").innerHTML = `
+        <p><strong>Move: ${moveDisplayName}</strong></p>
         <p><strong>${d1} + ${d2} + ${power} = ${total}</strong></p>
         <p>${result}${juiceToAdd > 0 ? ` (+${juiceToAdd} Juice!)` : ''}</p>
       `;
@@ -660,6 +772,12 @@ document.addEventListener("DOMContentLoaded", () => {
       // Reset power to 0
       document.getElementById("totalPower").value = 0;
 
+      // Clear core move selection
+      selectedCoreMove = null;
+      document.querySelectorAll(".move-icon").forEach(icon => {
+        icon.classList.remove("selected");
+      });
+
       // Recover all burnt tags
       if (activeCharacter && characterLibrary[activeCharacter]) {
         characterLibrary[activeCharacter].burntTags = [];
@@ -667,7 +785,7 @@ document.addEventListener("DOMContentLoaded", () => {
         saveActiveCharacterToCloud();
       }
 
-      console.log("🔄 Dice reset - tags recovered");
+      console.log("🔄 Dice reset - tags recovered, core move cleared");
     });
   }
   
