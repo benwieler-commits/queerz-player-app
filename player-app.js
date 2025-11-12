@@ -221,7 +221,7 @@ function renderCharacterSheet(data) {
   for (let i = 0; i < 5; i++) {
     const themeEl = document.getElementById(`theme${i}`);
     if (themeEl && !allThemes[i]?.name) themeEl.style.display = 'none';
-  }
+  });
   
   // Lists
   renderTagList("statusList", data.currentStatuses || [], "status-tag", addStatus);
