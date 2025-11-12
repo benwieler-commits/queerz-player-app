@@ -162,14 +162,22 @@ async function loadCharacter(characterName) {
 // ================================
 function renderCharacterSheet(data) {
   console.log("🎨 Full render:", data.name);
-  
+
   // Basics
-  document.getElementById("characterName").textContent = data.name || "Unnamed Hero";
-  document.querySelector(".pronouns").textContent = data.pronouns || "";
+  const charName = document.getElementById("characterName");
+  if (charName) charName.textContent = data.name || "Unnamed Hero";
+
+  const pronouns = document.querySelector(".pronouns");
+  if (pronouns) pronouns.textContent = data.pronouns || "";
+
   const portrait = document.querySelector(".character-portrait");
-  portrait.src = (currentPortraitMode === 'qfactor' ? data.qfactorPortrait : data.streetwearPortrait) || "";
-  portrait.alt = data.name || "Portrait";
-  document.querySelector(".juice-count").textContent = data.juice || 0;
+  if (portrait) {
+    portrait.src = (currentPortraitMode === 'qfactor' ? data.qfactorPortrait : data.streetwearPortrait) || "";
+    portrait.alt = data.name || "Portrait";
+  }
+
+  const juiceCount = document.querySelector(".juice-count");
+  if (juiceCount) juiceCount.textContent = data.juice || 0;
   
   // Themes: rainbow + realness → up to 5 slots
   const allThemes = [...(data.rainbowThemes || []), ...(data.realnessThemes || [])];
@@ -177,45 +185,71 @@ function renderCharacterSheet(data) {
     if (index > 4) return;
     const themeEl = document.getElementById(`theme${index}`);
     if (!themeEl) return;
-    
+
     // Header
-    themeEl.querySelector(".theme-name").textContent = theme.name || "";
-    themeEl.querySelector(".theme-type").textContent = theme.type || "";
-    
-    // Tracks
-    if (theme.type === "REALNESS THEME") {
-      renderTrack(themeEl.querySelector(".crack-track .track-boxes"), theme.crack || 0, 3);
-      themeEl.querySelectorAll(".shade-track, .growth-track").forEach(el => el.style.display = 'none');
-    } else {
-      renderTrack(themeEl.querySelector(".growth-track .track-boxes"), theme.growth || 0, 3);
-      renderTrack(themeEl.querySelector(".shade-track .track-boxes"), theme.shade || 0, 3);
-      themeEl.querySelector(".crack-track").style.display = 'none';
+    const themeName = themeEl.querySelector(".theme-name");
+    const themeType = themeEl.querySelector(".theme-type");
+    if (themeName) themeName.textContent = theme.name || "";
+    if (themeType) themeType.textContent = theme.type || "";
+
+    // Tracks - handle both RAINBOW and REALNESS themes regardless of card type
+    const isRealnessTheme = theme.type === "REALNESS THEME";
+
+    // Render crack track (REALNESS themes only)
+    const crackTrack = themeEl.querySelector(".crack-track");
+    if (crackTrack) {
+      if (isRealnessTheme) {
+        crackTrack.style.display = 'block';
+        renderTrack(crackTrack.querySelector(".track-boxes"), theme.crack || 0, 3);
+      } else {
+        crackTrack.style.display = 'none';
+      }
     }
-    
+
+    // Render growth/shade tracks (RAINBOW themes only)
+    const growthTrack = themeEl.querySelector(".growth-track");
+    const shadeTrack = themeEl.querySelector(".shade-track");
+
+    if (growthTrack && shadeTrack) {
+      if (isRealnessTheme) {
+        growthTrack.style.display = 'none';
+        shadeTrack.style.display = 'none';
+      } else {
+        growthTrack.style.display = 'block';
+        shadeTrack.style.display = 'block';
+        renderTrack(growthTrack.querySelector(".track-boxes"), theme.growth || 0, 3);
+        renderTrack(shadeTrack.querySelector(".track-boxes"), theme.shade || 0, 3);
+      }
+    }
+
     // Quote
-    themeEl.querySelector(".runway-quote em").textContent = theme.runway || "";
-    
+    const runwayQuote = themeEl.querySelector(".runway-quote em");
+    if (runwayQuote) runwayQuote.textContent = theme.runway || "";
+
     // Power tags
     const powerList = themeEl.querySelector(".tag-list");
-    powerList.innerHTML = '';
+    if (powerList) {
+      powerList.innerHTML = '';
 
-    // Handle both array and object formats from Firebase
-    let tags = theme.powerTags || [];
-    if (!Array.isArray(tags)) {
-      tags = Object.values(tags); // Convert Firebase object to array
+      // Handle both array and object formats from Firebase
+      let tags = theme.powerTags || [];
+      if (!Array.isArray(tags)) {
+        tags = Object.values(tags); // Convert Firebase object to array
+      }
+      tags = tags.filter(tag => tag && typeof tag === 'string' && tag.trim());
+
+      tags.forEach(tag => {
+        const li = document.createElement("li");
+        li.textContent = tag;
+        li.classList.add("tag-item");
+        li.onclick = () => burnTag(tag, "power");
+        powerList.appendChild(li);
+      });
     }
-    tags = tags.filter(tag => tag && typeof tag === 'string' && tag.trim());
 
-    tags.forEach(tag => {
-      const li = document.createElement("li");
-      li.textContent = tag;
-      li.classList.add("tag-item");
-      li.onclick = () => burnTag(tag, "power");
-      powerList.appendChild(li);
-    });
-    
     // Weakness
-    themeEl.querySelector(".weakness-text").textContent = theme.weaknessTag || "";
+    const weaknessText = themeEl.querySelector(".weakness-text");
+    if (weaknessText) weaknessText.textContent = theme.weaknessTag || "";
   });
 
   // Hide empty themes
@@ -292,8 +326,9 @@ function renderCharacterSheet(data) {
   }
   
   // Notes
-  if (data.notes && document.getElementById("notes")) document.getElementById("notes").textContent = data.notes;
-  
+  const notesEl = document.getElementById("notes");
+  if (notesEl && data.notes) notesEl.textContent = data.notes;
+
   // Broadcast to MC
   if (window.broadcastCharacterToMc) {
     broadcastCharacterToMc(data);
@@ -603,7 +638,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (activeCharacter && characterLibrary[activeCharacter]) {
         const current = characterLibrary[activeCharacter].juice || 0;
         characterLibrary[activeCharacter].juice = current + juiceToAdd;
-        document.querySelector(".juice-count").textContent = characterLibrary[activeCharacter].juice;
+        const juiceDisplay = document.querySelector(".juice-count");
+        if (juiceDisplay) juiceDisplay.textContent = characterLibrary[activeCharacter].juice;
         saveActiveCharacterToCloud();
       }
 
