@@ -264,10 +264,12 @@ function setupPowerTags(card, themeIndex) {
         // Set initial value
         input.value = theme.powerTags[tagIndex] || '';
 
-        // Update on input
+        // Update on input (only if unlocked)
         input.addEventListener('input', () => {
-            theme.powerTags[tagIndex] = input.value;
-            saveToCloud();
+            if (tagIndex < theme.unlockedTags) {
+                theme.powerTags[tagIndex] = input.value;
+                saveToCloud();
+            }
         });
 
         // Click to add to roll
@@ -767,15 +769,16 @@ function updateStoryTagsDisplay() {
 function setupPortraitToggle() {
     const toggleBtn = document.getElementById('portraitToggle');
     const portrait = document.getElementById('characterPortrait');
+    const placeholderSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%232a2a2a' width='400' height='400'/%3E%3Ctext fill='%23666' font-family='Arial' font-size='20' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3ENo Portrait%3C/text%3E%3C/svg%3E";
 
     toggleBtn.addEventListener('click', () => {
         if (characterData.currentPortraitMode === 'civilian') {
             characterData.currentPortraitMode = 'qfactor';
-            portrait.src = characterData.qfactorPortrait || 'https://via.placeholder.com/400';
+            portrait.src = characterData.qfactorPortrait || placeholderSvg;
             toggleBtn.textContent = '📸 Show Civilian';
         } else {
             characterData.currentPortraitMode = 'civilian';
-            portrait.src = characterData.civilianPortrait || 'https://via.placeholder.com/400';
+            portrait.src = characterData.civilianPortrait || placeholderSvg;
             toggleBtn.textContent = '📸 Show Q-Factor';
         }
         saveToCloud();
@@ -872,10 +875,11 @@ function loadCharacterToUI() {
 
     // Portrait
     const portrait = document.getElementById('characterPortrait');
+    const placeholderSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%232a2a2a' width='400' height='400'/%3E%3Ctext fill='%23666' font-family='Arial' font-size='20' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3ENo Portrait%3C/text%3E%3C/svg%3E";
     if (characterData.currentPortraitMode === 'civilian') {
-        portrait.src = characterData.civilianPortrait || 'https://via.placeholder.com/400';
+        portrait.src = characterData.civilianPortrait || placeholderSvg;
     } else {
-        portrait.src = characterData.qfactorPortrait || 'https://via.placeholder.com/400';
+        portrait.src = characterData.qfactorPortrait || placeholderSvg;
     }
 
     // Juice
@@ -924,16 +928,18 @@ function saveToCloud() {
 
 function broadcastToMc() {
     const broadcastData = {
-        name: characterData.name,
-        pronouns: characterData.pronouns,
+        name: characterData.name || 'Unnamed Character',
+        pronouns: characterData.pronouns || '',
         portraitUrl: characterData.currentPortraitMode === 'civilian'
-            ? characterData.civilianPortrait
-            : characterData.qfactorPortrait,
-        currentStatuses: characterData.currentStatuses,
-        storyTags: characterData.storyTags,
-        juice: characterData.juice
+            ? (characterData.civilianPortrait || '')
+            : (characterData.qfactorPortrait || ''),
+        currentStatuses: characterData.currentStatuses || [],
+        storyTags: characterData.storyTags || [],
+        juice: characterData.juice || 0,
+        themes: characterData.themes || []
     };
 
+    console.log('📤 Broadcasting to MC:', broadcastData);
     broadcastCharacterToMc(broadcastData);
 }
 
@@ -1005,6 +1011,16 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStoryTagsDisplay();
 
     console.log('✅ Player Companion ready!');
+});
+
+// Listen for Firebase auth ready, then do initial broadcast
+document.addEventListener('firebase-auth-ready', () => {
+    console.log('🔥 Firebase auth ready, doing initial broadcast...');
+    // Wait a moment for everything to settle
+    setTimeout(() => {
+        broadcastToMc();
+        console.log('📤 Initial broadcast sent to MC');
+    }, 500);
 });
 
 // Add CSS animations
