@@ -264,10 +264,12 @@ function setupPowerTags(card, themeIndex) {
         // Set initial value
         input.value = theme.powerTags[tagIndex] || '';
 
-        // Update on input
+        // Update on input (only if unlocked)
         input.addEventListener('input', () => {
-            theme.powerTags[tagIndex] = input.value;
-            saveToCloud();
+            if (tagIndex < theme.unlockedTags) {
+                theme.powerTags[tagIndex] = input.value;
+                saveToCloud();
+            }
         });
 
         // Click to add to roll
