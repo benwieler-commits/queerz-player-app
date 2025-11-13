@@ -84,7 +84,7 @@ body {
     flex-wrap: wrap;
 }
 
-.btn-upload, .btn-toggle, .btn-save, .btn-cloud {
+.btn-upload, .btn-toggle, .btn-save, .btn-cloud, .btn-lock {
     padding: 8px 15px;
     background: var(--teal-primary);
     color: white;
@@ -95,9 +95,17 @@ body {
     transition: all 0.3s;
 }
 
-.btn-upload:hover, .btn-toggle:hover, .btn-save:hover {
+.btn-upload:hover, .btn-toggle:hover, .btn-save:hover, .btn-lock:hover {
     background: var(--teal-dark);
     transform: translateY(-2px);
+}
+
+.btn-lock {
+    background: var(--coral-accent);
+}
+
+.btn-lock:hover {
+    background: var(--danger-red);
 }
 
 .btn-cloud.cloud-disabled {
@@ -222,6 +230,31 @@ body {
 
 .theme-card[data-theme-type="anchor"] .theme-name-input {
     color: var(--anchor-border);
+}
+
+/* Locked Theme Styling */
+.theme-card.theme-locked {
+    opacity: 0.7;
+    border-style: dashed;
+    position: relative;
+}
+
+.theme-card.theme-locked::before {
+    content: "🔒 LOCKED";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(100, 100, 100, 0.9);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    z-index: 10;
+}
+
+.theme-card.theme-locked:hover {
+    transform: none;
 }
 
 .theme-header {
