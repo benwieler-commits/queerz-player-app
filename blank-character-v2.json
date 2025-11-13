@@ -1,0 +1,110 @@
+{
+  "_INFO": "QUEERZ! Player Character Template v2 - New Flexible Theme System",
+  "_INSTRUCTIONS": "You can have any combination of 4 themes: Rainbow (Runway) or Anchor (Realness)",
+  "_THEME_TYPES": {
+    "rainbow": "Runway motivation themes with Growth/Shade trackers",
+    "anchor": "Realness identity themes with Growth/Release trackers"
+  },
+
+  "name": "",
+  "pronouns": "",
+  "civilianPortrait": "",
+  "qfactorPortrait": "",
+  "currentPortraitMode": "civilian",
+  "themeColor": "#4A7C7E",
+  "juice": 0,
+
+  "themes": [
+    {
+      "_COMMENT": "Theme 1 - Rainbow (Runway) Example",
+      "type": "rainbow",
+      "name": "",
+      "quote": "",
+      "growth": 0,
+      "shade": 0,
+      "release": 0,
+      "powerTags": ["", "", "", "", "", ""],
+      "unlockedTags": 3,
+      "weaknessTag": "",
+      "burntPowerTags": [false, false, false, false, false, false],
+      "burntWeakness": false
+    },
+    {
+      "_COMMENT": "Theme 2 - Can be Rainbow or Anchor",
+      "type": "rainbow",
+      "name": "",
+      "quote": "",
+      "growth": 0,
+      "shade": 0,
+      "release": 0,
+      "powerTags": ["", "", "", "", "", ""],
+      "unlockedTags": 3,
+      "weaknessTag": "",
+      "burntPowerTags": [false, false, false, false, false, false],
+      "burntWeakness": false
+    },
+    {
+      "_COMMENT": "Theme 3 - Can be Rainbow or Anchor",
+      "type": "rainbow",
+      "name": "",
+      "quote": "",
+      "growth": 0,
+      "shade": 0,
+      "release": 0,
+      "powerTags": ["", "", "", "", "", ""],
+      "unlockedTags": 3,
+      "weaknessTag": "",
+      "burntPowerTags": [false, false, false, false, false, false],
+      "burntWeakness": false
+    },
+    {
+      "_COMMENT": "Theme 4 - Anchor (Realness) Example",
+      "type": "anchor",
+      "name": "",
+      "quote": "",
+      "growth": 0,
+      "shade": 0,
+      "release": 0,
+      "powerTags": ["", "", "", "", "", ""],
+      "unlockedTags": 3,
+      "weaknessTag": "",
+      "burntPowerTags": [false, false, false, false, false, false],
+      "burntWeakness": false
+    }
+  ],
+
+  "currentStatuses": [],
+  "storyTags": [],
+  "burntTags": [],
+  "tagCombos": [],
+  "selectedMove": null,
+  "clickedTags": [],
+  "usedWeakness": false,
+
+  "_GROWTH_MECHANICS": {
+    "description": "Fill 3 Growth boxes to unlock 1 greyed-out tag",
+    "progression": "Start with 3 tags unlocked, unlock up to 6 total",
+    "rainbow_fade": "Fill 3 Shade boxes → theme fades, must replace with Anchor theme",
+    "anchor_fade": "Fill 3 Release boxes → theme fades, must replace with Rainbow theme",
+    "weakness_bonus": "If you use Weakness AND roll 6-, automatically gain +1 Growth"
+  },
+
+  "_TAG_SYSTEM": {
+    "power_tags": "Click to add +1 power to roll (once per roll)",
+    "weakness_tag": "Click to use (triggers Growth on 6- rolls)",
+    "burn_tags": "Click flame icon to burn a tag (unusable until MC prompts recovery)",
+    "greyed_tags": "Locked until Growth boxes are filled"
+  },
+
+  "_DICE_MECHANICS": {
+    "core_move_required": "Must select a core move before rolling",
+    "juice_generation": "7-9 = +1 Juice, 10+ = +3 Juice",
+    "juice_spending": "Spend up to 3 Juice to add to Power, OR spend 3 Juice to use a Combo",
+    "reset": "Reset button clears unused Juice and all clicked tags"
+  },
+
+  "_FIREBASE_BROADCAST": {
+    "to_mc": "Player broadcasts: Name, Pronouns, Portrait, Status Tags, Story Tags",
+    "from_mc": "Player receives: Scene, Music, NPC Portrait, Status Tags, Story Tags"
+  }
+}

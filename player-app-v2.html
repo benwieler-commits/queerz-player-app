@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUEERZ! Player Companion v2</title>
+    <link rel="stylesheet" href="player-app-v2.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="app-header">
+        <h1 class="app-title">🌈 QUEERZ! Player Companion</h1>
+        <div class="header-controls">
+            <label for="characterUpload" class="btn-upload">📁 Upload JSON</label>
+            <input type="file" id="characterUpload" accept=".json" style="display: none;">
+            <button id="exportBtn" class="btn-save">💾 Export JSON</button>
+            <button id="portraitToggle" class="btn-toggle">📸 Toggle Portrait</button>
+            <button id="cloudSyncToggle" class="btn-cloud cloud-disabled">☁️ Cloud: OFF</button>
+        </div>
+        <div class="sync-status">
+            <span id="cloudBadge" class="badge cloud-offline">☁️</span>
+            <span id="syncBadge" class="badge offline">●</span>
+            <span id="mcStatus" class="mc-status">Waiting for MC...</span>
+        </div>
+    </header>
+
+    <!-- MAIN FOLIO LAYOUT -->
+    <main class="folio-container">
+
+        <!-- LEFT COLUMN: Themes 1 & 2 -->
+        <section class="folio-column left-column">
+            <!-- Theme 1 -->
+            <div class="theme-card" id="theme0" data-theme-type="rainbow">
+                <div class="theme-header">
+                    <select class="theme-type-selector">
+                        <option value="rainbow">🌈 Rainbow (Runway)</option>
+                        <option value="anchor">⚓ Anchor (Realness)</option>
+                    </select>
+                    <input type="text" class="theme-name-input" placeholder="Theme Name">
+                </div>
+
+                <!-- Rainbow Trackers -->
+                <div class="rainbow-trackers">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="shade-track">
+                        <label>SHADE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="shade" data-index="0"></div>
+                            <div class="track-box" data-track="shade" data-index="1"></div>
+                            <div class="track-box" data-track="shade" data-index="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anchor Trackers -->
+                <div class="anchor-trackers" style="display: none;">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="release-track">
+                        <label>RELEASE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="release" data-index="0"></div>
+                            <div class="track-box" data-track="release" data-index="1"></div>
+                            <div class="track-box" data-track="release" data-index="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="runway-quote">
+                    <textarea class="runway-quote-input" placeholder="Your runway quote or identity statement..."></textarea>
+                </div>
+
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list">
+                            <li class="tag-item" data-tag-index="0">
+                                <input type="text" class="tag-input" placeholder="Power Tag 1">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item" data-tag-index="1">
+                                <input type="text" class="tag-input" placeholder="Power Tag 2">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item" data-tag-index="2">
+                                <input type="text" class="tag-input" placeholder="Power Tag 3">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="3">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="4">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="5">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag">
+                        <button class="btn-burn-weakness" title="Burn Weakness">🔥</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theme 2 (identical structure) -->
+            <div class="theme-card" id="theme1" data-theme-type="rainbow">
+                <div class="theme-header">
+                    <select class="theme-type-selector">
+                        <option value="rainbow">🌈 Rainbow (Runway)</option>
+                        <option value="anchor">⚓ Anchor (Realness)</option>
+                    </select>
+                    <input type="text" class="theme-name-input" placeholder="Theme Name">
+                </div>
+
+                <div class="rainbow-trackers">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="shade-track">
+                        <label>SHADE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="shade" data-index="0"></div>
+                            <div class="track-box" data-track="shade" data-index="1"></div>
+                            <div class="track-box" data-track="shade" data-index="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="anchor-trackers" style="display: none;">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="release-track">
+                        <label>RELEASE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="release" data-index="0"></div>
+                            <div class="track-box" data-track="release" data-index="1"></div>
+                            <div class="track-box" data-track="release" data-index="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="runway-quote">
+                    <textarea class="runway-quote-input" placeholder="Your runway quote or identity statement..."></textarea>
+                </div>
+
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list">
+                            <li class="tag-item" data-tag-index="0">
+                                <input type="text" class="tag-input" placeholder="Power Tag 1">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item" data-tag-index="1">
+                                <input type="text" class="tag-input" placeholder="Power Tag 2">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item" data-tag-index="2">
+                                <input type="text" class="tag-input" placeholder="Power Tag 3">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="3">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="4">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="5">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag">
+                        <button class="btn-burn-weakness" title="Burn Weakness">🔥</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER COLUMN: Portrait, MC Sync, Dice Roller -->
+        <section class="folio-center">
+            <!-- Character Portrait -->
+            <div class="portrait-container">
+                <img id="characterPortrait" src="https://via.placeholder.com/400" alt="Character Portrait" class="character-portrait">
+                <div class="character-info">
+                    <input type="text" id="characterName" placeholder="Character Name" class="character-name-input">
+                    <input type="text" id="characterPronouns" placeholder="Pronouns" class="pronouns-input">
+                    <div class="color-picker-section">
+                        <label for="themeColor">Theme Color:</label>
+                        <input type="color" id="themeColor" value="#4A7C7E">
+                    </div>
+                </div>
+            </div>
+
+            <!-- MC Broadcast Section -->
+            <div class="mc-broadcast">
+                <h3>📡 MC Broadcast</h3>
+                <div class="broadcast-content">
+                    <div class="broadcast-scene">
+                        <strong>Scene:</strong>
+                        <p id="sceneInfo">Waiting for scene...</p>
+                        <img id="sceneImage" src="" alt="Scene" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; display: none;">
+                    </div>
+                    <div class="broadcast-music">
+                        <strong>♪ Music:</strong>
+                        <p id="musicInfo">No music playing</p>
+                        <audio id="musicPlayer" controls style="width: 100%; margin-top: 8px; display: none;"></audio>
+                    </div>
+                    <div class="broadcast-character">
+                        <strong>NPC/Spotlight:</strong>
+                        <p id="spotlightInfo">—</p>
+                        <img id="spotlightPortrait" src="" alt="Spotlight Character" style="max-width: 200px; height: auto; border-radius: 8px; margin-top: 8px; display: none;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Core Move Selection -->
+            <div class="move-selector">
+                <h3>📖 Select Your Core Move</h3>
+                <p class="move-hint">⚠️ REQUIRED: Click a move before rolling!</p>
+                <div class="move-icons">
+                    <div class="move-icon" data-move="strike-a-pose" title="Strike a Pose">
+                        <span class="move-emoji">✨</span>
+                        <span>Strike a Pose</span>
+                    </div>
+                    <div class="move-icon" data-move="slay" title="Slay">
+                        <span class="move-emoji">⚔️</span>
+                        <span>Slay</span>
+                    </div>
+                    <div class="move-icon" data-move="get-a-clue" title="Get a Clue">
+                        <span class="move-emoji">🔍</span>
+                        <span>Get a Clue</span>
+                    </div>
+                    <div class="move-icon" data-move="talk-it-out" title="Talk It Out">
+                        <span class="move-emoji">💬</span>
+                        <span>Talk It Out</span>
+                    </div>
+                    <div class="move-icon" data-move="care" title="Care">
+                        <span class="move-emoji">💖</span>
+                        <span>Care</span>
+                    </div>
+                    <div class="move-icon" data-move="be-vulnerable" title="Be Vulnerable">
+                        <span class="move-emoji">🥺</span>
+                        <span>Be Vulnerable</span>
+                    </div>
+                    <div class="move-icon" data-move="resist" title="Resist">
+                        <span class="move-emoji">🛡️</span>
+                        <span>Resist</span>
+                    </div>
+                </div>
+                <div id="selectedMoveDisplay" class="selected-move-display">No move selected</div>
+            </div>
+
+            <!-- Juice Tracker -->
+            <div class="juice-tracker">
+                <h3>✨ JUICE</h3>
+                <div class="juice-display">
+                    <button id="juiceDown" class="juice-btn">−</button>
+                    <span id="juiceCount" class="juice-count">0</span>
+                    <button id="juiceUp" class="juice-btn">+</button>
+                </div>
+                <div class="juice-options">
+                    <button id="spendJuiceBtn" class="btn-spend-juice">Spend Juice for Power (+1 per Juice)</button>
+                    <button id="useComboBtn" class="btn-use-combo">Use Combo (3 Juice)</button>
+                </div>
+            </div>
+
+            <!-- Dice Roller -->
+            <div class="dice-roller">
+                <h3>🎲 Roll Dice</h3>
+                <div class="power-display">
+                    <label>Total Power:</label>
+                    <input type="number" id="totalPower" class="power-input" value="0" min="-5" max="10" readonly>
+                    <div class="power-breakdown" id="powerBreakdown"></div>
+                </div>
+                <button id="rollBtn" class="btn-roll">Roll 2d6 + Power</button>
+                <div id="rollResult" class="roll-result"></div>
+                <button id="resetBtn" class="btn-reset">Reset Dice & Clear Tags</button>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Themes 3 & 4 -->
+        <section class="folio-column right-column">
+            <!-- Theme 3 (identical structure) -->
+            <div class="theme-card" id="theme2" data-theme-type="rainbow">
+                <div class="theme-header">
+                    <select class="theme-type-selector">
+                        <option value="rainbow">🌈 Rainbow (Runway)</option>
+                        <option value="anchor">⚓ Anchor (Realness)</option>
+                    </select>
+                    <input type="text" class="theme-name-input" placeholder="Theme Name">
+                </div>
+
+                <div class="rainbow-trackers">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="shade-track">
+                        <label>SHADE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="shade" data-index="0"></div>
+                            <div class="track-box" data-track="shade" data-index="1"></div>
+                            <div class="track-box" data-track="shade" data-index="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="anchor-trackers" style="display: none;">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="release-track">
+                        <label>RELEASE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="release" data-index="0"></div>
+                            <div class="track-box" data-track="release" data-index="1"></div>
+                            <div class="track-box" data-track="release" data-index="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="runway-quote">
+                    <textarea class="runway-quote-input" placeholder="Your runway quote or identity statement..."></textarea>
+                </div>
+
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list">
+                            <li class="tag-item" data-tag-index="0">
+                                <input type="text" class="tag-input" placeholder="Power Tag 1">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item" data-tag-index="1">
+                                <input type="text" class="tag-input" placeholder="Power Tag 2">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item" data-tag-index="2">
+                                <input type="text" class="tag-input" placeholder="Power Tag 3">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="3">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="4">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="5">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag">
+                        <button class="btn-burn-weakness" title="Burn Weakness">🔥</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theme 4 (identical structure) -->
+            <div class="theme-card" id="theme3" data-theme-type="anchor">
+                <div class="theme-header">
+                    <select class="theme-type-selector">
+                        <option value="rainbow">🌈 Rainbow (Runway)</option>
+                        <option value="anchor" selected>⚓ Anchor (Realness)</option>
+                    </select>
+                    <input type="text" class="theme-name-input" placeholder="Theme Name">
+                </div>
+
+                <div class="rainbow-trackers" style="display: none;">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="shade-track">
+                        <label>SHADE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="shade" data-index="0"></div>
+                            <div class="track-box" data-track="shade" data-index="1"></div>
+                            <div class="track-box" data-track="shade" data-index="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="anchor-trackers">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="release-track">
+                        <label>RELEASE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="release" data-index="0"></div>
+                            <div class="track-box" data-track="release" data-index="1"></div>
+                            <div class="track-box" data-track="release" data-index="2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="runway-quote">
+                    <textarea class="runway-quote-input" placeholder="Your runway quote or identity statement..."></textarea>
+                </div>
+
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list">
+                            <li class="tag-item" data-tag-index="0">
+                                <input type="text" class="tag-input" placeholder="Power Tag 1">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item" data-tag-index="1">
+                                <input type="text" class="tag-input" placeholder="Power Tag 2">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item" data-tag-index="2">
+                                <input type="text" class="tag-input" placeholder="Power Tag 3">
+                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="3">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="4">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="5">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
+                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag">
+                        <button class="btn-burn-weakness" title="Burn Weakness">🔥</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- STATUS & STORY TAGS SECTION (Received from MC) -->
+    <section class="tags-section">
+        <div class="tags-container">
+            <!-- Current Statuses (Managed by MC) -->
+            <div class="status-panel">
+                <h3>Status Tags (From MC)</h3>
+                <p class="mc-managed-note">⭐ These tags are assigned by the MC</p>
+                <div id="statusList" class="tag-display"></div>
+            </div>
+
+            <!-- Story Tags (Managed by MC) -->
+            <div class="story-panel">
+                <h3>Story Tags (From MC)</h3>
+                <p class="mc-managed-note">⭐ These tags are assigned by the MC</p>
+                <div id="storyTagList" class="tag-display"></div>
+            </div>
+
+            <!-- Burnt Tags -->
+            <div class="burnt-panel">
+                <h3>Burnt Tags</h3>
+                <div id="burntTagList" class="tag-display"></div>
+                <button id="recoverBtn" class="btn-recover">Recover All Burnt Tags</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAG COMBOS SECTION -->
+    <section class="combos-section">
+        <div class="combos-container">
+            <div class="combos-panel">
+                <h2>🎯 TAG COMBOS</h2>
+                <p class="combos-subtitle">Create powerful combinations! (Costs 3 Juice to activate)</p>
+
+                <div class="combo-add">
+                    <input type="text" id="comboName" placeholder="Combo name (e.g., 'Glitter Bomb Attack')" class="input-combo-name">
+                    <div class="combo-tags-input">
+                        <input type="text" id="comboTag1" placeholder="Tag 1" class="input-small">
+                        <input type="text" id="comboTag2" placeholder="Tag 2" class="input-small">
+                        <input type="text" id="comboTag3" placeholder="Tag 3 (optional)" class="input-small">
+                    </div>
+                    <button id="addComboBtn" class="btn-add">+ Add Combo</button>
+                </div>
+
+                <div id="comboList" class="combo-display"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CORE MOVES REFERENCE -->
+    <section class="moves-section">
+        <h2>📖 CORE MOVES REFERENCE</h2>
+        <button id="toggleMovesBtn" class="btn-toggle-moves">Show/Hide Moves</button>
+        <div id="movesPanel" class="moves-panel hidden">
+            <div class="moves-grid">
+                <div class="move-card">
+                    <h3 class="move-name">STRIKE A POSE</h3>
+                    <p class="move-trigger">When you <strong>attempt to give yourself or your allies a positive status</strong>, or <strong>make an impression or influence others</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Choose 2 upgrades</p>
+                        <p><strong>7-9:</strong> Choose 1 upgrade, gain 1 Juice</p>
+                        <p><strong>6-:</strong> MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting, Contagious</p>
+                </div>
+
+                <div class="move-card">
+                    <h3 class="move-name">SLAY</h3>
+                    <p class="move-trigger">When you <strong>give your opponents a negative status or overcome their Ignorance Limit</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Choose 2 upgrades, gain 3 Juice</p>
+                        <p><strong>7-9:</strong> Choose 1 upgrade, gain 1 Juice</p>
+                        <p><strong>6-:</strong> MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting</p>
+                </div>
+
+                <div class="move-card">
+                    <h3 class="move-name">GET A CLUE</h3>
+                    <p class="move-trigger">When you <strong>investigate, research, or gather information</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Gain a Story Tag and ask 2 questions, gain 3 Juice</p>
+                        <p><strong>7-9:</strong> Ask 1 question or gain a Story Tag, gain 1 Juice</p>
+                        <p><strong>6-:</strong> MC makes a move</p>
+                    </div>
+                </div>
+
+                <div class="move-card">
+                    <h3 class="move-name">TALK IT OUT</h3>
+                    <p class="move-trigger">When you <strong>de-escalate or negotiate in good faith</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Make progress or bond, gain 3 Juice</p>
+                        <p><strong>7-9:</strong> Succeed with cost, gain 1 Juice</p>
+                        <p><strong>6-:</strong> They put up walls</p>
+                    </div>
+                </div>
+
+                <div class="move-card">
+                    <h3 class="move-name">CARE</h3>
+                    <p class="move-trigger">When you <strong>help someone with their emotional or physical needs</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Remove negative or give positive status, gain 3 Juice</p>
+                        <p><strong>7-9:</strong> As above but take status or mark Growth, gain 1 Juice</p>
+                        <p><strong>6-:</strong> Your care backfires</p>
+                    </div>
+                </div>
+
+                <div class="move-card">
+                    <h3 class="move-name">BE VULNERABLE</h3>
+                    <p class="move-trigger">When you <strong>open up emotionally or share something difficult</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Mark Growth, choose 2 benefits, gain 3 Juice</p>
+                        <p><strong>7-9:</strong> Mark Growth, choose 1 benefit, gain 1 Juice</p>
+                        <p><strong>6-:</strong> Mark Growth but MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Benefits:</strong> Gain support, clear status, earn trust, inspire others</p>
+                </div>
+
+                <div class="move-card">
+                    <h3 class="move-name">RESIST</h3>
+                    <p class="move-trigger">When you <strong>fight against a status being applied or try to reduce its tier</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Fully resist or reduce by 2 tiers, gain 3 Juice</p>
+                        <p><strong>7-9:</strong> Reduce status by 1 tier, gain 1 Juice</p>
+                        <p><strong>6-:</strong> Take the full status</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Firebase Config -->
+    <script type="module" src="firebase-config.js"></script>
+    <!-- Main App JavaScript -->
+    <script type="module" src="player-app-v2.js"></script>
+    <link rel="icon" href="data:,">
+</body>
+</html>
