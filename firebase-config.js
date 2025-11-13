@@ -112,33 +112,49 @@ function initializeBroadcastListener() {
     if (!data) return;
 
     hasReceived = true;
-    
-    // Scene + Image 1
-    if (data.currentScene) {
-      document.getElementById('sceneInfo').textContent = data.currentScene.name || 'Unknown Scene';
+
+    // Scene/Environment + Image
+    const environment = data.environment || data.currentScene;
+    if (environment) {
+      const sceneInfo = document.getElementById('sceneInfo');
+      if (sceneInfo) {
+        sceneInfo.textContent = environment.name || 'Unknown Scene';
+      }
       const sceneImg = document.getElementById('sceneImage');
-      if (sceneImg && data.currentScene.imageUrl) {
-        sceneImg.src = data.currentScene.imageUrl;
+      if (sceneImg && environment.imageUrl) {
+        sceneImg.src = environment.imageUrl;
         sceneImg.style.display = 'block';
       }
     }
-    
+
     // Music + Audio Player
-    if (data.currentMusic) {
-      document.getElementById('musicInfo').textContent = data.currentMusic.name || 'No music';
+    const music = data.music || data.currentMusic;
+    if (music) {
+      const musicInfo = document.getElementById('musicInfo');
+      if (musicInfo) {
+        musicInfo.textContent = music.name || 'No music';
+      }
       const musicPlayer = document.getElementById('musicPlayer');
-      if (musicPlayer && data.currentMusic.url) {
-        musicPlayer.src = data.currentMusic.url;
+      if (musicPlayer && music.url) {
+        musicPlayer.src = music.url;
         musicPlayer.style.display = 'block';
+        // Auto-loop if specified
+        if (music.isLooping !== undefined) {
+          musicPlayer.loop = music.isLooping;
+        }
       }
     }
-    
-    // Spotlight + Image 2
-    if (data.activeCharacter) {
-      document.getElementById('spotlightInfo').textContent = data.activeCharacter.name || 'No spotlight';
+
+    // NPC/Spotlight Character + Image
+    const npc = data.npc || data.activeCharacter;
+    if (npc) {
+      const spotlightInfo = document.getElementById('spotlightInfo');
+      if (spotlightInfo) {
+        spotlightInfo.textContent = npc.name || 'No spotlight';
+      }
       const spotImg = document.getElementById('spotlightPortrait');
-      if (spotImg && (data.activeCharacter.imageUrl || data.spotlightImage)) {
-        spotImg.src = data.activeCharacter.imageUrl || data.spotlightImage;
+      if (spotImg && npc.imageUrl) {
+        spotImg.src = npc.imageUrl;
         spotImg.style.display = 'block';
       }
     }

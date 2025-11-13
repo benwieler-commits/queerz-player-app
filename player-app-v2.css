@@ -305,6 +305,18 @@ body {
     opacity: 0.7;
 }
 
+.theme-name-input:read-only {
+    cursor: pointer;
+    background: rgba(100, 100, 100, 0.05);
+    border-bottom-style: dashed;
+}
+
+.runway-quote-input:read-only {
+    cursor: pointer;
+    background: rgba(100, 100, 100, 0.05);
+    border-left-style: dashed;
+}
+
 /* TRACKERS */
 
 .rainbow-trackers, .anchor-trackers {
@@ -556,6 +568,17 @@ body {
     color: var(--text-secondary);
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+.tag-input:read-only {
+    cursor: pointer;
+    background: rgba(100, 100, 100, 0.05);
+}
+
+.weakness-input:read-only {
+    cursor: pointer;
+    background: rgba(100, 100, 100, 0.05);
+    border-style: dashed;
 }
 
 .btn-burn {

@@ -259,27 +259,29 @@ function lockThemeFields(themeIndex) {
     const theme = characterData.themes[themeIndex];
     const card = document.querySelectorAll('.theme-card')[themeIndex];
 
-    // Lock theme selector, name, quote
-    const typeSelector = card.querySelector('.theme-type-selector');
+    // Make name and quote readonly (can still see and select, but not edit)
     const nameInput = card.querySelector('.theme-name-input');
     const quoteInput = card.querySelector('.runway-quote-input');
 
-    if (typeSelector) typeSelector.disabled = true;
-    if (nameInput) nameInput.disabled = true;
-    if (quoteInput) quoteInput.disabled = true;
+    if (nameInput) nameInput.readOnly = true;
+    if (quoteInput) quoteInput.readOnly = true;
 
-    // Lock all tags (0-2 which are normally unlocked)
+    // Disable type selector (can't change theme type)
+    const typeSelector = card.querySelector('.theme-type-selector');
+    if (typeSelector) typeSelector.disabled = true;
+
+    // Make first 3 tags readonly (can still click, but not edit text)
     const tagItems = card.querySelectorAll('.tag-item');
     tagItems.forEach((item, i) => {
-        if (i < 3) { // Only lock the first 3 tags
+        if (i < 3) {
             const input = item.querySelector('.tag-input');
-            if (input) input.disabled = true;
+            if (input) input.readOnly = true;
         }
     });
 
-    // Lock weakness
+    // Make weakness readonly
     const weaknessInput = card.querySelector('.weakness-input');
-    if (weaknessInput) weaknessInput.disabled = true;
+    if (weaknessInput) weaknessInput.readOnly = true;
 
     // Add visual locked class
     card.classList.add('theme-locked');
@@ -289,27 +291,29 @@ function unlockThemeFields(themeIndex) {
     const theme = characterData.themes[themeIndex];
     const card = document.querySelectorAll('.theme-card')[themeIndex];
 
-    // Unlock theme selector, name, quote
-    const typeSelector = card.querySelector('.theme-type-selector');
+    // Make name and quote editable again
     const nameInput = card.querySelector('.theme-name-input');
     const quoteInput = card.querySelector('.runway-quote-input');
 
-    if (typeSelector) typeSelector.disabled = false;
-    if (nameInput) nameInput.disabled = false;
-    if (quoteInput) quoteInput.disabled = false;
+    if (nameInput) nameInput.readOnly = false;
+    if (quoteInput) quoteInput.readOnly = false;
 
-    // Unlock first 3 tags
+    // Enable type selector
+    const typeSelector = card.querySelector('.theme-type-selector');
+    if (typeSelector) typeSelector.disabled = false;
+
+    // Make first 3 tags editable again
     const tagItems = card.querySelectorAll('.tag-item');
     tagItems.forEach((item, i) => {
         if (i < theme.unlockedTags) {
             const input = item.querySelector('.tag-input');
-            if (input) input.disabled = false;
+            if (input) input.readOnly = false;
         }
     });
 
-    // Unlock weakness
+    // Make weakness editable
     const weaknessInput = card.querySelector('.weakness-input');
-    if (weaknessInput) weaknessInput.disabled = false;
+    if (weaknessInput) weaknessInput.readOnly = false;
 
     // Remove visual locked class
     card.classList.remove('theme-locked');
@@ -886,7 +890,27 @@ function setupColorPicker() {
 }
 
 function applyThemeColor(hexColor) {
+    // Apply to main theme color
     document.documentElement.style.setProperty('--character-theme-color', hexColor);
+
+    // Apply to various UI elements throughout the app
+    document.documentElement.style.setProperty('--teal-primary', hexColor);
+
+    // Create a slightly darker version for hover states
+    const rgb = hexToRgb(hexColor);
+    if (rgb) {
+        const darkerColor = `rgb(${Math.max(0, rgb.r - 30)}, ${Math.max(0, rgb.g - 30)}, ${Math.max(0, rgb.b - 30)})`;
+        document.documentElement.style.setProperty('--teal-dark', darkerColor);
+    }
+}
+
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
 }
 
 // ================================
