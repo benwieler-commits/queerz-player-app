@@ -21,6 +21,7 @@ let characterData = {
     currentPortraitMode: 'civilian', // 'civilian' or 'qfactor'
     themeColor: '#4A7C7E',
     juice: 0,
+    characterLocked: false, // NEW: Lock character after creation
     themes: [
         createEmptyTheme('rainbow'),
         createEmptyTheme('rainbow'),
@@ -48,7 +49,8 @@ function createEmptyTheme(type = 'rainbow') {
         unlockedTags: 3, // Start with 3 unlocked
         weaknessTag: '',
         burntPowerTags: [false, false, false, false, false, false],
-        burntWeakness: false
+        burntWeakness: false,
+        locked: false // NEW: Theme locked after character creation
     };
 }
 
@@ -156,7 +158,9 @@ function setupTrackBoxes(card, themeIndex) {
 
             // Check if shade is filled (3/3)
             if (theme.shade === 3) {
-                alert(`⚠️ ${theme.name || 'This theme'} has faded! All 3 SHADE boxes are filled.\n\nYou must replace it with an Anchor/Realness theme.`);
+                theme.locked = false; // Unlock theme for editing
+                unlockThemeFields(themeIndex);
+                alert(`⚠️ ${theme.name || 'This theme'} has faded! All 3 SHADE boxes are filled.\n\nThis theme is now UNLOCKED for editing. Replace it with an Anchor/Realness theme.`);
             }
 
             updateTrackDisplay(card, themeIndex);
@@ -176,7 +180,9 @@ function setupTrackBoxes(card, themeIndex) {
 
             // Check if release is filled (3/3)
             if (theme.release === 3) {
-                alert(`⚠️ ${theme.name || 'This theme'} has faded! All 3 RELEASE boxes are filled.\n\nYou must replace it with a Rainbow/Runway theme.`);
+                theme.locked = false; // Unlock theme for editing
+                unlockThemeFields(themeIndex);
+                alert(`⚠️ ${theme.name || 'This theme'} has faded! All 3 RELEASE boxes are filled.\n\nThis theme is now UNLOCKED for editing. Replace it with a Rainbow/Runway theme.`);
             }
 
             updateTrackDisplay(card, themeIndex);
@@ -247,6 +253,83 @@ function updateTagUnlockStatus(themeIndex) {
             burnBtn.disabled = true;
         }
     });
+}
+
+function lockThemeFields(themeIndex) {
+    const theme = characterData.themes[themeIndex];
+    const card = document.querySelectorAll('.theme-card')[themeIndex];
+
+    // Lock theme selector, name, quote
+    const typeSelector = card.querySelector('.theme-type-selector');
+    const nameInput = card.querySelector('.theme-name-input');
+    const quoteInput = card.querySelector('.runway-quote-input');
+
+    if (typeSelector) typeSelector.disabled = true;
+    if (nameInput) nameInput.disabled = true;
+    if (quoteInput) quoteInput.disabled = true;
+
+    // Lock all tags (0-2 which are normally unlocked)
+    const tagItems = card.querySelectorAll('.tag-item');
+    tagItems.forEach((item, i) => {
+        if (i < 3) { // Only lock the first 3 tags
+            const input = item.querySelector('.tag-input');
+            if (input) input.disabled = true;
+        }
+    });
+
+    // Lock weakness
+    const weaknessInput = card.querySelector('.weakness-input');
+    if (weaknessInput) weaknessInput.disabled = true;
+
+    // Add visual locked class
+    card.classList.add('theme-locked');
+}
+
+function unlockThemeFields(themeIndex) {
+    const theme = characterData.themes[themeIndex];
+    const card = document.querySelectorAll('.theme-card')[themeIndex];
+
+    // Unlock theme selector, name, quote
+    const typeSelector = card.querySelector('.theme-type-selector');
+    const nameInput = card.querySelector('.theme-name-input');
+    const quoteInput = card.querySelector('.runway-quote-input');
+
+    if (typeSelector) typeSelector.disabled = false;
+    if (nameInput) nameInput.disabled = false;
+    if (quoteInput) quoteInput.disabled = false;
+
+    // Unlock first 3 tags
+    const tagItems = card.querySelectorAll('.tag-item');
+    tagItems.forEach((item, i) => {
+        if (i < theme.unlockedTags) {
+            const input = item.querySelector('.tag-input');
+            if (input) input.disabled = false;
+        }
+    });
+
+    // Unlock weakness
+    const weaknessInput = card.querySelector('.weakness-input');
+    if (weaknessInput) weaknessInput.disabled = false;
+
+    // Remove visual locked class
+    card.classList.remove('theme-locked');
+}
+
+function lockAllCharacterFields() {
+    characterData.characterLocked = true;
+    characterData.themes.forEach((theme, index) => {
+        theme.locked = true;
+        lockThemeFields(index);
+    });
+
+    // Update button visibility
+    const lockBtn = document.getElementById('lockCharacterBtn');
+    if (lockBtn) {
+        lockBtn.style.display = 'none';
+    }
+
+    showNotification('🔒 Character locked! Themes will unlock when Shade/Release boxes are filled.');
+    saveToCloud();
 }
 
 // ================================
@@ -904,7 +987,18 @@ function loadCharacterToUI() {
 
         updateThemeVisuals(card, index);
         updateTrackDisplay(card, index);
+
+        // Apply locked status if theme is locked
+        if (theme.locked) {
+            lockThemeFields(index);
+        }
     });
+
+    // Hide lock button if character is locked
+    if (characterData.characterLocked) {
+        const lockBtn = document.getElementById('lockCharacterBtn');
+        if (lockBtn) lockBtn.style.display = 'none';
+    }
 
     // Combos
     updateCombosDisplay();
@@ -977,6 +1071,16 @@ function showNotification(message) {
 function setupMiscUI() {
     // Recover burnt tags button
     document.getElementById('recoverBtn').addEventListener('click', recoverAllBurntTags);
+
+    // Lock character button
+    const lockBtn = document.getElementById('lockCharacterBtn');
+    if (lockBtn) {
+        lockBtn.addEventListener('click', lockAllCharacterFields);
+        // Hide button if character is already locked
+        if (characterData.characterLocked) {
+            lockBtn.style.display = 'none';
+        }
+    }
 
     // Toggle moves panel
     const toggleMovesBtn = document.getElementById('toggleMovesBtn');

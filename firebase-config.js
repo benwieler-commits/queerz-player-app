@@ -105,10 +105,12 @@ function initializeBroadcastListener() {
   
   onValue(broadcastRef, (snapshot) => {
     const data = snapshot.val();
-    if (data) console.log('📡 Broadcast data received'); // Throttled log
-    
+    if (data) {
+      console.log('📡 Broadcast data received:', data); // Full data logging
+    }
+
     if (!data) return;
-    
+
     hasReceived = true;
     
     // Scene + Image 1
