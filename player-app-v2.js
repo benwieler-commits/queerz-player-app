@@ -1142,6 +1142,8 @@ function setupCharacterInfo() {
 
     nameInput.addEventListener('input', () => {
         characterData.name = nameInput.value;
+        // Store character name in localStorage for MC broadcast matching
+        localStorage.setItem('currentCharacterName', nameInput.value);
         saveToCloud();
     });
 
@@ -1198,6 +1200,11 @@ function loadCharacterToUI() {
     document.getElementById('characterPronouns').value = characterData.pronouns;
     document.getElementById('themeColor').value = characterData.themeColor;
     applyThemeColor(characterData.themeColor);
+
+    // Store character name in localStorage for MC broadcast matching
+    if (characterData.name) {
+        localStorage.setItem('currentCharacterName', characterData.name);
+    }
 
     // Portrait
     const portrait = document.getElementById('characterPortrait');
@@ -1374,6 +1381,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStatusTagsDisplay();
     updateStoryTagsDisplay();
 
+    // Store initial character name in localStorage for MC broadcast matching
+    if (characterData.name) {
+        localStorage.setItem('currentCharacterName', characterData.name);
+    }
+
     console.log('✅ Player Companion ready!');
 });
 
@@ -1422,6 +1434,51 @@ window.testAddTags = function() {
 };
 
 /**
+ * Test function to simulate actual MC broadcast structure
+ * Call from browser console: testMCBroadcast()
+ */
+window.testMCBroadcast = function() {
+    console.log('🧪 Testing with actual MC broadcast structure...');
+
+    const currentCharName = localStorage.getItem('currentCharacterName');
+    console.log('  Current character name in localStorage:', currentCharName);
+
+    // Simulate the actual MC broadcast structure
+    const mockBroadcast = {
+        players: [
+            {
+                name: currentCharName || "Test Character",
+                tags: {
+                    status: [
+                        "Blessed (+2) Ongoing",
+                        "Hurt (-1) Temporary"
+                    ],
+                    story: [
+                        "Investigating (+1) Temporary"
+                    ]
+                }
+            }
+        ]
+    };
+
+    console.log('  Mock broadcast data:', mockBroadcast);
+
+    // Manually trigger the tag extraction logic
+    const statusTags = mockBroadcast.players[0].tags.status || [];
+    const storyTags = mockBroadcast.players[0].tags.story || [];
+
+    const testEvent = new CustomEvent('mc-tag-update', {
+        detail: {
+            statusTags: statusTags,
+            storyTags: storyTags
+        }
+    });
+
+    document.dispatchEvent(testEvent);
+    console.log('✅ MC-style broadcast dispatched. Check the Status/Story Tags sections.');
+};
+
+/**
  * Test function to check if display elements exist
  */
 window.checkDisplayElements = function() {
@@ -1438,4 +1495,7 @@ window.checkDisplayElements = function() {
     return { statusList: !!statusList, storyList: !!storyList };
 };
 
-console.log('💡 Debug functions available: testAddTags(), checkDisplayElements()');
+console.log('💡 Debug functions available:');
+console.log('  - testAddTags() - Test with simple tag format');
+console.log('  - testMCBroadcast() - Test with actual MC broadcast structure');
+console.log('  - checkDisplayElements() - Verify DOM elements exist');
