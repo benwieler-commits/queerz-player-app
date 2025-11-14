@@ -354,7 +354,6 @@ window.loadCharactersFromCloud = loadCharactersFromCloud;
 window.saveLastCharacterToCloud = saveLastCharacterToCloud;
 window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
 window.toggleCloudSync = toggleCloudSync;
-window.broadcastCharacterToMc = broadcastCharacterToMc;
 
 export {
   database, auth, currentUserId,
@@ -362,7 +361,6 @@ export {
   saveCharacterToCloud, loadCharactersFromCloud,
   saveLastCharacterToCloud, loadLastCharacterFromCloud,
   toggleCloudSync,
-  broadcastCharacterToMc,
   ref, set, get, onValue, off
 };
 

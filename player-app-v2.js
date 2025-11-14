@@ -5,9 +5,12 @@
 
 import {
     saveCharacterToCloud,
-    loadCharactersFromCloud,
-    broadcastCharacterToMc
+    loadCharactersFromCloud
 } from './firebase-config.js';
+
+import {
+    broadcastPlayerToMc
+} from './firebase-broadcast.js';
 
 // ================================
 // CHARACTER DATA STATE
@@ -1045,20 +1048,8 @@ function saveToCloud() {
 }
 
 function broadcastToMc() {
-    const broadcastData = {
-        name: characterData.name || 'Unnamed Character',
-        pronouns: characterData.pronouns || '',
-        portraitUrl: characterData.currentPortraitMode === 'civilian'
-            ? (characterData.civilianPortrait || '')
-            : (characterData.qfactorPortrait || ''),
-        currentStatuses: characterData.currentStatuses || [],
-        storyTags: characterData.storyTags || [],
-        juice: characterData.juice || 0,
-        themes: characterData.themes || []
-    };
-
-    console.log('📤 Broadcasting to MC:', broadcastData);
-    broadcastCharacterToMc(broadcastData);
+    console.log('📤 Preparing broadcast to MC...');
+    broadcastPlayerToMc(characterData);
 }
 
 // ================================
