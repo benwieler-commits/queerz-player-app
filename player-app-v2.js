@@ -1087,6 +1087,15 @@ function setupMiscUI() {
     // Recover burnt tags button
     document.getElementById('recoverBtn').addEventListener('click', recoverAllBurntTags);
 
+    // Send to MC button
+    const sendToMcBtn = document.getElementById('sendToMcBtn');
+    if (sendToMcBtn) {
+        sendToMcBtn.addEventListener('click', () => {
+            broadcastToMc();
+            showNotification('📤 Character sent to MC!');
+        });
+    }
+
     // Lock character button
     const lockBtn = document.getElementById('lockCharacterBtn');
     if (lockBtn) {
@@ -1130,16 +1139,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStoryTagsDisplay();
 
     console.log('✅ Player Companion ready!');
-});
-
-// Listen for Firebase auth ready, then do initial broadcast
-document.addEventListener('firebase-auth-ready', () => {
-    console.log('🔥 Firebase auth ready, doing initial broadcast...');
-    // Wait a moment for everything to settle
-    setTimeout(() => {
-        broadcastToMc();
-        console.log('📤 Initial broadcast sent to MC');
-    }, 500);
 });
 
 // Add CSS animations

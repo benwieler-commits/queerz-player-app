@@ -84,7 +84,7 @@ body {
     flex-wrap: wrap;
 }
 
-.btn-upload, .btn-toggle, .btn-save, .btn-cloud, .btn-lock {
+.btn-upload, .btn-toggle, .btn-save, .btn-cloud, .btn-lock, .btn-send-mc {
     padding: 8px 15px;
     background: var(--teal-primary);
     color: white;
@@ -95,7 +95,7 @@ body {
     transition: all 0.3s;
 }
 
-.btn-upload:hover, .btn-toggle:hover, .btn-save:hover, .btn-lock:hover {
+.btn-upload:hover, .btn-toggle:hover, .btn-save:hover, .btn-lock:hover, .btn-send-mc:hover {
     background: var(--teal-dark);
     transform: translateY(-2px);
 }
@@ -106,6 +106,16 @@ body {
 
 .btn-lock:hover {
     background: var(--danger-red);
+}
+
+.btn-send-mc {
+    background: var(--accent-purple);
+    font-weight: bold;
+}
+
+.btn-send-mc:hover {
+    background: #8B5CF6;
+    box-shadow: 0 4px 15px rgba(167, 139, 250, 0.4);
 }
 
 .btn-cloud.cloud-disabled {
