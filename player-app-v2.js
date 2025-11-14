@@ -924,6 +924,7 @@ function handleMCTagUpdate(event) {
         characterData.currentStatuses = statusTags.map(tag => {
             if (typeof tag === 'string') {
                 const parsed = parseTagFromMC(tag);
+                console.log('  Parsed status tag:', parsed);
                 return {
                     name: parsed.name,
                     modifier: parsed.modifier,
@@ -934,6 +935,7 @@ function handleMCTagUpdate(event) {
             }
             return tag; // Already an object
         });
+        console.log('  Updated currentStatuses:', characterData.currentStatuses);
     }
 
     // Process story tags
@@ -941,6 +943,7 @@ function handleMCTagUpdate(event) {
         characterData.storyTags = storyTags.map(tag => {
             if (typeof tag === 'string') {
                 const parsed = parseTagFromMC(tag);
+                console.log('  Parsed story tag:', parsed);
                 return {
                     name: parsed.name,
                     modifier: parsed.modifier,
@@ -951,17 +954,31 @@ function handleMCTagUpdate(event) {
             }
             return tag;
         });
+        console.log('  Updated storyTags:', characterData.storyTags);
     }
 
     // Update displays
     updateStatusTagsDisplay();
     updateStoryTagsDisplay();
     updatePowerDisplay();
+
+    // Show notification to user
+    const tagCount = (statusTags?.length || 0) + (storyTags?.length || 0);
+    if (tagCount > 0) {
+        showNotification(`📥 Received ${tagCount} tag(s) from MC`);
+    }
+
     saveToCloud();
 }
 
 function updateStatusTagsDisplay() {
     const statusList = document.getElementById('statusList');
+    if (!statusList) {
+        console.error('❌ statusList element not found!');
+        return;
+    }
+
+    console.log('🔄 Updating status tags display. Count:', characterData.currentStatuses.length);
     statusList.innerHTML = '';
 
     if (characterData.currentStatuses.length === 0) {
@@ -970,6 +987,7 @@ function updateStatusTagsDisplay() {
     }
 
     characterData.currentStatuses.forEach((status, index) => {
+        console.log(`  Rendering status tag #${index}:`, status);
         const pill = document.createElement('span');
 
         // Determine if tag is Temporary or Ongoing
@@ -1000,10 +1018,18 @@ function updateStatusTagsDisplay() {
         pill.textContent = `${status.name} ${modifierStr}${typeStr}`;
         statusList.appendChild(pill);
     });
+
+    console.log('✅ Status tags display updated');
 }
 
 function updateStoryTagsDisplay() {
     const storyList = document.getElementById('storyTagList');
+    if (!storyList) {
+        console.error('❌ storyTagList element not found!');
+        return;
+    }
+
+    console.log('🔄 Updating story tags display. Count:', characterData.storyTags.length);
     storyList.innerHTML = '';
 
     if (characterData.storyTags.length === 0) {
@@ -1011,7 +1037,8 @@ function updateStoryTagsDisplay() {
         return;
     }
 
-    characterData.storyTags.forEach(tag => {
+    characterData.storyTags.forEach((tag, index) => {
+        console.log(`  Rendering story tag #${index}:`, tag);
         const pill = document.createElement('span');
 
         if (tag.isTemporary) {
@@ -1037,6 +1064,8 @@ function updateStoryTagsDisplay() {
         pill.textContent = `${tag.name}${modifierStr}${typeStr}`;
         storyList.appendChild(pill);
     });
+
+    console.log('✅ Story tags display updated');
 }
 
 // ================================
@@ -1361,3 +1390,52 @@ style.textContent = `
 }
 `;
 document.head.appendChild(style);
+
+// ================================
+// DEBUG/TEST FUNCTIONS
+// ================================
+
+/**
+ * Test function to manually add tags (for debugging)
+ * Call from browser console: testAddTags()
+ */
+window.testAddTags = function() {
+    console.log('🧪 Testing tag display with sample data...');
+
+    // Simulate MC sending tags
+    const testEvent = new CustomEvent('mc-tag-update', {
+        detail: {
+            statusTags: [
+                "Inspired (+2) Ongoing",
+                "Weakened (-1) Temporary",
+                "Focused (+1) Ongoing"
+            ],
+            storyTags: [
+                "Undercover (+1) Temporary",
+                "Suspicious (-2) Ongoing"
+            ]
+        }
+    });
+
+    document.dispatchEvent(testEvent);
+    console.log('✅ Test tags dispatched. Check the Status/Story Tags sections.');
+};
+
+/**
+ * Test function to check if display elements exist
+ */
+window.checkDisplayElements = function() {
+    console.log('🔍 Checking display elements...');
+    const statusList = document.getElementById('statusList');
+    const storyList = document.getElementById('storyTagList');
+
+    console.log('statusList element:', statusList ? '✅ Found' : '❌ NOT FOUND');
+    console.log('storyTagList element:', storyList ? '✅ Found' : '❌ NOT FOUND');
+
+    if (statusList) console.log('  statusList parent:', statusList.parentElement);
+    if (storyList) console.log('  storyTagList parent:', storyList.parentElement);
+
+    return { statusList: !!statusList, storyList: !!storyList };
+};
+
+console.log('💡 Debug functions available: testAddTags(), checkDisplayElements()');
