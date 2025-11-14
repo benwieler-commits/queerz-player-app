@@ -574,6 +574,38 @@ function setupDiceRoller() {
             showNotification(`+${juiceGained} Juice!`);
         }
 
+        // Remove Temporary tags that were clicked and broadcast to MC
+        const removedTags = [];
+
+        // Remove temporary status tags
+        characterData.currentStatuses = characterData.currentStatuses.filter(status => {
+            if (status.isTemporary && status.clicked) {
+                removedTags.push(status.name);
+                return false; // Remove this tag
+            }
+            return true; // Keep this tag
+        });
+
+        // Remove temporary story tags
+        characterData.storyTags = characterData.storyTags.filter(tag => {
+            if (tag.isTemporary && tag.clicked) {
+                removedTags.push(tag.name);
+                return false;
+            }
+            return true;
+        });
+
+        // Broadcast removed tags to MC
+        if (removedTags.length > 0) {
+            console.log('📤 Broadcasting removed Temporary tags to MC:', removedTags);
+            broadcastTemporaryTagRemoval(removedTags);
+            showNotification(`Removed: ${removedTags.join(', ')}`);
+        }
+
+        // Update displays
+        updateStatusTagsDisplay();
+        updateStoryTagsDisplay();
+
         saveToCloud();
     });
 
@@ -584,23 +616,57 @@ function setupDiceRoller() {
 
 function calculateTotalPower() {
     let power = 0;
+    let breakdown = [];
 
     // Count clicked power tags (+1 each)
     const powerTagClicks = characterData.clickedTags.filter(t => t.includes('power')).length;
-    power += powerTagClicks;
+    if (powerTagClicks > 0) {
+        power += powerTagClicks;
+        breakdown.push(`Power Tags: +${powerTagClicks}`);
+    }
 
-    // Status tags (positive add, negative subtract)
+    // Count clicked weakness tags (-1 each)
+    const weaknessClicks = characterData.clickedTags.filter(t => t.includes('weakness')).length;
+    if (weaknessClicks > 0) {
+        power -= weaknessClicks;
+        breakdown.push(`Weakness: -${weaknessClicks}`);
+    }
+
+    // Status tags - Ongoing tags are automatically applied, Temporary only if clicked
+    let statusModifier = 0;
     characterData.currentStatuses.forEach(status => {
-        if (status.positive) {
-            power += status.tier;
-        } else {
-            power -= status.tier;
+        if (status.isOngoing && status.modifier) {
+            // Ongoing tags are always applied
+            statusModifier += status.modifier;
+        } else if (status.isTemporary && status.clicked && status.modifier) {
+            // Temporary tags only applied if clicked
+            statusModifier += status.modifier;
+        } else if (status.positive && status.tier) {
+            // Legacy format
+            statusModifier += status.tier;
+        } else if (!status.positive && status.tier) {
+            // Legacy negative format
+            statusModifier -= status.tier;
         }
     });
 
+    // Story tags - same logic
+    characterData.storyTags.forEach(tag => {
+        if (tag.isOngoing && tag.modifier) {
+            statusModifier += tag.modifier;
+        } else if (tag.isTemporary && tag.clicked && tag.modifier) {
+            statusModifier += tag.modifier;
+        }
+    });
+
+    if (statusModifier !== 0) {
+        power += statusModifier;
+        breakdown.push(`MC Tags: ${statusModifier > 0 ? '+' : ''}${statusModifier}`);
+    }
+
     // Update display
     document.getElementById('totalPower').value = power;
-    updatePowerBreakdown(power, powerTagClicks);
+    updatePowerBreakdown(breakdown.join(' | ') || 'No modifiers');
 
     return power;
 }
@@ -609,9 +675,9 @@ function updatePowerDisplay() {
     calculateTotalPower();
 }
 
-function updatePowerBreakdown(totalPower, tagCount) {
+function updatePowerBreakdown(breakdownText) {
     const breakdown = document.getElementById('powerBreakdown');
-    breakdown.textContent = `Power Tags: ${tagCount} | Status Modifiers: ${totalPower - tagCount}`;
+    breakdown.textContent = breakdownText;
 }
 
 function resetDiceRoll() {
@@ -818,6 +884,82 @@ function updateCombosDisplay() {
 // STATUS & STORY TAGS (From MC)
 // ================================
 
+/**
+ * Parse tag string from MC
+ * Format: "Tag Name (±number) Temporary/Ongoing"
+ * Example: "Inspired (+2) Ongoing" or "Weakened (-1) Temporary"
+ */
+function parseTagFromMC(tagString) {
+    const match = tagString.match(/^(.+?)\s*\(([+-]?\d+)\)\s*(Temporary|Ongoing)$/i);
+    if (match) {
+        const [, name, modifier, type] = match;
+        return {
+            name: name.trim(),
+            modifier: parseInt(modifier),
+            isTemporary: type.toLowerCase() === 'temporary',
+            isOngoing: type.toLowerCase() === 'ongoing',
+            rawString: tagString
+        };
+    }
+    // Fallback for tags without proper format
+    return {
+        name: tagString,
+        modifier: 0,
+        isTemporary: false,
+        isOngoing: false,
+        rawString: tagString
+    };
+}
+
+/**
+ * Handle tag updates from MC
+ */
+function handleMCTagUpdate(event) {
+    const { statusTags, storyTags } = event.detail;
+
+    console.log('📥 Received tag update from MC:', { statusTags, storyTags });
+
+    // Process status tags
+    if (statusTags && Array.isArray(statusTags)) {
+        characterData.currentStatuses = statusTags.map(tag => {
+            if (typeof tag === 'string') {
+                const parsed = parseTagFromMC(tag);
+                return {
+                    name: parsed.name,
+                    modifier: parsed.modifier,
+                    isTemporary: parsed.isTemporary,
+                    isOngoing: parsed.isOngoing,
+                    clicked: false // Track if temporary tag has been clicked
+                };
+            }
+            return tag; // Already an object
+        });
+    }
+
+    // Process story tags
+    if (storyTags && Array.isArray(storyTags)) {
+        characterData.storyTags = storyTags.map(tag => {
+            if (typeof tag === 'string') {
+                const parsed = parseTagFromMC(tag);
+                return {
+                    name: parsed.name,
+                    modifier: parsed.modifier,
+                    isTemporary: parsed.isTemporary,
+                    isOngoing: parsed.isOngoing,
+                    clicked: false
+                };
+            }
+            return tag;
+        });
+    }
+
+    // Update displays
+    updateStatusTagsDisplay();
+    updateStoryTagsDisplay();
+    updatePowerDisplay();
+    saveToCloud();
+}
+
 function updateStatusTagsDisplay() {
     const statusList = document.getElementById('statusList');
     statusList.innerHTML = '';
@@ -827,10 +969,35 @@ function updateStatusTagsDisplay() {
         return;
     }
 
-    characterData.currentStatuses.forEach(status => {
+    characterData.currentStatuses.forEach((status, index) => {
         const pill = document.createElement('span');
-        pill.className = `tag-pill ${status.positive ? 'positive' : 'negative'}`;
-        pill.textContent = `${status.name} (${status.positive ? '+' : '-'}${status.tier})`;
+
+        // Determine if tag is Temporary or Ongoing
+        if (status.isTemporary) {
+            pill.className = `tag-pill temporary-tag ${status.clicked ? 'clicked' : ''}`;
+            pill.style.cursor = 'pointer';
+            pill.title = 'Click to apply to next roll (will be removed after rolling)';
+
+            // Make clickable for Temporary tags
+            pill.addEventListener('click', () => {
+                status.clicked = !status.clicked;
+                updateStatusTagsDisplay();
+                updatePowerDisplay();
+            });
+        } else if (status.isOngoing) {
+            pill.className = 'tag-pill ongoing-tag';
+            pill.title = 'Ongoing - automatically applied to all rolls';
+        } else {
+            // Legacy format
+            pill.className = `tag-pill ${status.positive ? 'positive' : 'negative'}`;
+        }
+
+        const modifierStr = status.modifier
+            ? `(${status.modifier > 0 ? '+' : ''}${status.modifier})`
+            : (status.tier ? `(${status.positive ? '+' : '-'}${status.tier})` : '');
+        const typeStr = status.isTemporary ? ' Temporary' : (status.isOngoing ? ' Ongoing' : '');
+
+        pill.textContent = `${status.name} ${modifierStr}${typeStr}`;
         statusList.appendChild(pill);
     });
 }
@@ -846,8 +1013,28 @@ function updateStoryTagsDisplay() {
 
     characterData.storyTags.forEach(tag => {
         const pill = document.createElement('span');
-        pill.className = 'tag-pill';
-        pill.textContent = tag.name + (tag.ongoing ? ' (Ongoing)' : '');
+
+        if (tag.isTemporary) {
+            pill.className = `tag-pill temporary-tag ${tag.clicked ? 'clicked' : ''}`;
+            pill.style.cursor = 'pointer';
+            pill.title = 'Click to apply to next roll (will be removed after rolling)';
+
+            pill.addEventListener('click', () => {
+                tag.clicked = !tag.clicked;
+                updateStoryTagsDisplay();
+                updatePowerDisplay();
+            });
+        } else if (tag.isOngoing) {
+            pill.className = 'tag-pill ongoing-tag';
+            pill.title = 'Ongoing - automatically applied';
+        } else {
+            pill.className = 'tag-pill';
+        }
+
+        const modifierStr = tag.modifier ? `(${tag.modifier > 0 ? '+' : ''}${tag.modifier})` : '';
+        const typeStr = tag.isTemporary ? ' Temporary' : (tag.isOngoing ? ' Ongoing' : (tag.ongoing ? ' (Ongoing)' : ''));
+
+        pill.textContent = `${tag.name}${modifierStr}${typeStr}`;
         storyList.appendChild(pill);
     });
 }
@@ -1052,6 +1239,23 @@ function broadcastToMc() {
     broadcastPlayerToMc(characterData);
 }
 
+/**
+ * Broadcast temporary tag removal to MC
+ */
+function broadcastTemporaryTagRemoval(removedTags) {
+    // Import broadcast function from firebase-broadcast.js
+    import('./firebase-broadcast.js').then(module => {
+        const broadcastData = {
+            ...characterData,
+            temporaryTagsRemoved: removedTags,
+            timestamp: Date.now()
+        };
+        module.broadcastPlayerToMc(broadcastData);
+    }).catch(err => {
+        console.error('❌ Failed to broadcast tag removal:', err);
+    });
+}
+
 // ================================
 // UI HELPERS
 // ================================
@@ -1132,6 +1336,9 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCharacterInfo();
     setupFileHandling();
     setupMiscUI();
+
+    // Listen for MC tag updates
+    document.addEventListener('mc-tag-update', handleMCTagUpdate);
 
     // Initial UI update
     updateBurntTagsDisplay();
