@@ -158,7 +158,21 @@ function initializeBroadcastListener() {
         spotImg.style.display = 'block';
       }
     }
-    
+
+    // ⭐ NEW: Handle Status Tags and Story Tags from MC
+    if (data.playerUpdates && window.currentUserId) {
+      const playerUpdate = data.playerUpdates[window.currentUserId];
+      if (playerUpdate) {
+        // Dispatch event with tag updates for player app to handle
+        document.dispatchEvent(new CustomEvent('mc-tag-update', {
+          detail: {
+            statusTags: playerUpdate.statusTags || [],
+            storyTags: playerUpdate.storyTags || []
+          }
+        }));
+      }
+    }
+
     // Update statuses
     updateBroadcastStatus(true);
     const mcStatus = document.getElementById('mcStatus');
