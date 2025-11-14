@@ -1278,7 +1278,17 @@ let saveTimeout = null;
 function saveToCloud() {
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
-        saveCharacterToCloud(characterData);
+        // Check if cloud save is disabled
+        const disableCloudSave = localStorage.getItem('disableCloudSave') === 'true';
+
+        if (!disableCloudSave) {
+            // Only save to cloud if not disabled
+            saveCharacterToCloud(characterData);
+        } else {
+            console.log('☁️ Cloud save disabled - skipping save to Firebase');
+        }
+
+        // Always broadcast to MC (separate from cloud save)
         broadcastToMc();
     }, 1000);
 }
@@ -1396,6 +1406,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Store initial character name in localStorage for MC broadcast matching
     if (characterData.name) {
         localStorage.setItem('currentCharacterName', characterData.name);
+    }
+
+    // Setup disable cloud save checkbox
+    const disableCloudSaveCheckbox = document.getElementById('disableCloudSave');
+    if (disableCloudSaveCheckbox) {
+        // Load saved preference
+        const savedPreference = localStorage.getItem('disableCloudSave') === 'true';
+        disableCloudSaveCheckbox.checked = savedPreference;
+
+        // Listen for changes
+        disableCloudSaveCheckbox.addEventListener('change', (e) => {
+            localStorage.setItem('disableCloudSave', e.target.checked);
+            if (e.target.checked) {
+                console.log('☁️ Cloud save disabled - will only broadcast to MC');
+                showNotification('☁️ Cloud save disabled. Will still broadcast to MC.');
+            } else {
+                console.log('☁️ Cloud save enabled');
+                showNotification('☁️ Cloud save enabled');
+            }
+        });
     }
 
     console.log('✅ Player Companion ready!');
