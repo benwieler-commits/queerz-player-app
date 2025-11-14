@@ -160,17 +160,35 @@ function initializeBroadcastListener() {
     }
 
     // ⭐ NEW: Handle Status Tags and Story Tags from MC
+    let statusTags = [];
+    let storyTags = [];
+
+    // Check multiple possible locations for tags
     if (data.playerUpdates && window.currentUserId) {
       const playerUpdate = data.playerUpdates[window.currentUserId];
       if (playerUpdate) {
-        // Dispatch event with tag updates for player app to handle
-        document.dispatchEvent(new CustomEvent('mc-tag-update', {
-          detail: {
-            statusTags: playerUpdate.statusTags || [],
-            storyTags: playerUpdate.storyTags || []
-          }
-        }));
+        statusTags = playerUpdate.statusTags || [];
+        storyTags = playerUpdate.storyTags || [];
       }
+    }
+
+    // Also check direct properties (MC might broadcast directly)
+    if (data.statusTags) {
+      statusTags = data.statusTags;
+    }
+    if (data.storyTags) {
+      storyTags = data.storyTags;
+    }
+
+    // Dispatch if we have any tags
+    if (statusTags.length > 0 || storyTags.length > 0) {
+      console.log('📥 Broadcasting tag update:', { statusTags, storyTags });
+      document.dispatchEvent(new CustomEvent('mc-tag-update', {
+        detail: {
+          statusTags: statusTags,
+          storyTags: storyTags
+        }
+      }));
     }
 
     // Update statuses
