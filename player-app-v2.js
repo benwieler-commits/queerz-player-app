@@ -886,22 +886,35 @@ function updateCombosDisplay() {
 
 /**
  * Parse tag string from MC
- * Format: "Tag Name (±number) Temporary/Ongoing"
- * Example: "Inspired (+2) Ongoing" or "Weakened (-1) Temporary"
+ * Format: "Tag Name (±number) Temporary/Ongoing" OR "tag-name (+1 Temporary)"
+ * Example: "Inspired (+2) Ongoing" or "mama-jays-blessing (+1 Temporary)"
  */
 function parseTagFromMC(tagString) {
-    const match = tagString.match(/^(.+?)\s*\(([+-]?\d+)\)\s*(Temporary|Ongoing)$/i);
+    console.log('🔍 Parsing tag string:', tagString);
+
+    // Try format 1: "Tag Name (±number) Temporary/Ongoing" with space before parenthesis
+    let match = tagString.match(/^(.+?)\s*\(([+-]?\d+)\)\s*(Temporary|Ongoing)$/i);
+
+    // Try format 2: "tag-name (+1 Temporary)" with number AND type inside parenthesis
+    if (!match) {
+        match = tagString.match(/^(.+?)\s*\(([+-]?\d+)\s+(Temporary|Ongoing)\)$/i);
+    }
+
     if (match) {
         const [, name, modifier, type] = match;
-        return {
+        const parsed = {
             name: name.trim(),
             modifier: parseInt(modifier),
             isTemporary: type.toLowerCase() === 'temporary',
             isOngoing: type.toLowerCase() === 'ongoing',
             rawString: tagString
         };
+        console.log('✅ Parsed successfully:', parsed);
+        return parsed;
     }
+
     // Fallback for tags without proper format
+    console.warn('⚠️ Could not parse tag format, using fallback:', tagString);
     return {
         name: tagString,
         modifier: 0,
@@ -1279,17 +1292,16 @@ function broadcastToMc() {
  * Broadcast temporary tag removal to MC
  */
 function broadcastTemporaryTagRemoval(removedTags) {
-    // Import broadcast function from firebase-broadcast.js
-    import('./firebase-broadcast.js').then(module => {
-        const broadcastData = {
-            ...characterData,
-            temporaryTagsRemoved: removedTags,
-            timestamp: Date.now()
-        };
-        module.broadcastPlayerToMc(broadcastData);
-    }).catch(err => {
-        console.error('❌ Failed to broadcast tag removal:', err);
-    });
+    // Send a simple notification to MC about removed tags
+    // Don't try to update the full character state
+    console.log('📤 Notifying MC about removed tags:', removedTags);
+
+    // The MC should handle tag removal on their side
+    // For now, we'll just log it - the MC will see the tags are gone
+    // when the player broadcasts their normal character update
+
+    // Trigger a character save which will broadcast the updated state
+    saveToCloud();
 }
 
 // ================================
@@ -1443,18 +1455,18 @@ window.testMCBroadcast = function() {
     const currentCharName = localStorage.getItem('currentCharacterName');
     console.log('  Current character name in localStorage:', currentCharName);
 
-    // Simulate the actual MC broadcast structure
+    // Simulate the actual MC broadcast structure with ACTUAL format from MC
     const mockBroadcast = {
         players: [
             {
                 name: currentCharName || "Test Character",
                 tags: {
                     status: [
-                        "Blessed (+2) Ongoing",
-                        "Hurt (-1) Temporary"
+                        "mama-jays-blessing (+1 Temporary)",  // Actual MC format
+                        "weakened (-2 Ongoing)"               // Actual MC format
                     ],
                     story: [
-                        "Investigating (+1) Temporary"
+                        "investigating-the-crime (+1 Temporary)"
                     ]
                 }
             }
