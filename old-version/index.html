@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUEERZ! Player Companion</title>
+    <link rel="stylesheet" href="styles-player.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="app-header">
+        <h1 class="app-title">🌈 QUEERZ! Player Companion</h1>
+        <div class="header-controls">
+            <select id="characterSelect" class="character-select">
+                <option value="">Load Character...</option>
+            </select>
+            <label for="characterUpload" class="btn-upload">📁 Upload JSON</label>
+            <input type="file" id="characterUpload" accept=".json" style="display: none;">
+            <button id="portraitToggle" class="btn-toggle">Switch Portrait</button>
+            <!-- ⭐ CLOUD SYNC TOGGLE BUTTON -->
+            <button id="cloudSyncToggle" class="btn-cloud cloud-disabled">☁️ Cloud: OFF</button>
+            <button id="saveCharBtn" class="btn-save">💾 Save</button>
+        </div>
+        <div class="sync-status">
+            <!-- ⭐ CLOUD STATUS BADGE -->
+            <span id="cloudBadge" class="badge cloud-offline">☁️ Offline</span>
+            <span id="syncBadge" class="badge offline">● Offline</span>
+            <span id="mcStatus" class="mc-status">Waiting for MC...</span>
+        </div>
+    </header>
+
+    <!-- MAIN FOLIO LAYOUT -->
+    <main class="folio-container">
+        
+        <!-- LEFT COLUMN: Rainbow Themes 1 & 2 -->
+        <section class="folio-column left-column">
+            <div class="theme-card rainbow-theme" id="theme0">
+                <div class="theme-header">
+                    <div class="theme-type">SIGNATURE / FIGHTING STYLE</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="growth-track">
+                    <label>GROWTH</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="shade-track">
+                    <label>SHADE</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your runway quote here"</em>
+                </div>
+                <div class="theme-improvement">
+                    <label class="improvement-checkbox">
+                        <input type="checkbox" class="improvement-check">
+                        <span>✨ Theme Improvement Requirements Met</span>
+                    </label>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theme-card rainbow-theme" id="theme1">
+                <div class="theme-header">
+                    <div class="theme-type">FIGHTING STYLE / Q-GEAR</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="growth-track">
+                    <label>GROWTH</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="shade-track">
+                    <label>SHADE</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your runway quote here"</em>
+                </div>
+                <div class="theme-improvement">
+                    <label class="improvement-checkbox">
+                        <input type="checkbox" class="improvement-check">
+                        <span>✨ Theme Improvement Requirements Met</span>
+                    </label>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER COLUMN: Portrait, MC Sync, Roller -->
+        <section class="folio-center">
+            <!-- Character Portrait -->
+            <div class="portrait-container">
+                <img id="characterPortrait" src="" alt="Character Portrait" class="character-portrait">
+                <div class="character-info">
+                    <h2 id="characterName">Character Name</h2>
+                    <p id="characterPronouns" class="pronouns"></p>
+                </div>
+            </div>
+
+            <!-- MC Broadcast Section -->
+            <div class="mc-broadcast">
+                <h3>📡 MC Broadcast</h3>
+                <div class="broadcast-content">
+                    <div class="broadcast-scene">
+                        <strong>Scene:</strong>
+                        <p id="sceneInfo">Waiting for scene...</p>
+                        <!-- Scene Image Display -->
+                        <img id="sceneImage" src="" alt="Scene" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; display: none;">
+                    </div>
+                    <div class="broadcast-music">
+                        <strong>♪ Music:</strong>
+                        <p id="musicInfo">No music playing</p>
+                        <!-- Audio Player -->
+                        <audio id="musicPlayer" controls style="width: 100%; margin-top: 8px; display: none;"></audio>
+                    </div>
+                    <div class="broadcast-character">
+                        <strong>Spotlight:</strong>
+                        <p id="spotlightInfo">—</p>
+                        <!-- Spotlight Character Portrait -->
+                        <img id="spotlightPortrait" src="" alt="Spotlight Character" style="max-width: 200px; height: auto; border-radius: 8px; margin-top: 8px; display: none;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Core Move Selection -->
+            <div class="move-selector">
+                <h3>📖 Select Your Core Move</h3>
+                <p class="move-hint">Click a move before rolling!</p>
+                <div class="move-icons">
+                    <div class="move-icon" data-move="strike-a-pose" title="Strike a Pose">
+                        <img src="move-strike-a-pose.png" alt="Strike a Pose">
+                        <span>Strike a Pose</span>
+                    </div>
+                    <div class="move-icon" data-move="slay" title="Slay">
+                        <img src="move-slay.png" alt="Slay">
+                        <span>Slay</span>
+                    </div>
+                    <div class="move-icon" data-move="get-a-clue" title="Get a Clue">
+                        <img src="move-get-a-clue.png" alt="Get a Clue">
+                        <span>Get a Clue</span>
+                    </div>
+                    <div class="move-icon" data-move="talk-it-out" title="Talk It Out">
+                        <img src="move-talk-it-out.png" alt="Talk It Out">
+                        <span>Talk It Out</span>
+                    </div>
+                    <div class="move-icon" data-move="care" title="Care">
+                        <img src="move-care.png" alt="Care">
+                        <span>Care</span>
+                    </div>
+                    <div class="move-icon" data-move="be-vulnerable" title="Be Vulnerable">
+                        <img src="move-be-vulnerable.png" alt="Be Vulnerable">
+                        <span>Be Vulnerable</span>
+                    </div>
+                    <div class="move-icon" data-move="resist" title="Resist">
+                        <img src="move-resist.png" alt="Resist">
+                        <span>Resist</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dice Roller -->
+            <div class="dice-roller">
+                <h3>🎲 Roll Dice</h3>
+                <div class="power-display">
+                    <label>Total Power:</label>
+                    <input type="number" id="totalPower" class="power-input" value="0" min="-5" max="10">
+                </div>
+                <button id="rollBtn" class="btn-roll">Roll 2d6 + Power</button>
+                <button id="resetBtn" class="btn-reset">Reset</button>
+                <div id="rollResult" class="roll-result"></div>
+            </div>
+
+            <!-- Juice Tracker -->
+            <div class="juice-tracker">
+                <h3>✨ JUICE</h3>
+                <div class="juice-display">
+                    <button id="juiceDown" class="juice-btn">−</button>
+                    <span id="juiceCount" class="juice-count">0</span>
+                    <button id="juiceUp" class="juice-btn">+</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Rainbow Theme 3 & Realness Theme -->
+        <section class="folio-column right-column">
+            <div class="theme-card rainbow-theme" id="theme2">
+                <div class="theme-header">
+                    <div class="theme-type">Q-GEAR / PERSONALITY</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="growth-track">
+                    <label>GROWTH</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="shade-track">
+                    <label>SHADE</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your runway quote here"</em>
+                </div>
+                <div class="theme-improvement">
+                    <label class="improvement-checkbox">
+                        <input type="checkbox" class="improvement-check">
+                        <span>✨ Theme Improvement Requirements Met</span>
+                    </label>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theme-card realness-theme" id="theme3">
+                <div class="theme-header">
+                    <div class="theme-type realness-label">REALNESS THEME</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="crack-track">
+                    <label>CRACK</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your identity statement here"</em>
+                </div>
+                <div class="theme-improvement">
+                    <label class="improvement-checkbox">
+                        <input type="checkbox" class="improvement-check">
+                        <span>✨ Theme Improvement Requirements Met</span>
+                    </label>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theme-card realness-theme" id="theme4">
+                <div class="theme-header">
+                    <div class="theme-type realness-label">REALNESS THEME</div>
+                    <h2 class="theme-name">Theme Name</h2>
+                </div>
+                <div class="crack-track">
+                    <label>CRACK</label>
+                    <div class="track-boxes">
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                        <div class="track-box"></div>
+                    </div>
+                </div>
+                <div class="runway-quote">
+                    <em>"Your identity statement here"</em>
+                </div>
+                <div class="theme-improvement">
+                    <label class="improvement-checkbox">
+                        <input type="checkbox" class="improvement-check">
+                        <span>✨ Theme Improvement Requirements Met</span>
+                    </label>
+                </div>
+                <div class="theme-tags">
+                    <div class="power-tags">
+                        <h4>POWER TAGS</h4>
+                        <ul class="tag-list"></ul>
+                    </div>
+                    <div class="weakness-tag">
+                        <h4>WEAKNESS TAG</h4>
+                        <p class="weakness-text"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- STATUS & STORY TAGS SECTION -->
+    <section class="tags-section">
+        <div class="tags-container">
+            <!-- Current Statuses -->
+            <div class="status-panel">
+                <h3>Current Statuses</h3>
+                <div class="status-add">
+                    <input type="text" id="statusName" placeholder="Status name" class="input-small">
+                    <input type="number" id="statusTier" value="1" min="1" max="6" class="input-tiny">
+                    <select id="statusType" class="select-small">
+                        <option value="negative">Negative</option>
+                        <option value="positive">Positive</option>
+                    </select>
+                    <button id="addStatusBtn" class="btn-add">+ Add</button>
+                </div>
+                <div id="statusList" class="tag-display"></div>
+            </div>
+
+            <!-- Story Tags -->
+            <div class="story-panel">
+                <h3>Story Tags</h3>
+                <div class="story-add">
+                    <input type="text" id="storyTagName" placeholder="Story tag" class="input-small">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="storyOngoing">
+                        Ongoing
+                    </label>
+                    <button id="addStoryBtn" class="btn-add">+ Add</button>
+                </div>
+                <div id="storyTagList" class="tag-display"></div>
+            </div>
+
+            <!-- Burnt Tags -->
+            <div class="burnt-panel">
+                <h3>Burnt Tags</h3>
+                <div id="burntTagList" class="tag-display"></div>
+                <button id="recoverBtn" class="btn-recover">Recover All Burnt Tags</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- TAG COMBOS SECTION -->
+    <section class="combos-section">
+        <div class="combos-container">
+            <div class="combos-panel">
+                <h2>🎯 TAG COMBOS</h2>
+                <p class="combos-subtitle">Create powerful combinations of your tags!</p>
+                
+                <!-- Add New Combo -->
+                <div class="combo-add">
+                    <input type="text" id="comboName" placeholder="Combo name (e.g., 'Get the Drop on a Baddie')" class="input-combo-name">
+                    <div class="combo-tags-input">
+                        <input type="text" id="comboTag1" placeholder="Tag 1" class="input-small">
+                        <input type="text" id="comboTag2" placeholder="Tag 2" class="input-small">
+                        <input type="text" id="comboTag3" placeholder="Tag 3 (optional)" class="input-small">
+                    </div>
+                    <div class="combo-details">
+                        <input type="number" id="comboPower" value="2" min="1" max="5" class="input-tiny" placeholder="Power">
+                        <select id="comboMove" class="select-small">
+                            <option value="">Select Core Move...</option>
+                            <option value="strike-a-pose">Strike a Pose</option>
+                            <option value="slay">Slay</option>
+                            <option value="get-a-clue">Get a Clue</option>
+                            <option value="talk-it-out">Talk It Out</option>
+                            <option value="care">Care</option>
+                            <option value="be-vulnerable">Be Vulnerable</option>
+                            <option value="resist">Resist</option>
+                        </select>
+                        <button id="addComboBtn" class="btn-add">+ Add Combo</button>
+                    </div>
+                </div>
+                
+                <!-- Combo List -->
+                <div id="comboList" class="combo-display"></div>
+                
+                <!-- Clear Combos Button -->
+                <button id="clearCombosBtn" class="btn-secondary" style="margin-top: 15px;">Clear All Combos</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- CORE MOVES REFERENCE -->
+    <section class="moves-section">
+        <h2>📖 CORE MOVES REFERENCE</h2>
+        <button id="toggleMovesBtn" class="btn-toggle-moves">Show/Hide Moves</button>
+        <div id="movesPanel" class="moves-panel hidden">
+            <div class="moves-grid">
+                <!-- Strike a Pose -->
+                <div class="move-card">
+                    <h3 class="move-name">STRIKE A POSE</h3>
+                    <p class="move-trigger">When you <strong>attempt to give yourself or your allies a positive status</strong>, or <strong>make an impression or influence others</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Choose 2 upgrades</p>
+                        <p><strong>7-9:</strong> Choose 1 upgrade</p>
+                        <p><strong>Miss:</strong> MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting, Contagious</p>
+                </div>
+
+                <!-- Slay -->
+                <div class="move-card">
+                    <h3 class="move-name">SLAY</h3>
+                    <p class="move-trigger">When you <strong>give your opponents a negative status or overcome their Ignorance Limit</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Choose 2 upgrades</p>
+                        <p><strong>7-9:</strong> Choose 1 upgrade</p>
+                        <p><strong>Miss:</strong> MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting</p>
+                </div>
+
+                <!-- Get a Clue -->
+                <div class="move-card">
+                    <h3 class="move-name">GET A CLUE</h3>
+                    <p class="move-trigger">When you <strong>investigate, research, or gather information</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Gain a Story Tag and ask 2 questions</p>
+                        <p><strong>7-9:</strong> Ask 1 question or gain a Story Tag</p>
+                        <p><strong>Miss:</strong> MC makes a move</p>
+                    </div>
+                </div>
+
+                <!-- Talk It Out -->
+                <div class="move-card">
+                    <h3 class="move-name">TALK IT OUT</h3>
+                    <p class="move-trigger">De-escalate or negotiate in good faith by <strong>reaching out to them</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> You make progress, strike a deal, or bond - Give a relationship status where tier = Power</p>
+                        <p><strong>7-9:</strong> You succeed but choose: Demand, Steel Man, Attached - receive a relationship status where tier = Power/2 rounded down</p>
+                        <p><strong>Miss:</strong> They put up walls - Receive a negative relationship status where tier = Power </p>
+                    </div>
+                </div>
+
+                <!-- Care -->
+                <div class="move-card">
+                    <h3 class="move-name">CARE</h3>
+                    <p class="move-trigger">When you <strong>help someone with their emotional or physical needs</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Remove a negative status tier or give a positive status</p>
+                        <p><strong>7-9:</strong> As above, but you take a status yourself or mark Growth</p>
+                        <p><strong>Miss:</strong> Your care backfires</p>
+                    </div>
+                </div>
+
+                <!-- Be Vulnerable -->
+                <div class="move-card">
+                    <h3 class="move-name">BE VULNERABLE</h3>
+                    <p class="move-trigger">When you <strong>open up emotionally or share something difficult</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Mark Growth and choose 2 benefits</p>
+                        <p><strong>7-9:</strong> Mark Growth and choose 1 benefit</p>
+                        <p><strong>Miss:</strong> Mark Growth but MC makes a move</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Benefits:</strong> Gain support, clear a status, earn trust, inspire others</p>
+                </div>
+
+                <!-- Resist -->
+                <div class="move-card">
+                    <h3 class="move-name">RESIST</h3>
+                    <p class="move-trigger">When you <strong>fight against a status being applied to you or try to reduce its tier</strong>, roll 2d6 + Power.</p>
+                    <div class="move-results">
+                        <p><strong>10+:</strong> Fully resist or reduce by 2 tiers</p>
+                        <p><strong>7-9:</strong> Reduce status by 1 tier</p>
+                        <p><strong>Miss:</strong> Take the full status</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Firebase Config -->
+    <script type="module" src="firebase-config.js"></script>
+    <!-- Main App JavaScript -->
+    <script type="module" src="player-app.js"></script>
+    <link rel="icon" href="data:,">
+</body>
+</html>
