@@ -836,8 +836,27 @@ body {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
+.move-image {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border-radius: 8px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    transition: all 0.3s ease;
+}
+
+.move-icon:hover .move-image {
+    filter: drop-shadow(0 4px 8px rgba(138, 43, 226, 0.6));
+    transform: scale(1.05);
+}
+
 .move-icon.selected .move-emoji {
     filter: drop-shadow(0 0 10px rgba(138, 43, 226, 0.8));
+}
+
+.move-icon.selected .move-image {
+    filter: drop-shadow(0 0 15px rgba(138, 43, 226, 0.9));
+    transform: scale(1.1);
 }
 
 .move-icon span:last-child {
@@ -1115,6 +1134,34 @@ body {
 
 .tag-pill.positive {
     background: #4CAF50;
+}
+
+.tag-pill.temporary-tag {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: var(--bg-dark);
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tag-pill.temporary-tag:hover {
+    border-color: #FF8C00;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+    transform: translateY(-3px);
+}
+
+.tag-pill.temporary-tag.clicked {
+    background: linear-gradient(135deg, #32CD32, #228B22);
+    color: white;
+    border-color: #32CD32;
+    box-shadow: 0 0 20px rgba(50, 205, 50, 0.8);
+}
+
+.tag-pill.ongoing-tag {
+    background: linear-gradient(135deg, #4169E1, #1E90FF);
+    color: white;
+    border: 2px solid #4169E1;
+    box-shadow: 0 0 10px rgba(65, 105, 225, 0.5);
 }
 
 .burnt-tag-item {

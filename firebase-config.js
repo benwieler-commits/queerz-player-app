@@ -158,7 +158,75 @@ function initializeBroadcastListener() {
         spotImg.style.display = 'block';
       }
     }
-    
+
+    // ⭐ NEW: Handle Status Tags and Story Tags from MC
+    let statusTags = [];
+    let storyTags = [];
+
+    // Check multiple possible locations for tags
+
+    // Option 1: Tags in players array (actual MC app structure)
+    if (data.players && Array.isArray(data.players)) {
+      console.log('🔍 Found players array, length:', data.players.length);
+
+      // Try to find current player by matching character name
+      const currentCharName = localStorage.getItem('currentCharacterName');
+      console.log('🔍 Looking for character name:', currentCharName);
+      let currentPlayer = null;
+
+      if (currentCharName) {
+        currentPlayer = data.players.find(p => p.name === currentCharName);
+        console.log('🔍 Found by name match:', currentPlayer ? 'YES' : 'NO');
+      }
+
+      // If no match by name, try first player (for single player scenarios)
+      if (!currentPlayer && data.players.length > 0) {
+        currentPlayer = data.players[0];
+        console.log('🔍 Using first player:', currentPlayer.name);
+      }
+
+      console.log('🔍 Current player object:', currentPlayer);
+
+      if (currentPlayer && currentPlayer.tags) {
+        console.log('🔍 Player has tags:', currentPlayer.tags);
+        statusTags = currentPlayer.tags.status || [];
+        storyTags = currentPlayer.tags.story || [];
+        console.log('📥 Found tags for player:', currentPlayer.name, { statusTags, storyTags });
+      } else {
+        console.log('⚠️ Player missing tags property');
+      }
+    } else {
+      console.log('⚠️ No players array in broadcast data');
+    }
+
+    // Option 2: Tags in playerUpdates (alternative structure)
+    if (data.playerUpdates && window.currentUserId) {
+      const playerUpdate = data.playerUpdates[window.currentUserId];
+      if (playerUpdate) {
+        statusTags = playerUpdate.statusTags || statusTags;
+        storyTags = playerUpdate.storyTags || storyTags;
+      }
+    }
+
+    // Option 3: Direct properties (fallback)
+    if (data.statusTags) {
+      statusTags = data.statusTags;
+    }
+    if (data.storyTags) {
+      storyTags = data.storyTags;
+    }
+
+    // Dispatch if we have any tags
+    if (statusTags.length > 0 || storyTags.length > 0) {
+      console.log('📥 Broadcasting tag update:', { statusTags, storyTags });
+      document.dispatchEvent(new CustomEvent('mc-tag-update', {
+        detail: {
+          statusTags: statusTags,
+          storyTags: storyTags
+        }
+      }));
+    }
+
     // Update statuses
     updateBroadcastStatus(true);
     const mcStatus = document.getElementById('mcStatus');

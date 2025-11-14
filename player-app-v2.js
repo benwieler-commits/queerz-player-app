@@ -574,6 +574,38 @@ function setupDiceRoller() {
             showNotification(`+${juiceGained} Juice!`);
         }
 
+        // Remove Temporary tags that were clicked and broadcast to MC
+        const removedTags = [];
+
+        // Remove temporary status tags
+        characterData.currentStatuses = characterData.currentStatuses.filter(status => {
+            if (status.isTemporary && status.clicked) {
+                removedTags.push(status.name);
+                return false; // Remove this tag
+            }
+            return true; // Keep this tag
+        });
+
+        // Remove temporary story tags
+        characterData.storyTags = characterData.storyTags.filter(tag => {
+            if (tag.isTemporary && tag.clicked) {
+                removedTags.push(tag.name);
+                return false;
+            }
+            return true;
+        });
+
+        // Broadcast removed tags to MC
+        if (removedTags.length > 0) {
+            console.log('📤 Broadcasting removed Temporary tags to MC:', removedTags);
+            broadcastTemporaryTagRemoval(removedTags);
+            showNotification(`Removed: ${removedTags.join(', ')}`);
+        }
+
+        // Update displays
+        updateStatusTagsDisplay();
+        updateStoryTagsDisplay();
+
         saveToCloud();
     });
 
@@ -584,23 +616,57 @@ function setupDiceRoller() {
 
 function calculateTotalPower() {
     let power = 0;
+    let breakdown = [];
 
     // Count clicked power tags (+1 each)
     const powerTagClicks = characterData.clickedTags.filter(t => t.includes('power')).length;
-    power += powerTagClicks;
+    if (powerTagClicks > 0) {
+        power += powerTagClicks;
+        breakdown.push(`Power Tags: +${powerTagClicks}`);
+    }
 
-    // Status tags (positive add, negative subtract)
+    // Count clicked weakness tags (-1 each)
+    const weaknessClicks = characterData.clickedTags.filter(t => t.includes('weakness')).length;
+    if (weaknessClicks > 0) {
+        power -= weaknessClicks;
+        breakdown.push(`Weakness: -${weaknessClicks}`);
+    }
+
+    // Status tags - Ongoing tags are automatically applied, Temporary only if clicked
+    let statusModifier = 0;
     characterData.currentStatuses.forEach(status => {
-        if (status.positive) {
-            power += status.tier;
-        } else {
-            power -= status.tier;
+        if (status.isOngoing && status.modifier) {
+            // Ongoing tags are always applied
+            statusModifier += status.modifier;
+        } else if (status.isTemporary && status.clicked && status.modifier) {
+            // Temporary tags only applied if clicked
+            statusModifier += status.modifier;
+        } else if (status.positive && status.tier) {
+            // Legacy format
+            statusModifier += status.tier;
+        } else if (!status.positive && status.tier) {
+            // Legacy negative format
+            statusModifier -= status.tier;
         }
     });
 
+    // Story tags - same logic
+    characterData.storyTags.forEach(tag => {
+        if (tag.isOngoing && tag.modifier) {
+            statusModifier += tag.modifier;
+        } else if (tag.isTemporary && tag.clicked && tag.modifier) {
+            statusModifier += tag.modifier;
+        }
+    });
+
+    if (statusModifier !== 0) {
+        power += statusModifier;
+        breakdown.push(`MC Tags: ${statusModifier > 0 ? '+' : ''}${statusModifier}`);
+    }
+
     // Update display
     document.getElementById('totalPower').value = power;
-    updatePowerBreakdown(power, powerTagClicks);
+    updatePowerBreakdown(breakdown.join(' | ') || 'No modifiers');
 
     return power;
 }
@@ -609,9 +675,9 @@ function updatePowerDisplay() {
     calculateTotalPower();
 }
 
-function updatePowerBreakdown(totalPower, tagCount) {
+function updatePowerBreakdown(breakdownText) {
     const breakdown = document.getElementById('powerBreakdown');
-    breakdown.textContent = `Power Tags: ${tagCount} | Status Modifiers: ${totalPower - tagCount}`;
+    breakdown.textContent = breakdownText;
 }
 
 function resetDiceRoll() {
@@ -818,8 +884,101 @@ function updateCombosDisplay() {
 // STATUS & STORY TAGS (From MC)
 // ================================
 
+/**
+ * Parse tag string from MC
+ * Format: "Tag Name (±number) Temporary/Ongoing"
+ * Example: "Inspired (+2) Ongoing" or "Weakened (-1) Temporary"
+ */
+function parseTagFromMC(tagString) {
+    const match = tagString.match(/^(.+?)\s*\(([+-]?\d+)\)\s*(Temporary|Ongoing)$/i);
+    if (match) {
+        const [, name, modifier, type] = match;
+        return {
+            name: name.trim(),
+            modifier: parseInt(modifier),
+            isTemporary: type.toLowerCase() === 'temporary',
+            isOngoing: type.toLowerCase() === 'ongoing',
+            rawString: tagString
+        };
+    }
+    // Fallback for tags without proper format
+    return {
+        name: tagString,
+        modifier: 0,
+        isTemporary: false,
+        isOngoing: false,
+        rawString: tagString
+    };
+}
+
+/**
+ * Handle tag updates from MC
+ */
+function handleMCTagUpdate(event) {
+    const { statusTags, storyTags } = event.detail;
+
+    console.log('📥 Received tag update from MC:', { statusTags, storyTags });
+
+    // Process status tags
+    if (statusTags && Array.isArray(statusTags)) {
+        characterData.currentStatuses = statusTags.map(tag => {
+            if (typeof tag === 'string') {
+                const parsed = parseTagFromMC(tag);
+                console.log('  Parsed status tag:', parsed);
+                return {
+                    name: parsed.name,
+                    modifier: parsed.modifier,
+                    isTemporary: parsed.isTemporary,
+                    isOngoing: parsed.isOngoing,
+                    clicked: false // Track if temporary tag has been clicked
+                };
+            }
+            return tag; // Already an object
+        });
+        console.log('  Updated currentStatuses:', characterData.currentStatuses);
+    }
+
+    // Process story tags
+    if (storyTags && Array.isArray(storyTags)) {
+        characterData.storyTags = storyTags.map(tag => {
+            if (typeof tag === 'string') {
+                const parsed = parseTagFromMC(tag);
+                console.log('  Parsed story tag:', parsed);
+                return {
+                    name: parsed.name,
+                    modifier: parsed.modifier,
+                    isTemporary: parsed.isTemporary,
+                    isOngoing: parsed.isOngoing,
+                    clicked: false
+                };
+            }
+            return tag;
+        });
+        console.log('  Updated storyTags:', characterData.storyTags);
+    }
+
+    // Update displays
+    updateStatusTagsDisplay();
+    updateStoryTagsDisplay();
+    updatePowerDisplay();
+
+    // Show notification to user
+    const tagCount = (statusTags?.length || 0) + (storyTags?.length || 0);
+    if (tagCount > 0) {
+        showNotification(`📥 Received ${tagCount} tag(s) from MC`);
+    }
+
+    saveToCloud();
+}
+
 function updateStatusTagsDisplay() {
     const statusList = document.getElementById('statusList');
+    if (!statusList) {
+        console.error('❌ statusList element not found!');
+        return;
+    }
+
+    console.log('🔄 Updating status tags display. Count:', characterData.currentStatuses.length);
     statusList.innerHTML = '';
 
     if (characterData.currentStatuses.length === 0) {
@@ -827,16 +986,50 @@ function updateStatusTagsDisplay() {
         return;
     }
 
-    characterData.currentStatuses.forEach(status => {
+    characterData.currentStatuses.forEach((status, index) => {
+        console.log(`  Rendering status tag #${index}:`, status);
         const pill = document.createElement('span');
-        pill.className = `tag-pill ${status.positive ? 'positive' : 'negative'}`;
-        pill.textContent = `${status.name} (${status.positive ? '+' : '-'}${status.tier})`;
+
+        // Determine if tag is Temporary or Ongoing
+        if (status.isTemporary) {
+            pill.className = `tag-pill temporary-tag ${status.clicked ? 'clicked' : ''}`;
+            pill.style.cursor = 'pointer';
+            pill.title = 'Click to apply to next roll (will be removed after rolling)';
+
+            // Make clickable for Temporary tags
+            pill.addEventListener('click', () => {
+                status.clicked = !status.clicked;
+                updateStatusTagsDisplay();
+                updatePowerDisplay();
+            });
+        } else if (status.isOngoing) {
+            pill.className = 'tag-pill ongoing-tag';
+            pill.title = 'Ongoing - automatically applied to all rolls';
+        } else {
+            // Legacy format
+            pill.className = `tag-pill ${status.positive ? 'positive' : 'negative'}`;
+        }
+
+        const modifierStr = status.modifier
+            ? `(${status.modifier > 0 ? '+' : ''}${status.modifier})`
+            : (status.tier ? `(${status.positive ? '+' : '-'}${status.tier})` : '');
+        const typeStr = status.isTemporary ? ' Temporary' : (status.isOngoing ? ' Ongoing' : '');
+
+        pill.textContent = `${status.name} ${modifierStr}${typeStr}`;
         statusList.appendChild(pill);
     });
+
+    console.log('✅ Status tags display updated');
 }
 
 function updateStoryTagsDisplay() {
     const storyList = document.getElementById('storyTagList');
+    if (!storyList) {
+        console.error('❌ storyTagList element not found!');
+        return;
+    }
+
+    console.log('🔄 Updating story tags display. Count:', characterData.storyTags.length);
     storyList.innerHTML = '';
 
     if (characterData.storyTags.length === 0) {
@@ -844,12 +1037,35 @@ function updateStoryTagsDisplay() {
         return;
     }
 
-    characterData.storyTags.forEach(tag => {
+    characterData.storyTags.forEach((tag, index) => {
+        console.log(`  Rendering story tag #${index}:`, tag);
         const pill = document.createElement('span');
-        pill.className = 'tag-pill';
-        pill.textContent = tag.name + (tag.ongoing ? ' (Ongoing)' : '');
+
+        if (tag.isTemporary) {
+            pill.className = `tag-pill temporary-tag ${tag.clicked ? 'clicked' : ''}`;
+            pill.style.cursor = 'pointer';
+            pill.title = 'Click to apply to next roll (will be removed after rolling)';
+
+            pill.addEventListener('click', () => {
+                tag.clicked = !tag.clicked;
+                updateStoryTagsDisplay();
+                updatePowerDisplay();
+            });
+        } else if (tag.isOngoing) {
+            pill.className = 'tag-pill ongoing-tag';
+            pill.title = 'Ongoing - automatically applied';
+        } else {
+            pill.className = 'tag-pill';
+        }
+
+        const modifierStr = tag.modifier ? `(${tag.modifier > 0 ? '+' : ''}${tag.modifier})` : '';
+        const typeStr = tag.isTemporary ? ' Temporary' : (tag.isOngoing ? ' Ongoing' : (tag.ongoing ? ' (Ongoing)' : ''));
+
+        pill.textContent = `${tag.name}${modifierStr}${typeStr}`;
         storyList.appendChild(pill);
     });
+
+    console.log('✅ Story tags display updated');
 }
 
 // ================================
@@ -926,6 +1142,8 @@ function setupCharacterInfo() {
 
     nameInput.addEventListener('input', () => {
         characterData.name = nameInput.value;
+        // Store character name in localStorage for MC broadcast matching
+        localStorage.setItem('currentCharacterName', nameInput.value);
         saveToCloud();
     });
 
@@ -982,6 +1200,11 @@ function loadCharacterToUI() {
     document.getElementById('characterPronouns').value = characterData.pronouns;
     document.getElementById('themeColor').value = characterData.themeColor;
     applyThemeColor(characterData.themeColor);
+
+    // Store character name in localStorage for MC broadcast matching
+    if (characterData.name) {
+        localStorage.setItem('currentCharacterName', characterData.name);
+    }
 
     // Portrait
     const portrait = document.getElementById('characterPortrait');
@@ -1050,6 +1273,23 @@ function saveToCloud() {
 function broadcastToMc() {
     console.log('📤 Preparing broadcast to MC...');
     broadcastPlayerToMc(characterData);
+}
+
+/**
+ * Broadcast temporary tag removal to MC
+ */
+function broadcastTemporaryTagRemoval(removedTags) {
+    // Import broadcast function from firebase-broadcast.js
+    import('./firebase-broadcast.js').then(module => {
+        const broadcastData = {
+            ...characterData,
+            temporaryTagsRemoved: removedTags,
+            timestamp: Date.now()
+        };
+        module.broadcastPlayerToMc(broadcastData);
+    }).catch(err => {
+        console.error('❌ Failed to broadcast tag removal:', err);
+    });
 }
 
 // ================================
@@ -1133,10 +1373,18 @@ document.addEventListener('DOMContentLoaded', () => {
     setupFileHandling();
     setupMiscUI();
 
+    // Listen for MC tag updates
+    document.addEventListener('mc-tag-update', handleMCTagUpdate);
+
     // Initial UI update
     updateBurntTagsDisplay();
     updateStatusTagsDisplay();
     updateStoryTagsDisplay();
+
+    // Store initial character name in localStorage for MC broadcast matching
+    if (characterData.name) {
+        localStorage.setItem('currentCharacterName', characterData.name);
+    }
 
     console.log('✅ Player Companion ready!');
 });
@@ -1154,3 +1402,100 @@ style.textContent = `
 }
 `;
 document.head.appendChild(style);
+
+// ================================
+// DEBUG/TEST FUNCTIONS
+// ================================
+
+/**
+ * Test function to manually add tags (for debugging)
+ * Call from browser console: testAddTags()
+ */
+window.testAddTags = function() {
+    console.log('🧪 Testing tag display with sample data...');
+
+    // Simulate MC sending tags
+    const testEvent = new CustomEvent('mc-tag-update', {
+        detail: {
+            statusTags: [
+                "Inspired (+2) Ongoing",
+                "Weakened (-1) Temporary",
+                "Focused (+1) Ongoing"
+            ],
+            storyTags: [
+                "Undercover (+1) Temporary",
+                "Suspicious (-2) Ongoing"
+            ]
+        }
+    });
+
+    document.dispatchEvent(testEvent);
+    console.log('✅ Test tags dispatched. Check the Status/Story Tags sections.');
+};
+
+/**
+ * Test function to simulate actual MC broadcast structure
+ * Call from browser console: testMCBroadcast()
+ */
+window.testMCBroadcast = function() {
+    console.log('🧪 Testing with actual MC broadcast structure...');
+
+    const currentCharName = localStorage.getItem('currentCharacterName');
+    console.log('  Current character name in localStorage:', currentCharName);
+
+    // Simulate the actual MC broadcast structure
+    const mockBroadcast = {
+        players: [
+            {
+                name: currentCharName || "Test Character",
+                tags: {
+                    status: [
+                        "Blessed (+2) Ongoing",
+                        "Hurt (-1) Temporary"
+                    ],
+                    story: [
+                        "Investigating (+1) Temporary"
+                    ]
+                }
+            }
+        ]
+    };
+
+    console.log('  Mock broadcast data:', mockBroadcast);
+
+    // Manually trigger the tag extraction logic
+    const statusTags = mockBroadcast.players[0].tags.status || [];
+    const storyTags = mockBroadcast.players[0].tags.story || [];
+
+    const testEvent = new CustomEvent('mc-tag-update', {
+        detail: {
+            statusTags: statusTags,
+            storyTags: storyTags
+        }
+    });
+
+    document.dispatchEvent(testEvent);
+    console.log('✅ MC-style broadcast dispatched. Check the Status/Story Tags sections.');
+};
+
+/**
+ * Test function to check if display elements exist
+ */
+window.checkDisplayElements = function() {
+    console.log('🔍 Checking display elements...');
+    const statusList = document.getElementById('statusList');
+    const storyList = document.getElementById('storyTagList');
+
+    console.log('statusList element:', statusList ? '✅ Found' : '❌ NOT FOUND');
+    console.log('storyTagList element:', storyList ? '✅ Found' : '❌ NOT FOUND');
+
+    if (statusList) console.log('  statusList parent:', statusList.parentElement);
+    if (storyList) console.log('  storyTagList parent:', storyList.parentElement);
+
+    return { statusList: !!statusList, storyList: !!storyList };
+};
+
+console.log('💡 Debug functions available:');
+console.log('  - testAddTags() - Test with simple tag format');
+console.log('  - testMCBroadcast() - Test with actual MC broadcast structure');
+console.log('  - checkDisplayElements() - Verify DOM elements exist');
