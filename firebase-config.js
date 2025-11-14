@@ -164,15 +164,39 @@ function initializeBroadcastListener() {
     let storyTags = [];
 
     // Check multiple possible locations for tags
-    if (data.playerUpdates && window.currentUserId) {
-      const playerUpdate = data.playerUpdates[window.currentUserId];
-      if (playerUpdate) {
-        statusTags = playerUpdate.statusTags || [];
-        storyTags = playerUpdate.storyTags || [];
+
+    // Option 1: Tags in players array (actual MC app structure)
+    if (data.players && Array.isArray(data.players)) {
+      // Try to find current player by matching character name
+      const currentCharName = localStorage.getItem('currentCharacterName');
+      let currentPlayer = null;
+
+      if (currentCharName) {
+        currentPlayer = data.players.find(p => p.name === currentCharName);
+      }
+
+      // If no match by name, try first player (for single player scenarios)
+      if (!currentPlayer && data.players.length > 0) {
+        currentPlayer = data.players[0];
+      }
+
+      if (currentPlayer && currentPlayer.tags) {
+        statusTags = currentPlayer.tags.status || [];
+        storyTags = currentPlayer.tags.story || [];
+        console.log('📥 Found tags for player:', currentPlayer.name, { statusTags, storyTags });
       }
     }
 
-    // Also check direct properties (MC might broadcast directly)
+    // Option 2: Tags in playerUpdates (alternative structure)
+    if (data.playerUpdates && window.currentUserId) {
+      const playerUpdate = data.playerUpdates[window.currentUserId];
+      if (playerUpdate) {
+        statusTags = playerUpdate.statusTags || statusTags;
+        storyTags = playerUpdate.storyTags || storyTags;
+      }
+    }
+
+    // Option 3: Direct properties (fallback)
     if (data.statusTags) {
       statusTags = data.statusTags;
     }
