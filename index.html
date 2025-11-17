@@ -96,35 +96,28 @@
                         <h4>POWER TAGS</h4>
                         <ul class="tag-list">
                             <li class="tag-item" data-tag-index="0">
-                                <input type="text" class="tag-input" placeholder="Power Tag 1">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 1" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item" data-tag-index="1">
-                                <input type="text" class="tag-input" placeholder="Power Tag 2">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 2" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item" data-tag-index="2">
-                                <input type="text" class="tag-input" placeholder="Power Tag 3">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 3" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="3">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="4">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="5">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                         </ul>
                     </div>
                     <div class="weakness-tag">
                         <h4>WEAKNESS TAG</h4>
-                        <input type="text" class="weakness-input" placeholder="Weakness tag">
-                        <button class="btn-burn-weakness" title="Burn Weakness">🔥</button>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag" title="Click to apply to your roll">
                     </div>
                 </div>
             </div>
@@ -186,35 +179,28 @@
                         <h4>POWER TAGS</h4>
                         <ul class="tag-list">
                             <li class="tag-item" data-tag-index="0">
-                                <input type="text" class="tag-input" placeholder="Power Tag 1">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 1" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item" data-tag-index="1">
-                                <input type="text" class="tag-input" placeholder="Power Tag 2">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 2" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item" data-tag-index="2">
-                                <input type="text" class="tag-input" placeholder="Power Tag 3">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 3" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="3">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="4">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="5">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                         </ul>
                     </div>
                     <div class="weakness-tag">
                         <h4>WEAKNESS TAG</h4>
-                        <input type="text" class="weakness-input" placeholder="Weakness tag">
-                        <button class="btn-burn-weakness" title="Burn Weakness">🔥</button>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag" title="Click to apply to your roll">
                     </div>
                 </div>
             </div>
@@ -311,14 +297,27 @@
             <!-- Dice Roller -->
             <div class="dice-roller">
                 <h3>🎲 Roll Dice</h3>
+
+                <!-- Tag Application Instructions -->
+                <div class="tag-instructions">
+                    <p><strong>📌 Apply Tags:</strong> Click your power/weakness tags below to add to your roll (+1 or -1 each)</p>
+                    <p><strong>🔥 Burn for Guaranteed Hit:</strong> Use the button below to burn ONE tag for auto-success</p>
+                </div>
+
                 <div class="power-display">
                     <label>Total Power:</label>
                     <input type="number" id="totalPower" class="power-input" value="0" min="-5" max="10" readonly>
                     <div class="power-breakdown" id="powerBreakdown"></div>
                 </div>
+
+                <!-- Normal Roll Button -->
                 <button id="rollBtn" class="btn-roll">Roll 2d6 + Power</button>
+
+                <!-- Burn Tag for Guaranteed Hit Button -->
+                <button id="burnForGuaranteedHitBtn" class="btn-burn-guaranteed">🔥 Burn Tag for Guaranteed Hit (7 + Power 3)</button>
+
                 <div id="rollResult" class="roll-result"></div>
-                <button id="resetBtn" class="btn-reset">Reset Dice & Clear Tags</button>
+                <button id="resetBtn" class="btn-reset">Reset Dice & Clear Applied Tags</button>
             </div>
         </section>
 
@@ -381,35 +380,28 @@
                         <h4>POWER TAGS</h4>
                         <ul class="tag-list">
                             <li class="tag-item" data-tag-index="0">
-                                <input type="text" class="tag-input" placeholder="Power Tag 1">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 1" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item" data-tag-index="1">
-                                <input type="text" class="tag-input" placeholder="Power Tag 2">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 2" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item" data-tag-index="2">
-                                <input type="text" class="tag-input" placeholder="Power Tag 3">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 3" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="3">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="4">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="5">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                         </ul>
                     </div>
                     <div class="weakness-tag">
                         <h4>WEAKNESS TAG</h4>
-                        <input type="text" class="weakness-input" placeholder="Weakness tag">
-                        <button class="btn-burn-weakness" title="Burn Weakness">🔥</button>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag" title="Click to apply to your roll">
                     </div>
                 </div>
             </div>
@@ -471,35 +463,28 @@
                         <h4>POWER TAGS</h4>
                         <ul class="tag-list">
                             <li class="tag-item" data-tag-index="0">
-                                <input type="text" class="tag-input" placeholder="Power Tag 1">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 1" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item" data-tag-index="1">
-                                <input type="text" class="tag-input" placeholder="Power Tag 2">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 2" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item" data-tag-index="2">
-                                <input type="text" class="tag-input" placeholder="Power Tag 3">
-                                <button class="btn-burn" title="Burn Tag">🔥</button>
+                                <input type="text" class="tag-input" placeholder="Power Tag 3" title="Click to apply to your roll">
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="3">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="4">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                             <li class="tag-item greyed-tag" data-tag-index="5">
                                 <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
-                                <button class="btn-burn" title="Burn Tag" disabled>🔥</button>
                             </li>
                         </ul>
                     </div>
                     <div class="weakness-tag">
                         <h4>WEAKNESS TAG</h4>
-                        <input type="text" class="weakness-input" placeholder="Weakness tag">
-                        <button class="btn-burn-weakness" title="Burn Weakness">🔥</button>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag" title="Click to apply to your roll">
                     </div>
                 </div>
             </div>

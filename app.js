@@ -349,7 +349,6 @@ function setupPowerTags(card, themeIndex) {
 
     tagItems.forEach((item, tagIndex) => {
         const input = item.querySelector('.tag-input');
-        const burnBtn = item.querySelector('.btn-burn');
 
         // Set initial value
         input.value = theme.powerTags[tagIndex] || '';
@@ -368,43 +367,31 @@ function setupPowerTags(card, themeIndex) {
             }
         });
 
-        // Click to add to roll
+        // Click to apply tag to roll (not permanent burning)
         input.addEventListener('click', () => {
-            if (!theme.burntPowerTags[tagIndex] && input.value && tagIndex < theme.unlockedTags) {
-                const tagKey = `theme${themeIndex}-power${tagIndex}`;
-                if (!characterData.clickedTags.includes(tagKey)) {
-                    characterData.clickedTags.push(tagKey);
-                    item.classList.add('clicked');
-                    updatePowerDisplay();
-                } else {
-                    // Unclick
-                    characterData.clickedTags = characterData.clickedTags.filter(t => t !== tagKey);
-                    item.classList.remove('clicked');
-                    updatePowerDisplay();
-                }
+            // Can't use if burnt or locked
+            if (theme.burntPowerTags[tagIndex] || !input.value || tagIndex >= theme.unlockedTags) {
+                return;
+            }
+
+            const tagKey = `theme${themeIndex}-power${tagIndex}`;
+            if (!characterData.clickedTags.includes(tagKey)) {
+                // Apply tag (add to current roll)
+                characterData.clickedTags.push(tagKey);
+                item.classList.add('applied');
+                updatePowerDisplay();
+            } else {
+                // Un-apply tag
+                characterData.clickedTags = characterData.clickedTags.filter(t => t !== tagKey);
+                item.classList.remove('applied');
+                updatePowerDisplay();
             }
         });
 
-        // Burn button
-        burnBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (!theme.burntPowerTags[tagIndex]) {
-                theme.burntPowerTags[tagIndex] = true;
-                item.classList.add('burnt');
-                characterData.burntTags.push({
-                    type: 'power',
-                    themeIndex: themeIndex,
-                    tagIndex: tagIndex,
-                    name: input.value
-                });
-                updateBurntTagsDisplay();
-                saveToCloud();
-            }
-        });
-
-        // Set burnt state
+        // Set burnt state (from guaranteed hit burns)
         if (theme.burntPowerTags[tagIndex]) {
             item.classList.add('burnt');
+            item.classList.remove('applied');
         }
     });
 }
@@ -428,7 +415,6 @@ function updateAllThemes() {
 function setupWeaknessTag(card, themeIndex) {
     const theme = characterData.themes[themeIndex];
     const input = card.querySelector('.weakness-input');
-    const burnBtn = card.querySelector('.btn-burn-weakness');
 
     input.value = theme.weaknessTag || '';
 
@@ -438,38 +424,31 @@ function setupWeaknessTag(card, themeIndex) {
     });
 
     input.addEventListener('click', () => {
-        if (!theme.burntWeakness && input.value) {
-            const tagKey = `theme${themeIndex}-weakness`;
-            if (!characterData.clickedTags.includes(tagKey)) {
-                characterData.clickedTags.push(tagKey);
-                characterData.usedWeakness = true;
-                input.classList.add('clicked');
-                updatePowerDisplay();
-            } else {
-                characterData.clickedTags = characterData.clickedTags.filter(t => t !== tagKey);
-                characterData.usedWeakness = false;
-                input.classList.remove('clicked');
-                updatePowerDisplay();
-            }
+        // Can't use if burnt
+        if (theme.burntWeakness || !input.value) {
+            return;
+        }
+
+        const tagKey = `theme${themeIndex}-weakness`;
+        if (!characterData.clickedTags.includes(tagKey)) {
+            // Apply weakness (subtract from roll)
+            characterData.clickedTags.push(tagKey);
+            characterData.usedWeakness = true;
+            input.classList.add('applied');
+            updatePowerDisplay();
+        } else {
+            // Un-apply weakness
+            characterData.clickedTags = characterData.clickedTags.filter(t => t !== tagKey);
+            characterData.usedWeakness = false;
+            input.classList.remove('applied');
+            updatePowerDisplay();
         }
     });
 
-    burnBtn.addEventListener('click', () => {
-        if (!theme.burntWeakness) {
-            theme.burntWeakness = true;
-            input.classList.add('burnt');
-            characterData.burntTags.push({
-                type: 'weakness',
-                themeIndex: themeIndex,
-                name: input.value
-            });
-            updateBurntTagsDisplay();
-            saveToCloud();
-        }
-    });
-
+    // Set burnt state (from guaranteed hit burns)
     if (theme.burntWeakness) {
         input.classList.add('burnt');
+        input.classList.remove('applied');
     }
 }
 
@@ -543,9 +522,11 @@ function setupMoveSelection() {
 
 function setupDiceRoller() {
     const rollBtn = document.getElementById('rollBtn');
+    const burnForGuaranteedHitBtn = document.getElementById('burnForGuaranteedHitBtn');
     const resetBtn = document.getElementById('resetBtn');
     const rollResult = document.getElementById('rollResult');
 
+    // NORMAL ROLL (with applied tags)
     rollBtn.addEventListener('click', () => {
         // Check if move is selected
         if (!characterData.selectedMove) {
@@ -596,37 +577,125 @@ function setupDiceRoller() {
             showNotification(`+${juiceGained} Juice!`);
         }
 
-        // Remove Temporary tags that were clicked and broadcast to MC
-        const removedTags = [];
+        // CLEAR APPLIED TAGS (not permanent - tags return after roll)
+        clearAppliedTags();
 
-        // Remove temporary status tags
-        characterData.currentStatuses = characterData.currentStatuses.filter(status => {
-            if (status.isTemporary && status.clicked) {
-                removedTags.push(status.name);
-                return false; // Remove this tag
-            }
-            return true; // Keep this tag
-        });
+        // Remove Temporary MC tags that were clicked
+        removeTemporaryMCTags();
 
-        // Remove temporary story tags
-        characterData.storyTags = characterData.storyTags.filter(tag => {
-            if (tag.isTemporary && tag.clicked) {
-                removedTags.push(tag.name);
-                return false;
-            }
-            return true;
-        });
+        saveToCloud();
+    });
 
-        // Broadcast removed tags to MC
-        if (removedTags.length > 0) {
-            console.log('📤 Broadcasting removed Temporary tags to MC:', removedTags);
-            broadcastTemporaryTagRemoval(removedTags);
-            showNotification(`Removed: ${removedTags.join(', ')}`);
+    // BURN TAG FOR GUARANTEED HIT
+    burnForGuaranteedHitBtn.addEventListener('click', () => {
+        // Check if move is selected
+        if (!characterData.selectedMove) {
+            alert('⚠️ You must select a Core Move before using this!');
+            return;
         }
 
-        // Update displays
-        updateStatusTagsDisplay();
-        updateStoryTagsDisplay();
+        // Collect all available (non-burnt) tags
+        const availableTags = [];
+        characterData.themes.forEach((theme, themeIndex) => {
+            theme.powerTags.forEach((tag, tagIndex) => {
+                if (tag && tagIndex < theme.unlockedTags && !theme.burntPowerTags[tagIndex]) {
+                    availableTags.push({
+                        name: tag,
+                        themeIndex: themeIndex,
+                        tagIndex: tagIndex,
+                        type: 'power'
+                    });
+                }
+            });
+            // Also add weakness tags
+            if (theme.weaknessTag && !theme.burntWeakness) {
+                availableTags.push({
+                    name: theme.weaknessTag,
+                    themeIndex: themeIndex,
+                    type: 'weakness'
+                });
+            }
+        });
+
+        if (availableTags.length === 0) {
+            alert('❌ No available tags to burn! All tags are already burnt.\n\nUse "Recover All Burnt Tags" during Downtime to recover them.');
+            return;
+        }
+
+        // Prompt user to select ONE tag
+        const tagNames = availableTags.map((t, i) => `${i + 1}. ${t.name} (${t.type})`).join('\n');
+        const selection = prompt(`🔥 BURN TAG FOR GUARANTEED HIT\n\nSelect ONE tag to burn:\n\n${tagNames}\n\nEnter the number (1-${availableTags.length}):`);
+
+        if (!selection) return; // User cancelled
+
+        const tagNum = parseInt(selection);
+        if (isNaN(tagNum) || tagNum < 1 || tagNum > availableTags.length) {
+            alert('Invalid selection!');
+            return;
+        }
+
+        const selectedTag = availableTags[tagNum - 1];
+
+        // Burn the tag permanently
+        const theme = characterData.themes[selectedTag.themeIndex];
+        if (selectedTag.type === 'power') {
+            theme.burntPowerTags[selectedTag.tagIndex] = true;
+        } else {
+            theme.burntWeakness = true;
+        }
+
+        // Add to burnt tags list
+        characterData.burntTags.push({
+            type: selectedTag.type,
+            themeIndex: selectedTag.themeIndex,
+            tagIndex: selectedTag.type === 'power' ? selectedTag.tagIndex : undefined,
+            name: selectedTag.name
+        });
+
+        // Calculate status modifier for final power
+        let statusModifier = 0;
+        characterData.currentStatuses.forEach(status => {
+            if (status.isOngoing && status.modifier) {
+                statusModifier += status.modifier;
+            } else if (status.isTemporary && status.clicked && status.modifier) {
+                statusModifier += status.modifier;
+            } else if (status.positive && status.tier) {
+                statusModifier += status.tier;
+            } else if (!status.positive && status.tier) {
+                statusModifier -= status.tier;
+            }
+        });
+
+        characterData.storyTags.forEach(tag => {
+            if (tag.isOngoing && tag.modifier) {
+                statusModifier += tag.modifier;
+            } else if (tag.isTemporary && tag.clicked && tag.modifier) {
+                statusModifier += tag.modifier;
+            }
+        });
+
+        const finalPower = 3 + statusModifier;
+        const finalTotal = 7 + statusModifier;
+
+        // Display guaranteed hit result
+        rollResult.className = 'roll-result partial guaranteed-hit';
+        rollResult.innerHTML = `🔥 <strong>TAG BURNED FOR GUARANTEED HIT!</strong><br><br>Result: 7 + Power ${finalPower} = ${finalTotal}<br><br>Tag Burnt: "${selectedTag.name}"<br><br>⚡ PARTIAL SUCCESS (Guaranteed)`;
+
+        // Add juice (partial success = 1 juice)
+        characterData.juice += 1;
+        updateJuiceDisplay();
+
+        showNotification(`🔥 Tag Burned: ${selectedTag.name}`);
+
+        // Update UI
+        updateAllThemes();
+        updateBurntTagsDisplay();
+
+        // CLEAR APPLIED TAGS
+        clearAppliedTags();
+
+        // Remove Temporary MC tags that were clicked
+        removeTemporaryMCTags();
 
         saveToCloud();
     });
@@ -634,6 +703,53 @@ function setupDiceRoller() {
     resetBtn.addEventListener('click', () => {
         resetDiceRoll();
     });
+}
+
+// Helper function to clear applied tags (not burned tags)
+function clearAppliedTags() {
+    // Clear clicked/applied tags
+    characterData.clickedTags = [];
+    characterData.usedWeakness = false;
+
+    // Remove "applied" class from all tags
+    document.querySelectorAll('.tag-item.applied, .weakness-input.applied').forEach(el => {
+        el.classList.remove('applied');
+    });
+
+    updatePowerDisplay();
+}
+
+// Helper function to remove temporary MC tags
+function removeTemporaryMCTags() {
+    const removedTags = [];
+
+    // Remove temporary status tags
+    characterData.currentStatuses = characterData.currentStatuses.filter(status => {
+        if (status.isTemporary && status.clicked) {
+            removedTags.push(status.name);
+            return false;
+        }
+        return true;
+    });
+
+    // Remove temporary story tags
+    characterData.storyTags = characterData.storyTags.filter(tag => {
+        if (tag.isTemporary && tag.clicked) {
+            removedTags.push(tag.name);
+            return false;
+        }
+        return true;
+    });
+
+    if (removedTags.length > 0) {
+        console.log('📤 Broadcasting removed Temporary tags to MC:', removedTags);
+        broadcastTemporaryTagRemoval(removedTags);
+        showNotification(`Removed MC Tags: ${removedTags.join(', ')}`);
+    }
+
+    // Update displays
+    updateStatusTagsDisplay();
+    updateStoryTagsDisplay();
 }
 
 function calculateTotalPower() {
@@ -703,9 +819,9 @@ function updatePowerBreakdown(breakdownText) {
 }
 
 function resetDiceRoll() {
-    // Clear all clicked tags
-    characterData.clickedTags = [];
-    characterData.usedWeakness = false;
+    // Clear applied tags (NOT burnt tags - those persist)
+    clearAppliedTags();
+
     characterData.selectedMove = null;
 
     // Clear unused juice
@@ -713,10 +829,6 @@ function resetDiceRoll() {
     updateJuiceDisplay();
 
     // Reset UI
-    document.querySelectorAll('.tag-item.clicked, .weakness-input.clicked').forEach(el => {
-        el.classList.remove('clicked');
-    });
-
     document.querySelectorAll('.move-icon.selected').forEach(el => {
         el.classList.remove('selected');
     });
