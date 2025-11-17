@@ -250,13 +250,13 @@ function updateTagUnlockStatus(themeIndex) {
         if (i < theme.unlockedTags) {
             item.classList.remove('greyed-tag');
             item.classList.add('unlocked');
-            input.disabled = false;
-            burnBtn.disabled = false;
+            if (input) input.disabled = false;
+            if (burnBtn) burnBtn.disabled = false;
         } else {
             item.classList.add('greyed-tag');
             item.classList.remove('unlocked');
-            input.disabled = true;
-            burnBtn.disabled = true;
+            if (input) input.disabled = true;
+            if (burnBtn) burnBtn.disabled = true;
         }
     });
 }
