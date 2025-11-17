@@ -81,7 +81,7 @@ This is the **brand new Player App** designed to accompany the [MC App](https://
 1. **Select Core Move** (required)
 2. **Click relevant tags** from your themes
 3. **Check total power** in dice roller
-4. **Roll 2d6 + Power**
+4. **Roll 2d6 + 1 (base) + Power**
 5. **Receive Juice** based on result (7-9 = 1, 10+ = 3)
 6. **Reset** when done (clears unused Juice and clicked tags)
 
