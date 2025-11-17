@@ -1266,6 +1266,107 @@ body {
     border-radius: 8px;
 }
 
+.combo-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.combo-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.combo-field label {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.combo-power-select,
+.combo-core-move-input {
+    padding: 10px;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    border: 2px solid var(--teal-primary);
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.combo-tag-selector {
+    margin-bottom: 15px;
+}
+
+.combo-tag-selector label {
+    display: block;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.combo-available-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(74, 124, 126, 0.3);
+    border-radius: 8px;
+    min-height: 60px;
+    margin-bottom: 10px;
+}
+
+.combo-available-tag {
+    padding: 6px 12px;
+    background: var(--teal-primary);
+    color: white;
+    border: 2px solid transparent;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+}
+
+.combo-available-tag:hover {
+    background: var(--teal-dark);
+    transform: scale(1.05);
+}
+
+.combo-available-tag.selected {
+    background: var(--gold-tag);
+    color: var(--bg-dark);
+    border-color: var(--gold-tag);
+}
+
+.combo-available-tag.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.combo-selected-tags {
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.selected-tags-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.selected-tags-display {
+    color: var(--gold-tag);
+    font-weight: 600;
+}
+
 .btn-add {
     padding: 8px 15px;
     background: var(--teal-primary);
@@ -1313,6 +1414,33 @@ body {
     color: var(--gold-tag);
     font-size: 1.1rem;
     margin: 0;
+}
+
+.combo-metadata {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+}
+
+.combo-power,
+.combo-core-move {
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.combo-power {
+    background: rgba(167, 139, 250, 0.3);
+    color: #A78BFA;
+    border: 1px solid #A78BFA;
+}
+
+.combo-core-move {
+    background: rgba(74, 124, 126, 0.3);
+    color: var(--teal-primary);
+    border: 1px solid var(--teal-primary);
+    flex: 1;
 }
 
 .combo-remove-btn {

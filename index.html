@@ -541,11 +541,34 @@
 
                 <div class="combo-add">
                     <input type="text" id="comboName" placeholder="Combo name (e.g., 'Glitter Bomb Attack')" class="input-combo-name">
-                    <div class="combo-tags-input">
-                        <input type="text" id="comboTag1" placeholder="Tag 1" class="input-small">
-                        <input type="text" id="comboTag2" placeholder="Tag 2" class="input-small">
-                        <input type="text" id="comboTag3" placeholder="Tag 3 (optional)" class="input-small">
+
+                    <div class="combo-fields-grid">
+                        <div class="combo-field">
+                            <label for="comboPower">Power (1-4):</label>
+                            <select id="comboPower" class="combo-power-select">
+                                <option value="">Select Power</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                            </select>
+                        </div>
+
+                        <div class="combo-field">
+                            <label for="comboCoreMove">Core Move:</label>
+                            <input type="text" id="comboCoreMove" placeholder="e.g., Strike a Pose" class="combo-core-move-input">
+                        </div>
                     </div>
+
+                    <div class="combo-tag-selector">
+                        <label>Select 2 Tags (click to select):</label>
+                        <div id="comboAvailableTags" class="combo-available-tags"></div>
+                        <div id="comboSelectedTags" class="combo-selected-tags">
+                            <span class="selected-tags-label">Selected: </span>
+                            <span id="comboSelectedTagsDisplay" class="selected-tags-display">None</span>
+                        </div>
+                    </div>
+
                     <button id="addComboBtn" class="btn-add">+ Add Combo</button>
                 </div>
 
