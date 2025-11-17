@@ -358,6 +358,12 @@ function setupPowerTags(card, themeIndex) {
         input.addEventListener('input', () => {
             if (tagIndex < theme.unlockedTags) {
                 theme.powerTags[tagIndex] = input.value;
+
+                // Refresh combo available tags when power tags change
+                if (refreshComboAvailableTags) {
+                    refreshComboAvailableTags();
+                }
+
                 saveToCloud();
             }
         });
@@ -807,6 +813,9 @@ function updateJuiceDisplay() {
 // COMBO SYSTEM
 // ================================
 
+// Store reference to tag population function for use in loadCharacterToUI
+let refreshComboAvailableTags = null;
+
 function setupCombos() {
     let selectedTags = [];
 
@@ -932,7 +941,7 @@ function setupCombos() {
         }
 
         if (!coreMove) {
-            alert('Please enter a Core Move!');
+            alert('Please select a Core Move!');
             return;
         }
 
@@ -959,6 +968,9 @@ function setupCombos() {
         updateCombosDisplay();
         saveToCloud();
     });
+
+    // Expose tag population function for external use
+    refreshComboAvailableTags = populateAvailableTags;
 
     // Initialize
     populateAvailableTags();
@@ -1462,6 +1474,12 @@ function loadCharacterToUI() {
 
     // Combos
     updateCombosDisplay();
+
+    // Refresh available tags for combo creation based on loaded character's power tags
+    if (refreshComboAvailableTags) {
+        refreshComboAvailableTags();
+    }
+
     updateBurntTagsDisplay();
     updateStatusTagsDisplay();
     updateStoryTagsDisplay();
