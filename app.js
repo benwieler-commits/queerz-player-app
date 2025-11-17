@@ -403,6 +403,22 @@ function setupPowerTags(card, themeIndex) {
     });
 }
 
+function updateAllThemes() {
+    const themeCards = document.querySelectorAll('.theme-card');
+    themeCards.forEach((card, themeIndex) => {
+        const theme = characterData.themes[themeIndex];
+        const tagItems = card.querySelectorAll('.tag-item');
+
+        tagItems.forEach((item, tagIndex) => {
+            if (theme.burntPowerTags[tagIndex]) {
+                item.classList.add('burnt');
+            } else {
+                item.classList.remove('burnt');
+            }
+        });
+    });
+}
+
 function setupWeaknessTag(card, themeIndex) {
     const theme = characterData.themes[themeIndex];
     const input = card.querySelector('.weakness-input');
@@ -792,37 +808,161 @@ function updateJuiceDisplay() {
 // ================================
 
 function setupCombos() {
+    let selectedTags = [];
+
+    // Populate available tags
+    function populateAvailableTags() {
+        const availableTagsContainer = document.getElementById('comboAvailableTags');
+        availableTagsContainer.innerHTML = '';
+
+        // Collect all non-empty power tags from all themes
+        const allPowerTags = [];
+        characterData.themes.forEach((theme, themeIndex) => {
+            theme.powerTags.forEach((tag, tagIndex) => {
+                if (tag.trim() !== '') {
+                    allPowerTags.push({
+                        name: tag,
+                        themeIndex: themeIndex,
+                        tagIndex: tagIndex
+                    });
+                }
+            });
+        });
+
+        if (allPowerTags.length === 0) {
+            availableTagsContainer.innerHTML = '<p style="color: var(--text-secondary); margin: 0;">No power tags available. Create some power tags in your themes first!</p>';
+            return;
+        }
+
+        allPowerTags.forEach(tagInfo => {
+            const tagBtn = document.createElement('button');
+            tagBtn.className = 'combo-available-tag';
+            tagBtn.textContent = tagInfo.name;
+            tagBtn.dataset.themeIndex = tagInfo.themeIndex;
+            tagBtn.dataset.tagIndex = tagInfo.tagIndex;
+            tagBtn.dataset.tagName = tagInfo.name;
+
+            tagBtn.addEventListener('click', () => {
+                const tagName = tagBtn.dataset.tagName;
+                const themeIdx = parseInt(tagBtn.dataset.themeIndex);
+                const tagIdx = parseInt(tagBtn.dataset.tagIndex);
+
+                // Check if already selected
+                const existingIndex = selectedTags.findIndex(t =>
+                    t.themeIndex === themeIdx && t.tagIndex === tagIdx
+                );
+
+                if (existingIndex !== -1) {
+                    // Deselect
+                    selectedTags.splice(existingIndex, 1);
+                    tagBtn.classList.remove('selected');
+                } else {
+                    // Select (if less than 2 tags selected)
+                    if (selectedTags.length < 2) {
+                        selectedTags.push({
+                            name: tagName,
+                            themeIndex: themeIdx,
+                            tagIndex: tagIdx
+                        });
+                        tagBtn.classList.add('selected');
+                    } else {
+                        alert('You can only select 2 tags for a combo!');
+                    }
+                }
+
+                updateSelectedTagsDisplay();
+                updateTagButtonStates();
+            });
+
+            availableTagsContainer.appendChild(tagBtn);
+        });
+    }
+
+    function updateSelectedTagsDisplay() {
+        const display = document.getElementById('comboSelectedTagsDisplay');
+        if (selectedTags.length === 0) {
+            display.textContent = 'None';
+            display.style.color = 'var(--text-secondary)';
+        } else {
+            display.textContent = selectedTags.map(t => t.name).join(', ');
+            display.style.color = 'var(--gold-tag)';
+        }
+    }
+
+    function updateTagButtonStates() {
+        const tagButtons = document.querySelectorAll('.combo-available-tag');
+        tagButtons.forEach(btn => {
+            if (selectedTags.length >= 2 && !btn.classList.contains('selected')) {
+                btn.classList.add('disabled');
+                btn.style.pointerEvents = 'none';
+            } else {
+                btn.classList.remove('disabled');
+                btn.style.pointerEvents = 'auto';
+            }
+        });
+    }
+
+    function clearComboForm() {
+        document.getElementById('comboName').value = '';
+        document.getElementById('comboPower').value = '';
+        document.getElementById('comboCoreMove').value = '';
+        selectedTags = [];
+        updateSelectedTagsDisplay();
+        document.querySelectorAll('.combo-available-tag').forEach(btn => {
+            btn.classList.remove('selected', 'disabled');
+            btn.style.pointerEvents = 'auto';
+        });
+    }
+
     const addComboBtn = document.getElementById('addComboBtn');
 
     addComboBtn.addEventListener('click', () => {
         const name = document.getElementById('comboName').value.trim();
-        const tag1 = document.getElementById('comboTag1').value.trim();
-        const tag2 = document.getElementById('comboTag2').value.trim();
-        const tag3 = document.getElementById('comboTag3').value.trim();
+        const power = document.getElementById('comboPower').value;
+        const coreMove = document.getElementById('comboCoreMove').value.trim();
 
-        if (!name || !tag1 || !tag2) {
-            alert('Please enter at least a name and 2 tags for the combo!');
+        if (!name) {
+            alert('Please enter a combo name!');
+            return;
+        }
+
+        if (!power) {
+            alert('Please select a Power value (1-4)!');
+            return;
+        }
+
+        if (!coreMove) {
+            alert('Please enter a Core Move!');
+            return;
+        }
+
+        if (selectedTags.length !== 2) {
+            alert('Please select exactly 2 tags for the combo!');
             return;
         }
 
         const combo = {
             name: name,
-            tags: [tag1, tag2, tag3].filter(t => t),
+            power: parseInt(power),
+            coreMove: coreMove,
+            tags: selectedTags.map(t => ({
+                name: t.name,
+                themeIndex: t.themeIndex,
+                tagIndex: t.tagIndex
+            })),
             id: Date.now()
         };
 
         characterData.tagCombos.push(combo);
 
-        // Clear inputs
-        document.getElementById('comboName').value = '';
-        document.getElementById('comboTag1').value = '';
-        document.getElementById('comboTag2').value = '';
-        document.getElementById('comboTag3').value = '';
-
+        clearComboForm();
         updateCombosDisplay();
         saveToCloud();
     });
 
+    // Initialize
+    populateAvailableTags();
+    updateSelectedTagsDisplay();
     updateCombosDisplay();
 }
 
@@ -839,13 +979,22 @@ function updateCombosDisplay() {
         const comboCard = document.createElement('div');
         comboCard.className = 'combo-card';
 
+        // Handle both old format (tags as strings) and new format (tags as objects)
+        const tagNames = combo.tags.map(tag => typeof tag === 'string' ? tag : tag.name);
+
         comboCard.innerHTML = `
             <div class="combo-header">
                 <h4 class="combo-name">${combo.name}</h4>
                 <button class="combo-remove-btn" data-combo-id="${combo.id}">×</button>
             </div>
+            ${combo.power && combo.coreMove ? `
+            <div class="combo-metadata">
+                <span class="combo-power">Power: ${combo.power}</span>
+                <span class="combo-core-move">${combo.coreMove}</span>
+            </div>
+            ` : ''}
             <div class="combo-tags">
-                ${combo.tags.map(tag => `<span class="combo-tag-pill">${tag}</span>`).join('')}
+                ${tagNames.map(tag => `<span class="combo-tag-pill">${tag}</span>`).join('')}
             </div>
             <button class="combo-use-btn" data-combo-id="${combo.id}">
                 Use Combo (3 Juice)
@@ -868,10 +1017,58 @@ function updateCombosDisplay() {
     document.querySelectorAll('.combo-use-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (characterData.juice >= 3) {
-                characterData.juice -= 3;
-                updateJuiceDisplay();
                 const combo = characterData.tagCombos.find(c => c.id === parseInt(btn.dataset.comboId));
-                alert(`✨ Combo Activated: ${combo.name}!\n\nYou used ${combo.tags.join(', ')}`);
+
+                // Check if tags can be burned (new format combos only)
+                if (combo.tags && combo.tags.length > 0 && typeof combo.tags[0] === 'object') {
+                    // Verify both tags are not already burnt
+                    const tag1 = combo.tags[0];
+                    const tag2 = combo.tags[1];
+
+                    const tag1Burnt = characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex];
+                    const tag2Burnt = characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex];
+
+                    if (tag1Burnt || tag2Burnt) {
+                        alert(`Cannot use combo! One or both of the required tags are already burnt.\n\nRequired tags: ${tag1.name}, ${tag2.name}\n\nYou must recover burnt tags before using this combo again.`);
+                        return;
+                    }
+
+                    // Deduct juice
+                    characterData.juice -= 3;
+                    updateJuiceDisplay();
+
+                    // Burn both tags
+                    characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex] = true;
+                    characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex] = true;
+
+                    // Add to burnt tags list
+                    characterData.burntTags.push({
+                        type: 'power',
+                        themeIndex: tag1.themeIndex,
+                        tagIndex: tag1.tagIndex,
+                        name: tag1.name
+                    });
+                    characterData.burntTags.push({
+                        type: 'power',
+                        themeIndex: tag2.themeIndex,
+                        tagIndex: tag2.tagIndex,
+                        name: tag2.name
+                    });
+
+                    // Update theme displays
+                    updateAllThemes();
+                    updateBurntTagsDisplay();
+
+                    alert(`✨ Combo Activated: ${combo.name}!\n\nCore Move: ${combo.coreMove}\nPower: ${combo.power}\n\nTags Used (BURNT): ${tag1.name}, ${tag2.name}\n\n⚠️ Both tags have been burnt and must be recovered before you can use this combo again!`);
+                } else {
+                    // Old format combo - just deduct juice
+                    characterData.juice -= 3;
+                    updateJuiceDisplay();
+
+                    const tagNames = combo.tags.map(tag => typeof tag === 'string' ? tag : tag.name);
+                    alert(`✨ Combo Activated: ${combo.name}!\n\nYou used ${tagNames.join(', ')}\n\n(Note: This is an old-format combo. Recreate it to enable tag burning.)`);
+                }
+
                 saveToCloud();
             } else {
                 alert('Not enough Juice! Combos cost 3 Juice.');
