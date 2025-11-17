@@ -24,6 +24,7 @@ let characterData = {
     currentPortraitMode: 'civilian', // 'civilian' or 'qfactor'
     themeColor: '#4A7C7E',
     juice: 0,
+    clues: 0, // NEW: Clues tracker
     characterLocked: false, // NEW: Lock character after creation
     themes: [
         createEmptyTheme('rainbow'),
@@ -37,7 +38,9 @@ let characterData = {
     tagCombos: [],
     selectedMove: null,
     clickedTags: [], // Track clicked tags for current roll
-    usedWeakness: false
+    usedWeakness: false,
+    lastRollResult: null, // NEW: Track last roll for Juice spending
+    createdItemsThisRoll: [] // NEW: Track items created during Juice spending
 };
 
 function createEmptyTheme(type = 'rainbow') {
@@ -547,14 +550,31 @@ function setupDiceRoller() {
         let resultText = '';
         let juiceGained = 0;
 
+        // Check if Strike a Pose for special Juice rules
+        const isStrikeAPose = characterData.selectedMove === 'strike-a-pose';
+
         if (total >= 10) {
             resultClass = 'success';
             resultText = '🌟 SUCCESS!';
-            juiceGained = 3;
+
+            if (isStrikeAPose) {
+                // Strike a Pose: Gain Juice = Power used, MINIMUM 2
+                juiceGained = Math.max(power, 2);
+            } else {
+                // Normal moves: +3 Juice
+                juiceGained = 3;
+            }
         } else if (total >= 7) {
             resultClass = 'partial';
             resultText = '⚡ PARTIAL SUCCESS!';
-            juiceGained = 1;
+
+            if (isStrikeAPose) {
+                // Strike a Pose: Gain Juice = Power used
+                juiceGained = power;
+            } else {
+                // Normal moves: +1 Juice
+                juiceGained = 1;
+            }
         } else {
             resultClass = 'miss';
             resultText = '💥 MISS!';
@@ -569,12 +589,24 @@ function setupDiceRoller() {
         rollResult.className = `roll-result ${resultClass}`;
         rollResult.textContent = `${resultText}\nRolled: ${die1} + ${die2} + ${power} = ${total}`;
 
+        // Store roll result for Juice spending
+        characterData.lastRollResult = {
+            total: total,
+            power: power,
+            success: total >= 10,
+            partialSuccess: total >= 7 && total < 10
+        };
+
         // Add juice
         characterData.juice += juiceGained;
         updateJuiceDisplay();
 
         if (juiceGained > 0) {
-            showNotification(`+${juiceGained} Juice!`);
+            if (isStrikeAPose) {
+                showNotification(`Strike a Pose! +${juiceGained} Juice (Power: ${power})`);
+            } else {
+                showNotification(`+${juiceGained} Juice!`);
+            }
         }
 
         // CLEAR APPLIED TAGS (not permanent - tags return after roll)
@@ -584,6 +616,13 @@ function setupDiceRoller() {
         removeTemporaryMCTags();
 
         saveToCloud();
+
+        // If Strike a Pose and hit (7+), open Juice spending modal
+        if (isStrikeAPose && total >= 7) {
+            setTimeout(() => {
+                openJuiceSpendingModal();
+            }, 500);
+        }
     });
 
     // BURN TAG FOR GUARANTEED HIT
@@ -1324,9 +1363,20 @@ function updateStatusTagsDisplay() {
         console.log(`  Rendering status tag #${index}:`, status);
         const pill = document.createElement('span');
 
+        // Base class
+        let pillClasses = ['tag-pill'];
+
+        // Add source class (MC vs player-created)
+        if (status.playerCreated) {
+            pillClasses.push('player-created');
+        } else {
+            pillClasses.push('mc-created');
+        }
+
         // Determine if tag is Temporary or Ongoing
         if (status.isTemporary) {
-            pill.className = `tag-pill temporary-tag ${status.clicked ? 'clicked' : ''}`;
+            pillClasses.push('temporary-tag');
+            if (status.clicked) pillClasses.push('clicked');
             pill.style.cursor = 'pointer';
             pill.title = 'Click to apply to next roll (will be removed after rolling)';
 
@@ -1337,12 +1387,14 @@ function updateStatusTagsDisplay() {
                 updatePowerDisplay();
             });
         } else if (status.isOngoing) {
-            pill.className = 'tag-pill ongoing-tag';
+            pillClasses.push('ongoing-tag');
             pill.title = 'Ongoing - automatically applied to all rolls';
         } else {
             // Legacy format
-            pill.className = `tag-pill ${status.positive ? 'positive' : 'negative'}`;
+            pillClasses.push(status.positive ? 'positive' : 'negative');
         }
+
+        pill.className = pillClasses.join(' ');
 
         const modifierStr = status.modifier
             ? `(${status.modifier > 0 ? '+' : ''}${status.modifier})`
@@ -1375,8 +1427,20 @@ function updateStoryTagsDisplay() {
         console.log(`  Rendering story tag #${index}:`, tag);
         const pill = document.createElement('span');
 
+        // Base class
+        let pillClasses = ['tag-pill'];
+
+        // Add source class (MC vs player-created)
+        if (tag.playerCreated) {
+            pillClasses.push('player-created');
+        } else {
+            pillClasses.push('mc-created');
+        }
+
+        // Determine if tag is Temporary or Ongoing
         if (tag.isTemporary) {
-            pill.className = `tag-pill temporary-tag ${tag.clicked ? 'clicked' : ''}`;
+            pillClasses.push('temporary-tag');
+            if (tag.clicked) pillClasses.push('clicked');
             pill.style.cursor = 'pointer';
             pill.title = 'Click to apply to next roll (will be removed after rolling)';
 
@@ -1386,11 +1450,11 @@ function updateStoryTagsDisplay() {
                 updatePowerDisplay();
             });
         } else if (tag.isOngoing) {
-            pill.className = 'tag-pill ongoing-tag';
-            pill.title = 'Ongoing - automatically applied';
-        } else {
-            pill.className = 'tag-pill';
+            pillClasses.push('ongoing-tag');
+            pill.title = 'Ongoing - automatically applied to all rolls';
         }
+
+        pill.className = pillClasses.join(' ');
 
         const modifierStr = tag.modifier ? `(${tag.modifier > 0 ? '+' : ''}${tag.modifier})` : '';
         const typeStr = tag.isTemporary ? ' Temporary' : (tag.isOngoing ? ' Ongoing' : (tag.ongoing ? ' (Ongoing)' : ''));
@@ -1552,6 +1616,11 @@ function loadCharacterToUI() {
     // Juice
     updateJuiceDisplay();
 
+    // Clues (NEW)
+    if (characterData.clues !== undefined) {
+        updateCluesDisplay();
+    }
+
     // Themes
     document.querySelectorAll('.theme-card').forEach((card, index) => {
         const theme = characterData.themes[index];
@@ -1669,6 +1738,357 @@ function showNotification(message) {
 }
 
 // ================================
+// JUICE SPENDING MODAL (NEW)
+// ================================
+
+function openJuiceSpendingModal() {
+    const modal = document.getElementById('juiceSpendingModal');
+    const modalJuiceCount = document.getElementById('modalJuiceCount');
+    const specialUpgrades = document.getElementById('specialUpgrades');
+
+    // Reset created items list
+    characterData.createdItemsThisRoll = [];
+    updateCreatedItemsList();
+
+    // Update available Juice display
+    modalJuiceCount.textContent = characterData.juice;
+
+    // Show special upgrades only on 10+
+    if (characterData.lastRollResult && characterData.lastRollResult.success) {
+        specialUpgrades.style.display = 'block';
+    } else {
+        specialUpgrades.style.display = 'none';
+    }
+
+    // Reset upgrade checkboxes
+    document.getElementById('prolongEffect').checked = false;
+    document.getElementById('scaleUpEffect').checked = false;
+    document.getElementById('makeFlashier').checked = false;
+
+    // Show modal
+    modal.classList.remove('hidden');
+}
+
+function closeJuiceSpendingModal() {
+    const modal = document.getElementById('juiceSpendingModal');
+    modal.classList.add('hidden');
+
+    // Clear input fields
+    document.getElementById('newStoryTagName').value = '';
+    document.getElementById('newStatusName').value = '';
+    document.getElementById('statusTier').value = '1';
+
+    // Reset created items
+    characterData.createdItemsThisRoll = [];
+
+    // Save state
+    saveToCloud();
+}
+
+function createStoryTagFromJuice() {
+    const tagName = document.getElementById('newStoryTagName').value.trim();
+
+    if (!tagName) {
+        alert('Please enter a tag name!');
+        return;
+    }
+
+    if (characterData.juice < 1) {
+        alert('Not enough Juice! Story tags cost 1 Juice each.');
+        return;
+    }
+
+    // Deduct Juice
+    characterData.juice -= 1;
+    updateJuiceDisplay();
+    document.getElementById('modalJuiceCount').textContent = characterData.juice;
+
+    // Create story tag (default to temporary)
+    const newTag = {
+        name: tagName,
+        modifier: 0,
+        isTemporary: true,
+        isOngoing: false,
+        clicked: false,
+        playerCreated: true // Mark as player-created
+    };
+
+    characterData.storyTags.push(newTag);
+
+    // Track created item
+    characterData.createdItemsThisRoll.push({
+        type: 'Story Tag',
+        name: tagName,
+        duration: 'Temporary'
+    });
+
+    // Clear input
+    document.getElementById('newStoryTagName').value = '';
+
+    // Update displays
+    updateStoryTagsDisplay();
+    updateCreatedItemsList();
+    saveToCloud();
+
+    showNotification(`Created story tag: ${tagName} (1 Juice spent)`);
+}
+
+function createStatusFromJuice() {
+    const statusName = document.getElementById('newStatusName').value.trim();
+    const tier = parseInt(document.getElementById('statusTier').value);
+
+    if (!statusName) {
+        alert('Please enter a status name!');
+        return;
+    }
+
+    if (characterData.juice < tier) {
+        alert(`Not enough Juice! Tier ${tier} status costs ${tier} Juice.`);
+        return;
+    }
+
+    // Deduct Juice
+    characterData.juice -= tier;
+    updateJuiceDisplay();
+    document.getElementById('modalJuiceCount').textContent = characterData.juice;
+
+    // Create status (default to temporary, positive)
+    const newStatus = {
+        name: statusName,
+        modifier: tier,
+        tier: tier,
+        positive: true,
+        isTemporary: true,
+        isOngoing: false,
+        clicked: false,
+        playerCreated: true // Mark as player-created
+    };
+
+    characterData.currentStatuses.push(newStatus);
+
+    // Track created item
+    characterData.createdItemsThisRoll.push({
+        type: `Status (Tier ${tier})`,
+        name: statusName,
+        duration: 'Temporary'
+    });
+
+    // Clear input
+    document.getElementById('newStatusName').value = '';
+    document.getElementById('statusTier').value = '1';
+
+    // Update displays
+    updateStatusTagsDisplay();
+    updateCreatedItemsList();
+    saveToCloud();
+
+    showNotification(`Created status: ${statusName} (${tier} Juice spent)`);
+}
+
+function applyJuiceUpgrades() {
+    const prolongEffect = document.getElementById('prolongEffect').checked;
+    const scaleUpEffect = document.getElementById('scaleUpEffect').checked;
+    const makeFlashier = document.getElementById('makeFlashier').checked;
+
+    let juiceCost = 0;
+    const upgrades = [];
+
+    // Check Prolong Effect
+    if (prolongEffect) {
+        if (characterData.createdItemsThisRoll.length === 0) {
+            alert('You need to create at least one tag or status before using "Prolong Effect"!');
+            document.getElementById('prolongEffect').checked = false;
+            return;
+        }
+        juiceCost += 1;
+        upgrades.push('Prolong Effect');
+
+        // Make last created item ongoing instead of temporary
+        const lastItem = characterData.createdItemsThisRoll[characterData.createdItemsThisRoll.length - 1];
+
+        if (lastItem.type.startsWith('Status')) {
+            // Find and update the status
+            const status = characterData.currentStatuses.find(s => s.name === lastItem.name && s.playerCreated);
+            if (status) {
+                status.isTemporary = false;
+                status.isOngoing = true;
+                lastItem.duration = 'Ongoing';
+            }
+        } else {
+            // Find and update the story tag
+            const tag = characterData.storyTags.find(t => t.name === lastItem.name && t.playerCreated);
+            if (tag) {
+                tag.isTemporary = false;
+                tag.isOngoing = true;
+                lastItem.duration = 'Ongoing';
+            }
+        }
+    }
+
+    // Check Scale Up Effect
+    if (scaleUpEffect) {
+        juiceCost += 1;
+        upgrades.push('Scale Up Effect');
+    }
+
+    // Check Make It Flashier
+    if (makeFlashier) {
+        juiceCost += 1;
+        upgrades.push('Make It Flashier');
+    }
+
+    if (juiceCost > 0) {
+        if (characterData.juice < juiceCost) {
+            alert(`Not enough Juice! These upgrades cost ${juiceCost} Juice total.`);
+            return;
+        }
+
+        // Deduct Juice
+        characterData.juice -= juiceCost;
+        updateJuiceDisplay();
+        document.getElementById('modalJuiceCount').textContent = characterData.juice;
+
+        // Update displays
+        updateStatusTagsDisplay();
+        updateStoryTagsDisplay();
+        updateCreatedItemsList();
+        saveToCloud();
+
+        showNotification(`Applied upgrades: ${upgrades.join(', ')} (${juiceCost} Juice spent)`);
+
+        // Uncheck boxes
+        document.getElementById('prolongEffect').checked = false;
+        document.getElementById('scaleUpEffect').checked = false;
+        document.getElementById('makeFlashier').checked = false;
+    }
+}
+
+function updateCreatedItemsList() {
+    const list = document.getElementById('createdItemsList');
+
+    if (characterData.createdItemsThisRoll.length === 0) {
+        list.innerHTML = '<p class="empty-message">No items created yet</p>';
+        return;
+    }
+
+    list.innerHTML = '';
+    characterData.createdItemsThisRoll.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'created-item';
+        itemDiv.innerHTML = `
+            <div>
+                <span class="created-item-name">${item.name}</span>
+                <span class="created-item-type"> - ${item.type} (${item.duration})</span>
+            </div>
+        `;
+        list.appendChild(itemDiv);
+    });
+}
+
+// ================================
+// DOWNTIME MOVES (NEW)
+// ================================
+
+function setupDowntime() {
+    // Prepare for Action button
+    const prepareBtn = document.getElementById('downtimePrepareBtn');
+    prepareBtn.addEventListener('click', () => {
+        characterData.juice += 3;
+        updateJuiceDisplay();
+        showNotification('✨ Downtime: Prepared for action! +3 Juice');
+        saveToCloud();
+    });
+
+    // Deepen Relationship button
+    const deepenBtn = document.getElementById('downtimeDeepenBtn');
+    deepenBtn.addEventListener('click', () => {
+        openDeepenRelationshipModal();
+    });
+
+    // Clues tracker
+    const cluesUp = document.getElementById('cluesUp');
+    const cluesDown = document.getElementById('cluesDown');
+
+    cluesUp.addEventListener('click', () => {
+        characterData.clues++;
+        updateCluesDisplay();
+        saveToCloud();
+    });
+
+    cluesDown.addEventListener('click', () => {
+        if (characterData.clues > 0) {
+            characterData.clues--;
+            updateCluesDisplay();
+            saveToCloud();
+        }
+    });
+
+    updateCluesDisplay();
+}
+
+function updateCluesDisplay() {
+    document.getElementById('cluesCount').textContent = characterData.clues;
+}
+
+function openDeepenRelationshipModal() {
+    const modal = document.getElementById('deepenRelationshipModal');
+    const cluesSlider = document.getElementById('deepenCluesSlider');
+    const juiceSlider = document.getElementById('deepenJuiceSlider');
+    const cluesValue = document.getElementById('deepenCluesValue');
+    const juiceValue = document.getElementById('deepenJuiceValue');
+
+    // Reset sliders
+    cluesSlider.value = 0;
+    juiceSlider.value = 3;
+    cluesValue.textContent = 0;
+    juiceValue.textContent = 3;
+
+    // Setup slider sync
+    cluesSlider.addEventListener('input', () => {
+        const cluesVal = parseInt(cluesSlider.value);
+        juiceSlider.value = 3 - cluesVal;
+        cluesValue.textContent = cluesVal;
+        juiceValue.textContent = 3 - cluesVal;
+    });
+
+    juiceSlider.addEventListener('input', () => {
+        const juiceVal = parseInt(juiceSlider.value);
+        cluesSlider.value = 3 - juiceVal;
+        cluesValue.textContent = 3 - juiceVal;
+        juiceValue.textContent = juiceVal;
+    });
+
+    // Show modal
+    modal.classList.remove('hidden');
+}
+
+function closeDeepenRelationshipModal() {
+    const modal = document.getElementById('deepenRelationshipModal');
+    modal.classList.add('hidden');
+}
+
+function confirmDeepenRelationship() {
+    const cluesGained = parseInt(document.getElementById('deepenCluesSlider').value);
+    const juiceGained = parseInt(document.getElementById('deepenJuiceSlider').value);
+
+    // Add to character
+    characterData.clues += cluesGained;
+    characterData.juice += juiceGained;
+
+    // Update displays
+    updateCluesDisplay();
+    updateJuiceDisplay();
+
+    // Close modal
+    closeDeepenRelationshipModal();
+
+    // Notify
+    showNotification(`💖 Deepen Relationship: +${cluesGained} Clues, +${juiceGained} Juice`);
+
+    saveToCloud();
+}
+
+// ================================
 // MISC UI
 // ================================
 
@@ -1702,6 +2122,21 @@ function setupMiscUI() {
     toggleMovesBtn.addEventListener('click', () => {
         movesPanel.classList.toggle('hidden');
     });
+
+    // Juice spending modal buttons
+    document.getElementById('createStoryTagBtn').addEventListener('click', createStoryTagFromJuice);
+    document.getElementById('createStatusBtn').addEventListener('click', createStatusFromJuice);
+    document.getElementById('closeJuiceModalBtn').addEventListener('click', closeJuiceSpendingModal);
+
+    // Setup upgrade checkbox listeners
+    const upgradeCheckboxes = ['prolongEffect', 'scaleUpEffect', 'makeFlashier'];
+    upgradeCheckboxes.forEach(id => {
+        document.getElementById(id).addEventListener('change', applyJuiceUpgrades);
+    });
+
+    // Deepen Relationship modal buttons
+    document.getElementById('confirmDeepenBtn').addEventListener('click', confirmDeepenRelationship);
+    document.getElementById('cancelDeepenBtn').addEventListener('click', closeDeepenRelationshipModal);
 }
 
 // ================================
@@ -1715,6 +2150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupMoveSelection();
     setupDiceRoller();
     setupJuiceTracker();
+    setupDowntime(); // NEW: Setup Downtime moves
     setupCombos();
     setupPortraitToggle();
     setupColorPicker();
@@ -1729,6 +2165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBurntTagsDisplay();
     updateStatusTagsDisplay();
     updateStoryTagsDisplay();
+    updateCluesDisplay(); // NEW: Update clues display
 
     // Store initial character name in localStorage for MC broadcast matching
     if (characterData.name) {
