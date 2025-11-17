@@ -1286,7 +1286,8 @@ body {
 }
 
 .combo-power-select,
-.combo-core-move-input {
+.combo-core-move-input,
+.combo-core-move-select {
     padding: 10px;
     background: var(--bg-dark);
     color: var(--text-primary);
