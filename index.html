@@ -764,52 +764,7 @@
             </div>
         </div>
     </section>
-<!-- CLAUDE ASSISTANT PANEL -->
-<section class="claude-assistant-section">
-    <h2>🤖 CLAUDE ASSISTANT</h2>
-    <button id="toggleClaudeBtn" class="btn-toggle-claude">Show/Hide Assistant</button>
-    
-    <div id="claudePanel" class="claude-panel hidden">
-        <div class="claude-container">
-            <!-- Quick Action Buttons -->
-            <div class="claude-quick-actions">
-                <button id="claudeExplainResult" class="btn-claude-action" disabled>
-                    💭 Explain My Last Roll
-                </button>
-                <button id="claudeSuggestTags" class="btn-claude-action">
-                    🏷️ Suggest Tags for Action
-                </button>
-                <button id="claudeHelpJuice" class="btn-claude-action" disabled>
-                    ✨ Help Spend Juice
-                </button>
-                <button id="claudeSuggestMove" class="btn-claude-action">
-                    🎯 Which Move Should I Use?
-                </button>
-            </div>
 
-            <!-- Custom Question Input -->
-            <div class="claude-custom-question">
-                <label for="claudeQuestion">Ask Claude Anything:</label>
-                <textarea id="claudeQuestion" placeholder="E.g., 'What tags make sense for comforting Young Kaylin?' or 'Should I use Care or Talk It Out here?'" rows="2"></textarea>
-                <button id="claudeAskCustom" class="btn-claude-ask">Ask Claude</button>
-            </div>
-
-            <!-- Claude's Response -->
-            <div class="claude-response-container">
-                <h3>Claude's Advice:</h3>
-                <div id="claudeResponse" class="claude-response">
-                    Ask me anything about your current situation! I can help explain move results, suggest tags, guide Juice spending, or answer questions about QUEERZ! mechanics.
-                </div>
-            </div>
-
-            <!-- Loading Indicator -->
-            <div id="claudeLoading" class="claude-loading hidden">
-                <div class="spinner"></div>
-                <span>Claude is thinking...</span>
-            </div>
-        </div>
-    </div>
-</section>
     <!-- Firebase Config -->
     <script type="module" src="firebase-config.js"></script>
     <!-- Firebase Broadcast -->
