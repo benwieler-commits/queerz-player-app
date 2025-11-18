@@ -2037,6 +2037,44 @@ function highlightResistMove() {
     }
 }
 
+// ================================
+// STATUS CATEGORIZATION
+// ================================
+
+/**
+ * Categorizes a status by its name (positive, negative, or story tag)
+ * @param {string} statusName - The name of the status (without tier number)
+ * @returns {string} - 'positive', 'negative', or 'story'
+ */
+function categorizeStatus(statusName) {
+    // Normalize the name: lowercase and remove tier numbers (e.g., "Guilty-2" → "guilty")
+    const baseName = statusName.toLowerCase().split('-')[0].trim();
+
+    // Positive statuses (helpful buffs)
+    const positiveStatuses = [
+        'supported', 'confident', 'inspired', 'protected', 'empowered',
+        'loved', 'validated', 'energized', 'clear-headed', 'focused',
+        'determined', 'hopeful', 'clearheaded'
+    ];
+
+    // Negative statuses (harmful debuffs)
+    const negativeStatuses = [
+        'guilty', 'shaken', 'trapped', 'judged', 'obligated',
+        'unworthy', 'bound', 'exhausted', 'confused', 'afraid',
+        'isolated', 'broken', 'concerned', 'tired', 'saddened',
+        'dirty', 'drained', 'muddy', 'infatuated'
+    ];
+
+    if (positiveStatuses.includes(baseName)) {
+        return 'positive';
+    } else if (negativeStatuses.includes(baseName)) {
+        return 'negative';
+    } else {
+        // Everything else is a story tag
+        return 'story';
+    }
+}
+
 function updateStatusTagsDisplay() {
     const statusList = document.getElementById('statusList');
     if (!statusList) {
@@ -2052,53 +2090,114 @@ function updateStatusTagsDisplay() {
         return;
     }
 
-    characterData.currentStatuses.forEach((status, index) => {
-        console.log(`  Rendering status tag #${index}:`, status);
-        const pill = document.createElement('span');
+    // Categorize statuses into three groups
+    const positiveStatuses = [];
+    const negativeStatuses = [];
+    const storyTags = [];
 
-        // Base class
-        let pillClasses = ['tag-pill'];
-
-        // Add source class (MC vs player-created)
-        if (status.playerCreated) {
-            pillClasses.push('player-created');
+    characterData.currentStatuses.forEach(status => {
+        const category = categorizeStatus(status.name);
+        if (category === 'positive') {
+            positiveStatuses.push(status);
+        } else if (category === 'negative') {
+            negativeStatuses.push(status);
         } else {
-            pillClasses.push('mc-created');
+            storyTags.push(status);
         }
-
-        // Determine if tag is Temporary or Ongoing
-        if (status.isTemporary) {
-            pillClasses.push('temporary-tag');
-            if (status.clicked) pillClasses.push('clicked');
-            pill.style.cursor = 'pointer';
-            pill.title = 'Click to apply to next roll (will be removed after rolling)';
-
-            // Make clickable for Temporary tags
-            pill.addEventListener('click', () => {
-                status.clicked = !status.clicked;
-                updateStatusTagsDisplay();
-                updatePowerDisplay();
-            });
-        } else if (status.isOngoing) {
-            pillClasses.push('ongoing-tag');
-            pill.title = 'Ongoing - automatically applied to all rolls';
-        } else {
-            // Legacy format
-            pillClasses.push(status.positive ? 'positive' : 'negative');
-        }
-
-        pill.className = pillClasses.join(' ');
-
-        const modifierStr = status.modifier
-            ? `(${status.modifier > 0 ? '+' : ''}${status.modifier})`
-            : (status.tier ? `(${status.positive ? '+' : '-'}${status.tier})` : '');
-        const typeStr = status.isTemporary ? ' Temporary' : (status.isOngoing ? ' Ongoing' : '');
-
-        pill.textContent = `${status.name} ${modifierStr}${typeStr}`;
-        statusList.appendChild(pill);
     });
 
-    console.log('✅ Status tags display updated');
+    // Render each category with headers
+    if (positiveStatuses.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'status-category-header positive-header';
+        header.textContent = '💚 HELPING YOU';
+        statusList.appendChild(header);
+
+        const group = document.createElement('div');
+        group.className = 'status-category-group';
+        positiveStatuses.forEach(status => {
+            group.appendChild(createStatusPill(status, 'positive'));
+        });
+        statusList.appendChild(group);
+    }
+
+    if (negativeStatuses.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'status-category-header negative-header';
+        header.textContent = '⚠️ HINDERING YOU';
+        statusList.appendChild(header);
+
+        const group = document.createElement('div');
+        group.className = 'status-category-group';
+        negativeStatuses.forEach(status => {
+            group.appendChild(createStatusPill(status, 'negative'));
+        });
+        statusList.appendChild(group);
+    }
+
+    if (storyTags.length > 0) {
+        const header = document.createElement('div');
+        header.className = 'status-category-header story-header';
+        header.textContent = '📋 STORY TAGS';
+        statusList.appendChild(header);
+
+        const group = document.createElement('div');
+        group.className = 'status-category-group';
+        storyTags.forEach(status => {
+            group.appendChild(createStatusPill(status, 'story'));
+        });
+        statusList.appendChild(group);
+    }
+
+    console.log('✅ Status tags display updated (grouped by type)');
+}
+
+/**
+ * Creates a status pill element with appropriate styling
+ * @param {Object} status - The status object
+ * @param {string} category - 'positive', 'negative', or 'story'
+ * @returns {HTMLElement} - The pill element
+ */
+function createStatusPill(status, category) {
+    const pill = document.createElement('span');
+
+    // Base classes
+    let pillClasses = ['tag-pill', `status-${category}`];
+
+    // Add source class (MC vs player-created)
+    if (status.playerCreated) {
+        pillClasses.push('player-created');
+    } else {
+        pillClasses.push('mc-created');
+    }
+
+    // Determine if tag is Temporary or Ongoing
+    if (status.isTemporary) {
+        pillClasses.push('temporary-tag');
+        if (status.clicked) pillClasses.push('clicked');
+        pill.style.cursor = 'pointer';
+        pill.title = 'Click to apply to next roll (will be removed after rolling)';
+
+        // Make clickable for Temporary tags
+        pill.addEventListener('click', () => {
+            status.clicked = !status.clicked;
+            updateStatusTagsDisplay();
+            updatePowerDisplay();
+        });
+    } else if (status.isOngoing) {
+        pillClasses.push('ongoing-tag');
+        pill.title = 'Ongoing - automatically applied to all rolls';
+    }
+
+    pill.className = pillClasses.join(' ');
+
+    const modifierStr = status.modifier
+        ? `(${status.modifier > 0 ? '+' : ''}${status.modifier})`
+        : (status.tier ? `(${status.positive ? '+' : '-'}${status.tier})` : '');
+    const typeStr = status.isTemporary ? ' Temporary' : (status.isOngoing ? ' Ongoing' : '');
+
+    pill.textContent = `${status.name} ${modifierStr}${typeStr}`;
+    return pill;
 }
 
 function updateStoryTagsDisplay() {
