@@ -12,15 +12,6 @@ import {
     broadcastPlayerToMc
 } from './firebase-broadcast.js';
 
-import {
-    askClaude,
-    explainMoveResult,
-    suggestTagsForAction,
-    helpWithJuiceSpending,
-    suggestAppropriateMove,
-    explainComplication
-} from './claude-helper.js';
-
 // ================================
 // CHARACTER DATA STATE
 // ================================
@@ -607,16 +598,10 @@ function setupDiceRoller() {
             success: total >= 10,
             partialSuccess: total >= 7 && total < 10
         };
-        
-        // Enable Claude assistance for this roll
-updateClaudeButtonStates();
 
         // Add juice
         characterData.juice += juiceGained;
         updateJuiceDisplay();
-        
-        // Update Claude button states
-updateClaudeButtonStates();
 
         if (juiceGained > 0) {
             if (isStrikeAPose) {
@@ -976,150 +961,6 @@ function updateJuiceDisplay() {
 
     spendBtn.disabled = characterData.juice === 0;
     comboBtn.disabled = characterData.juice < 3;
-}
-
-// ================================
-// CLAUDE ASSISTANT SETUP
-// ================================
-
-function setupClaudeAssistant() {
-    const toggleBtn = document.getElementById('toggleClaudeBtn');
-    const claudePanel = document.getElementById('claudePanel');
-    const claudeResponse = document.getElementById('claudeResponse');
-    const claudeLoading = document.getElementById('claudeLoading');
-
-    // Toggle panel visibility
-    toggleBtn.addEventListener('click', () => {
-        claudePanel.classList.toggle('hidden');
-    });
-
-    // Quick Action: Explain Last Roll
-    document.getElementById('claudeExplainResult').addEventListener('click', async () => {
-        if (!characterData.lastRollResult || !characterData.selectedMove) {
-            showClaudeResponse("No recent roll to explain! Roll dice first.");
-            return;
-        }
-
-        showClaudeLoading(true);
-        const response = await explainMoveResult(
-            characterData.selectedMove,
-            characterData.lastRollResult.total,
-            characterData.lastRollResult.power,
-            getGameContext()
-        );
-        showClaudeResponse(response);
-        showClaudeLoading(false);
-    });
-
-    // Quick Action: Suggest Tags
-    document.getElementById('claudeSuggestTags').addEventListener('click', async () => {
-        const action = prompt("What are you trying to do?\n\nExample: 'Comfort Young Kaylin' or 'Attack The Keeper'");
-        if (!action) return;
-
-        showClaudeLoading(true);
-        const response = await suggestTagsForAction(action, getGameContext());
-        showClaudeResponse(response);
-        showClaudeLoading(false);
-    });
-
-    // Quick Action: Help with Juice Spending
-    document.getElementById('claudeHelpJuice').addEventListener('click', async () => {
-        if (characterData.juice === 0) {
-            showClaudeResponse("You don't have any Juice to spend!");
-            return;
-        }
-
-        showClaudeLoading(true);
-        const response = await helpWithJuiceSpending(
-            characterData.juice,
-            characterData.selectedMove || "Strike a Pose",
-            getGameContext()
-        );
-        showClaudeResponse(response);
-        showClaudeLoading(false);
-    });
-
-    // Quick Action: Suggest Move
-    document.getElementById('claudeSuggestMove').addEventListener('click', async () => {
-        const action = prompt("What are you trying to do?\n\nDescribe your intended action:");
-        if (!action) return;
-
-        showClaudeLoading(true);
-        const response = await suggestAppropriateMove(action, getGameContext());
-        showClaudeResponse(response);
-        showClaudeLoading(false);
-    });
-
-    // Custom Question
-    document.getElementById('claudeAskCustom').addEventListener('click', async () => {
-        const question = document.getElementById('claudeQuestion').value.trim();
-        if (!question) {
-            alert("Please type a question first!");
-            return;
-        }
-
-        showClaudeLoading(true);
-        const response = await askClaude(question, getGameContext());
-        showClaudeResponse(response);
-        showClaudeLoading(false);
-
-        // Clear question input
-        document.getElementById('claudeQuestion').value = '';
-    });
-
-    // Enable/disable buttons based on game state
-    updateClaudeButtonStates();
-}
-
-function getGameContext() {
-    return {
-        characterName: characterData.name,
-        selectedMove: characterData.selectedMove,
-        clickedTags: characterData.clickedTags,
-        totalPower: parseInt(document.getElementById('totalPower').value) || 0,
-        rollResult: characterData.lastRollResult,
-        currentStatuses: characterData.currentStatuses,
-        juice: characterData.juice,
-        themes: characterData.themes
-    };
-}
-
-function showClaudeResponse(response) {
-    const responseDiv = document.getElementById('claudeResponse');
-    
-    // Convert markdown-style formatting to HTML
-    let formattedResponse = response
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') // Bold
-        .replace(/\*(.+?)\*/g, '<em>$1</em>') // Italic
-        .replace(/\n/g, '<br>'); // Line breaks
-
-    responseDiv.innerHTML = formattedResponse;
-    
-    // Scroll to response
-    responseDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function showClaudeLoading(isLoading) {
-    const loadingDiv = document.getElementById('claudeLoading');
-    if (isLoading) {
-        loadingDiv.classList.remove('hidden');
-    } else {
-        loadingDiv.classList.add('hidden');
-    }
-}
-
-function updateClaudeButtonStates() {
-    // Enable "Explain Result" only if there's a last roll
-    const explainBtn = document.getElementById('claudeExplainResult');
-    if (explainBtn) {
-        explainBtn.disabled = !characterData.lastRollResult || !characterData.selectedMove;
-    }
-
-    // Enable "Help with Juice" only if there's juice
-    const juiceBtn = document.getElementById('claudeHelpJuice');
-    if (juiceBtn) {
-        juiceBtn.disabled = characterData.juice === 0;
-    }
 }
 
 // ================================
@@ -2319,7 +2160,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCharacterInfo();
     setupFileHandling();
     setupMiscUI();
-    setupClaudeAssistant();
 
     // Listen for MC tag updates
     document.addEventListener('mc-tag-update', handleMCTagUpdate);
