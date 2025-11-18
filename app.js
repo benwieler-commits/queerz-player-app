@@ -710,12 +710,18 @@ function setupDiceRoller() {
         const powerDisplay = power !== 0 ? ` + ${power} (power)` : '';
         rollResult.textContent = `${resultText}\nRolled: ${die1} + ${die2} + 1 (base)${powerDisplay} = ${total}`;
 
-        // Store roll result for Juice spending
+        // Store roll result for Juice spending and MC display
         characterData.lastRollResult = {
-            total: total,
+            die1: die1,
+            die2: die2,
+            baseBonus: 1,
             power: power,
+            total: total,
+            resultClass: resultClass,
+            resultText: resultText,
             success: total >= 10,
-            partialSuccess: total >= 7 && total < 10
+            partialSuccess: total >= 7 && total < 10,
+            timestamp: Date.now()
         };
 
         // Store roll data for MC broadcast
@@ -851,16 +857,17 @@ function setupDiceRoller() {
         rollResult.className = 'roll-result partial guaranteed-hit';
         rollResult.innerHTML = `🔥 <strong>TAG BURNED FOR GUARANTEED HIT!</strong><br><br>Result: 7 + 1 (base) + Power ${finalPower} = ${finalTotal}<br><br>Tag Burnt: "${selectedTag.name}"<br><br>⚡ PARTIAL SUCCESS (Guaranteed)`;
 
-        // Store roll data for MC broadcast (guaranteed hit)
-        characterData.lastRoll = {
-            move: characterData.selectedMove,
-            moveName: getMoveDisplayName(characterData.selectedMove),
-            dice: [7, 0], // Showing 7 as base for guaranteed hit
+        // Store roll result for MC display
+        characterData.lastRollResult = {
+            die1: '🔥',
+            die2: '🔥',
             baseBonus: 1,
             power: finalPower,
             total: finalTotal,
-            result: 'partial',
-            resultText: 'PARTIAL SUCCESS (Guaranteed Hit)',
+            resultClass: 'partial',
+            resultText: '🔥 GUARANTEED HIT!',
+            success: false,
+            partialSuccess: true,
             guaranteedHit: true,
             burntTag: selectedTag.name,
             timestamp: Date.now()
@@ -1086,7 +1093,7 @@ function setupJuiceTracker() {
     });
 
     useComboBtn.addEventListener('click', () => {
-        alert('Select a combo below to activate it!\n\nNote: Activating a combo will burn the 2 tags used in that combo.');
+        alert('Scroll down to the Tag Combos section to select and activate a combo!');
     });
 
     updateJuiceDisplay();
@@ -1303,7 +1310,7 @@ function updateCombosDisplay() {
                 ${tagNames.map(tag => `<span class="combo-tag-pill">${tag}</span>`).join('')}
             </div>
             <button class="combo-use-btn" data-combo-id="${combo.id}">
-                Activate Combo (Burns Tags)
+                Use Combo
             </button>
         `;
 
@@ -1338,7 +1345,7 @@ function updateCombosDisplay() {
                     return;
                 }
 
-                // Burn both tags (NO JUICE COST - Juice properly implemented in Core Moves now)
+                // Burn both tags
                 characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex] = true;
                 characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex] = true;
 
@@ -1362,7 +1369,7 @@ function updateCombosDisplay() {
 
                 alert(`✨ Combo Activated: ${combo.name}!\n\nCore Move: ${combo.coreMove}\nPower: ${combo.power}\n\nTags Used (BURNT): ${tag1.name}, ${tag2.name}\n\n⚠️ Both tags have been burnt and must be recovered before you can use this combo again!`);
             } else {
-                // Old format combo - no juice cost anymore
+                // Old format combo
                 const tagNames = combo.tags.map(tag => typeof tag === 'string' ? tag : tag.name);
                 alert(`✨ Combo Activated: ${combo.name}!\n\nYou used ${tagNames.join(', ')}\n\n(Note: This is an old-format combo. Recreate it to enable tag burning.)`);
             }
