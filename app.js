@@ -591,12 +591,18 @@ function setupDiceRoller() {
         const powerDisplay = power !== 0 ? ` + ${power} (power)` : '';
         rollResult.textContent = `${resultText}\nRolled: ${die1} + ${die2} + 1 (base)${powerDisplay} = ${total}`;
 
-        // Store roll result for Juice spending
+        // Store roll result for Juice spending and MC display
         characterData.lastRollResult = {
-            total: total,
+            die1: die1,
+            die2: die2,
+            baseBonus: 1,
             power: power,
+            total: total,
+            resultClass: resultClass,
+            resultText: resultText,
             success: total >= 10,
-            partialSuccess: total >= 7 && total < 10
+            partialSuccess: total >= 7 && total < 10,
+            timestamp: Date.now()
         };
 
         // Add juice
@@ -722,6 +728,22 @@ function setupDiceRoller() {
         // Display guaranteed hit result
         rollResult.className = 'roll-result partial guaranteed-hit';
         rollResult.innerHTML = `🔥 <strong>TAG BURNED FOR GUARANTEED HIT!</strong><br><br>Result: 7 + 1 (base) + Power ${finalPower} = ${finalTotal}<br><br>Tag Burnt: "${selectedTag.name}"<br><br>⚡ PARTIAL SUCCESS (Guaranteed)`;
+
+        // Store roll result for MC display
+        characterData.lastRollResult = {
+            die1: '🔥',
+            die2: '🔥',
+            baseBonus: 1,
+            power: finalPower,
+            total: finalTotal,
+            resultClass: 'partial',
+            resultText: '🔥 GUARANTEED HIT!',
+            success: false,
+            partialSuccess: true,
+            guaranteedHit: true,
+            burntTag: selectedTag.name,
+            timestamp: Date.now()
+        };
 
         // Add juice (partial success = 1 juice)
         characterData.juice += 1;
@@ -943,11 +965,7 @@ function setupJuiceTracker() {
     });
 
     useComboBtn.addEventListener('click', () => {
-        if (characterData.juice >= 3) {
-            alert('Select a combo below to activate it for 3 Juice!');
-        } else {
-            alert('Not enough Juice! Combos cost 3 Juice.');
-        }
+        alert('Scroll down to the Tag Combos section to select and activate a combo!');
     });
 
     updateJuiceDisplay();
@@ -1163,7 +1181,7 @@ function updateCombosDisplay() {
                 ${tagNames.map(tag => `<span class="combo-tag-pill">${tag}</span>`).join('')}
             </div>
             <button class="combo-use-btn" data-combo-id="${combo.id}">
-                Use Combo (3 Juice)
+                Use Combo
             </button>
         `;
 
@@ -1182,63 +1200,52 @@ function updateCombosDisplay() {
 
     document.querySelectorAll('.combo-use-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (characterData.juice >= 3) {
-                const combo = characterData.tagCombos.find(c => c.id === parseInt(btn.dataset.comboId));
+            const combo = characterData.tagCombos.find(c => c.id === parseInt(btn.dataset.comboId));
 
-                // Check if tags can be burned (new format combos only)
-                if (combo.tags && combo.tags.length > 0 && typeof combo.tags[0] === 'object') {
-                    // Verify both tags are not already burnt
-                    const tag1 = combo.tags[0];
-                    const tag2 = combo.tags[1];
+            // Check if tags can be burned (new format combos only)
+            if (combo.tags && combo.tags.length > 0 && typeof combo.tags[0] === 'object') {
+                // Verify both tags are not already burnt
+                const tag1 = combo.tags[0];
+                const tag2 = combo.tags[1];
 
-                    const tag1Burnt = characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex];
-                    const tag2Burnt = characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex];
+                const tag1Burnt = characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex];
+                const tag2Burnt = characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex];
 
-                    if (tag1Burnt || tag2Burnt) {
-                        alert(`Cannot use combo! One or both of the required tags are already burnt.\n\nRequired tags: ${tag1.name}, ${tag2.name}\n\nYou must recover burnt tags before using this combo again.`);
-                        return;
-                    }
-
-                    // Deduct juice
-                    characterData.juice -= 3;
-                    updateJuiceDisplay();
-
-                    // Burn both tags
-                    characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex] = true;
-                    characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex] = true;
-
-                    // Add to burnt tags list
-                    characterData.burntTags.push({
-                        type: 'power',
-                        themeIndex: tag1.themeIndex,
-                        tagIndex: tag1.tagIndex,
-                        name: tag1.name
-                    });
-                    characterData.burntTags.push({
-                        type: 'power',
-                        themeIndex: tag2.themeIndex,
-                        tagIndex: tag2.tagIndex,
-                        name: tag2.name
-                    });
-
-                    // Update theme displays
-                    updateAllThemes();
-                    updateBurntTagsDisplay();
-
-                    alert(`✨ Combo Activated: ${combo.name}!\n\nCore Move: ${combo.coreMove}\nPower: ${combo.power}\n\nTags Used (BURNT): ${tag1.name}, ${tag2.name}\n\n⚠️ Both tags have been burnt and must be recovered before you can use this combo again!`);
-                } else {
-                    // Old format combo - just deduct juice
-                    characterData.juice -= 3;
-                    updateJuiceDisplay();
-
-                    const tagNames = combo.tags.map(tag => typeof tag === 'string' ? tag : tag.name);
-                    alert(`✨ Combo Activated: ${combo.name}!\n\nYou used ${tagNames.join(', ')}\n\n(Note: This is an old-format combo. Recreate it to enable tag burning.)`);
+                if (tag1Burnt || tag2Burnt) {
+                    alert(`Cannot use combo! One or both of the required tags are already burnt.\n\nRequired tags: ${tag1.name}, ${tag2.name}\n\nYou must recover burnt tags before using this combo again.`);
+                    return;
                 }
 
-                saveToCloud();
+                // Burn both tags
+                characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex] = true;
+                characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex] = true;
+
+                // Add to burnt tags list
+                characterData.burntTags.push({
+                    type: 'power',
+                    themeIndex: tag1.themeIndex,
+                    tagIndex: tag1.tagIndex,
+                    name: tag1.name
+                });
+                characterData.burntTags.push({
+                    type: 'power',
+                    themeIndex: tag2.themeIndex,
+                    tagIndex: tag2.tagIndex,
+                    name: tag2.name
+                });
+
+                // Update theme displays
+                updateAllThemes();
+                updateBurntTagsDisplay();
+
+                alert(`✨ Combo Activated: ${combo.name}!\n\nCore Move: ${combo.coreMove}\nPower: ${combo.power}\n\nTags Used (BURNT): ${tag1.name}, ${tag2.name}\n\n⚠️ Both tags have been burnt and must be recovered before you can use this combo again!`);
             } else {
-                alert('Not enough Juice! Combos cost 3 Juice.');
+                // Old format combo
+                const tagNames = combo.tags.map(tag => typeof tag === 'string' ? tag : tag.name);
+                alert(`✨ Combo Activated: ${combo.name}!\n\nYou used ${tagNames.join(', ')}\n\n(Note: This is an old-format combo. Recreate it to enable tag burning.)`);
             }
+
+            saveToCloud();
         });
     });
 }

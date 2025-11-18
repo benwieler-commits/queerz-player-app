@@ -56,6 +56,10 @@ export async function broadcastPlayerToMc(characterData) {
       // Game state
       juice: characterData.juice || 0,
 
+      // Dice roll result (NEW - for MC to display)
+      lastRollResult: characterData.lastRollResult || null,
+      selectedMove: characterData.selectedMove || null,
+
       // Themes (simplified for MC display)
       themes: (characterData.themes || []).map(theme => ({
         name: theme.name || 'Unnamed Theme',
