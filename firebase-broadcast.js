@@ -55,6 +55,10 @@ export async function broadcastPlayerToMc(characterData) {
 
       // Game state
       juice: characterData.juice || 0,
+      clues: characterData.clues || 0,
+
+      // Last dice roll (for MC to see player's roll results)
+      lastRoll: characterData.lastRoll || null,
 
       // Themes (simplified for MC display)
       themes: (characterData.themes || []).map(theme => ({

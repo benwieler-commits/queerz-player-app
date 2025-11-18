@@ -40,7 +40,8 @@ let characterData = {
     clickedTags: [], // Track clicked tags for current roll
     usedWeakness: false,
     lastRollResult: null, // NEW: Track last roll for Juice spending
-    createdItemsThisRoll: [] // NEW: Track items created during Juice spending
+    createdItemsThisRoll: [], // NEW: Track items created during Juice spending
+    lastRoll: null // NEW: Last dice roll for MC broadcast
 };
 
 function createEmptyTheme(type = 'rainbow') {
@@ -523,6 +524,124 @@ function setupMoveSelection() {
 // DICE ROLLING & JUICE
 // ================================
 
+// Helper function to get display name for moves
+function getMoveDisplayName(moveKey) {
+    const moveNames = {
+        'strike-a-pose': 'Strike a Pose',
+        'slay': 'Slay',
+        'get-a-clue': 'Get a Clue',
+        'talk-it-out': 'Talk It Out',
+        'care': 'Care',
+        'be-vulnerable': 'Be Vulnerable',
+        'resist': 'Resist'
+    };
+    return moveNames[moveKey] || moveKey;
+}
+
+// ================================
+// MOVE-SPECIFIC RESULT HANDLERS
+// ================================
+
+function handleMoveSpecificResult(move, total, power) {
+    // Determine result type
+    const isSuccess = total >= 10;
+    const isPartial = total >= 7 && total < 10;
+    const isMiss = total < 7;
+
+    // Route to move-specific handler
+    switch(move) {
+        case 'strike-a-pose':
+            handleStrikeAPoseResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'slay':
+            handleSlayResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'get-a-clue':
+            handleGetAClueResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'talk-it-out':
+            handleTalkItOutResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'care':
+            handleCareResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'resist':
+            handleResistResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'be-vulnerable':
+            handleBeVulnerableResult(isSuccess, isPartial, isMiss, power);
+            break;
+        default:
+            console.warn('Unknown move:', move);
+    }
+}
+
+// STRIKE A POSE - Juice spending
+function handleStrikeAPoseResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    // Open Juice spending modal after a brief delay
+    setTimeout(() => {
+        openJuiceSpendingModal();
+    }, 500);
+}
+
+// SLAY - Upgrade selection
+function handleSlayResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    const numUpgrades = isSuccess ? 2 : 1;
+    setTimeout(() => {
+        openSlayUpgradesModal(numUpgrades, power);
+    }, 500);
+}
+
+// GET A CLUE - Questions and complications
+function handleGetAClueResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    const cluesGained = power;
+    characterData.clues += cluesGained;
+    updateCluesDisplay();
+
+    setTimeout(() => {
+        openGetAClueModal(cluesGained, isPartial);
+    }, 500);
+}
+
+// TALK IT OUT - Outcomes and complications
+function handleTalkItOutResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    setTimeout(() => {
+        openTalkItOutModal(isPartial, power);
+    }, 500);
+}
+
+// CARE - Remove statuses/tags
+function handleCareResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    setTimeout(() => {
+        openCareModal(power, isPartial);
+    }, 500);
+}
+
+// RESIST - Simple result display (no modal needed)
+function handleResistResult(isSuccess, isPartial, isMiss, power) {
+    // Results already shown in main roll display
+    // No additional UI needed
+}
+
+// BE VULNERABLE - Complication display
+function handleBeVulnerableResult(isSuccess, isPartial, isMiss, power) {
+    if (!isPartial) return; // Only show complications on 7-9
+
+    setTimeout(() => {
+        showBeVulnerableComplications();
+    }, 500);
+}
+
 function setupDiceRoller() {
     const rollBtn = document.getElementById('rollBtn');
     const burnForGuaranteedHitBtn = document.getElementById('burnForGuaranteedHitBtn');
@@ -599,6 +718,19 @@ function setupDiceRoller() {
             partialSuccess: total >= 7 && total < 10
         };
 
+        // Store roll data for MC broadcast
+        characterData.lastRoll = {
+            move: characterData.selectedMove,
+            moveName: getMoveDisplayName(characterData.selectedMove),
+            dice: [die1, die2],
+            baseBonus: 1,
+            power: power,
+            total: total,
+            result: total >= 10 ? 'success' : (total >= 7 ? 'partial' : 'miss'),
+            resultText: resultText,
+            timestamp: Date.now()
+        };
+
         // Add juice
         characterData.juice += juiceGained;
         updateJuiceDisplay();
@@ -619,12 +751,8 @@ function setupDiceRoller() {
 
         saveToCloud();
 
-        // If Strike a Pose and hit (7+), open Juice spending modal
-        if (isStrikeAPose && total >= 7) {
-            setTimeout(() => {
-                openJuiceSpendingModal();
-            }, 500);
-        }
+        // Handle move-specific results
+        handleMoveSpecificResult(characterData.selectedMove, total, power);
     });
 
     // BURN TAG FOR GUARANTEED HIT
@@ -722,6 +850,21 @@ function setupDiceRoller() {
         // Display guaranteed hit result
         rollResult.className = 'roll-result partial guaranteed-hit';
         rollResult.innerHTML = `🔥 <strong>TAG BURNED FOR GUARANTEED HIT!</strong><br><br>Result: 7 + 1 (base) + Power ${finalPower} = ${finalTotal}<br><br>Tag Burnt: "${selectedTag.name}"<br><br>⚡ PARTIAL SUCCESS (Guaranteed)`;
+
+        // Store roll data for MC broadcast (guaranteed hit)
+        characterData.lastRoll = {
+            move: characterData.selectedMove,
+            moveName: getMoveDisplayName(characterData.selectedMove),
+            dice: [7, 0], // Showing 7 as base for guaranteed hit
+            baseBonus: 1,
+            power: finalPower,
+            total: finalTotal,
+            result: 'partial',
+            resultText: 'PARTIAL SUCCESS (Guaranteed Hit)',
+            guaranteedHit: true,
+            burntTag: selectedTag.name,
+            timestamp: Date.now()
+        };
 
         // Add juice (partial success = 1 juice)
         characterData.juice += 1;
@@ -943,11 +1086,7 @@ function setupJuiceTracker() {
     });
 
     useComboBtn.addEventListener('click', () => {
-        if (characterData.juice >= 3) {
-            alert('Select a combo below to activate it for 3 Juice!');
-        } else {
-            alert('Not enough Juice! Combos cost 3 Juice.');
-        }
+        alert('Select a combo below to activate it!\n\nNote: Activating a combo will burn the 2 tags used in that combo.');
     });
 
     updateJuiceDisplay();
@@ -960,7 +1099,8 @@ function updateJuiceDisplay() {
     const comboBtn = document.getElementById('useComboBtn');
 
     spendBtn.disabled = characterData.juice === 0;
-    comboBtn.disabled = characterData.juice < 3;
+    // Combos no longer require Juice - they only burn tags
+    comboBtn.disabled = false;
 }
 
 // ================================
@@ -1163,7 +1303,7 @@ function updateCombosDisplay() {
                 ${tagNames.map(tag => `<span class="combo-tag-pill">${tag}</span>`).join('')}
             </div>
             <button class="combo-use-btn" data-combo-id="${combo.id}">
-                Use Combo (3 Juice)
+                Activate Combo (Burns Tags)
             </button>
         `;
 
@@ -1182,63 +1322,52 @@ function updateCombosDisplay() {
 
     document.querySelectorAll('.combo-use-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (characterData.juice >= 3) {
-                const combo = characterData.tagCombos.find(c => c.id === parseInt(btn.dataset.comboId));
+            const combo = characterData.tagCombos.find(c => c.id === parseInt(btn.dataset.comboId));
 
-                // Check if tags can be burned (new format combos only)
-                if (combo.tags && combo.tags.length > 0 && typeof combo.tags[0] === 'object') {
-                    // Verify both tags are not already burnt
-                    const tag1 = combo.tags[0];
-                    const tag2 = combo.tags[1];
+            // Check if tags can be burned (new format combos only)
+            if (combo.tags && combo.tags.length > 0 && typeof combo.tags[0] === 'object') {
+                // Verify both tags are not already burnt
+                const tag1 = combo.tags[0];
+                const tag2 = combo.tags[1];
 
-                    const tag1Burnt = characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex];
-                    const tag2Burnt = characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex];
+                const tag1Burnt = characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex];
+                const tag2Burnt = characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex];
 
-                    if (tag1Burnt || tag2Burnt) {
-                        alert(`Cannot use combo! One or both of the required tags are already burnt.\n\nRequired tags: ${tag1.name}, ${tag2.name}\n\nYou must recover burnt tags before using this combo again.`);
-                        return;
-                    }
-
-                    // Deduct juice
-                    characterData.juice -= 3;
-                    updateJuiceDisplay();
-
-                    // Burn both tags
-                    characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex] = true;
-                    characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex] = true;
-
-                    // Add to burnt tags list
-                    characterData.burntTags.push({
-                        type: 'power',
-                        themeIndex: tag1.themeIndex,
-                        tagIndex: tag1.tagIndex,
-                        name: tag1.name
-                    });
-                    characterData.burntTags.push({
-                        type: 'power',
-                        themeIndex: tag2.themeIndex,
-                        tagIndex: tag2.tagIndex,
-                        name: tag2.name
-                    });
-
-                    // Update theme displays
-                    updateAllThemes();
-                    updateBurntTagsDisplay();
-
-                    alert(`✨ Combo Activated: ${combo.name}!\n\nCore Move: ${combo.coreMove}\nPower: ${combo.power}\n\nTags Used (BURNT): ${tag1.name}, ${tag2.name}\n\n⚠️ Both tags have been burnt and must be recovered before you can use this combo again!`);
-                } else {
-                    // Old format combo - just deduct juice
-                    characterData.juice -= 3;
-                    updateJuiceDisplay();
-
-                    const tagNames = combo.tags.map(tag => typeof tag === 'string' ? tag : tag.name);
-                    alert(`✨ Combo Activated: ${combo.name}!\n\nYou used ${tagNames.join(', ')}\n\n(Note: This is an old-format combo. Recreate it to enable tag burning.)`);
+                if (tag1Burnt || tag2Burnt) {
+                    alert(`Cannot use combo! One or both of the required tags are already burnt.\n\nRequired tags: ${tag1.name}, ${tag2.name}\n\nYou must recover burnt tags before using this combo again.`);
+                    return;
                 }
 
-                saveToCloud();
+                // Burn both tags (NO JUICE COST - Juice properly implemented in Core Moves now)
+                characterData.themes[tag1.themeIndex].burntPowerTags[tag1.tagIndex] = true;
+                characterData.themes[tag2.themeIndex].burntPowerTags[tag2.tagIndex] = true;
+
+                // Add to burnt tags list
+                characterData.burntTags.push({
+                    type: 'power',
+                    themeIndex: tag1.themeIndex,
+                    tagIndex: tag1.tagIndex,
+                    name: tag1.name
+                });
+                characterData.burntTags.push({
+                    type: 'power',
+                    themeIndex: tag2.themeIndex,
+                    tagIndex: tag2.tagIndex,
+                    name: tag2.name
+                });
+
+                // Update theme displays
+                updateAllThemes();
+                updateBurntTagsDisplay();
+
+                alert(`✨ Combo Activated: ${combo.name}!\n\nCore Move: ${combo.coreMove}\nPower: ${combo.power}\n\nTags Used (BURNT): ${tag1.name}, ${tag2.name}\n\n⚠️ Both tags have been burnt and must be recovered before you can use this combo again!`);
             } else {
-                alert('Not enough Juice! Combos cost 3 Juice.');
+                // Old format combo - no juice cost anymore
+                const tagNames = combo.tags.map(tag => typeof tag === 'string' ? tag : tag.name);
+                alert(`✨ Combo Activated: ${combo.name}!\n\nYou used ${tagNames.join(', ')}\n\n(Note: This is an old-format combo. Recreate it to enable tag burning.)`);
             }
+
+            saveToCloud();
         });
     });
 }
@@ -2089,6 +2218,169 @@ function confirmDeepenRelationship() {
     showNotification(`💖 Deepen Relationship: +${cluesGained} Clues, +${juiceGained} Juice`);
 
     saveToCloud();
+}
+
+// ================================
+// SLAY UPGRADES MODAL
+// ================================
+
+let slaySelectedUpgrades = [];
+let slayMaxUpgrades = 2;
+
+function openSlayUpgradesModal(numUpgrades, power) {
+    slaySelectedUpgrades = [];
+    slayMaxUpgrades = numUpgrades;
+
+    const modal = document.getElementById('slayUpgradesModal');
+    const countText = document.getElementById('slayUpgradeCount');
+    const confirmBtn = document.getElementById('confirmSlayUpgradesBtn');
+
+    countText.textContent = `Choose ${numUpgrades} upgrade${numUpgrades > 1 ? 's' : ''} (can pick same twice)`;
+
+    // Reset all checkboxes
+    document.querySelectorAll('.upgrade-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+
+    // Setup checkbox listeners
+    document.querySelectorAll('.upgrade-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', handleSlayUpgradeSelection);
+    });
+
+    // Setup confirm button
+    confirmBtn.addEventListener('click', confirmSlayUpgrades);
+
+    // Setup cancel button
+    document.getElementById('cancelSlayUpgradesBtn').addEventListener('click', closeSlayUpgradesModal);
+
+    updateSlaySelectedDisplay();
+    modal.classList.remove('hidden');
+}
+
+function handleSlayUpgradeSelection(e) {
+    const upgrade = e.target.id.replace('upgrade-', '');
+
+    if (e.target.checked) {
+        // Add to selected list
+        if (slaySelectedUpgrades.length < slayMaxUpgrades) {
+            slaySelectedUpgrades.push(upgrade);
+        } else {
+            // Already at max, uncheck
+            e.target.checked = false;
+            alert(`You can only select ${slayMaxUpgrades} upgrade${slayMaxUpgrades > 1 ? 's' : ''}!`);
+            return;
+        }
+    } else {
+        // Remove from selected list (remove first occurrence)
+        const index = slaySelectedUpgrades.indexOf(upgrade);
+        if (index > -1) {
+            slaySelectedUpgrades.splice(index, 1);
+        }
+    }
+
+    updateSlaySelectedDisplay();
+}
+
+function updateSlaySelectedDisplay() {
+    const display = document.getElementById('selectedSlayUpgrades');
+    const confirmBtn = document.getElementById('confirmSlayUpgradesBtn');
+
+    if (slaySelectedUpgrades.length === 0) {
+        display.textContent = 'None yet';
+        confirmBtn.disabled = true;
+    } else {
+        const upgradeNames = {
+            'killing-it': '⚡ Killing it!',
+            'more-power': '💪 More power',
+            'more-coverage': '👥 More coverage',
+            'take-something': '🎯 Take something',
+            'keep-focused': '👀 Keep focused',
+            'make-comeback': '🔄 Make a comeback'
+        };
+
+        display.innerHTML = slaySelectedUpgrades.map(u => `<div class="selected-upgrade-pill">${upgradeNames[u] || u}</div>`).join('');
+        confirmBtn.disabled = slaySelectedUpgrades.length !== slayMaxUpgrades;
+    }
+}
+
+function confirmSlayUpgrades() {
+    if (slaySelectedUpgrades.length !== slayMaxUpgrades) {
+        alert(`Please select exactly ${slayMaxUpgrades} upgrade${slayMaxUpgrades > 1 ? 's' : ''}!`);
+        return;
+    }
+
+    // Show notification of selected upgrades
+    const upgradeNames = {
+        'killing-it': 'Killing it!',
+        'more-power': 'More power',
+        'more-coverage': 'More coverage',
+        'take-something': 'Take something',
+        'keep-focused': 'Keep focused',
+        'make-comeback': 'Make a comeback'
+    };
+
+    const selectedNames = slaySelectedUpgrades.map(u => upgradeNames[u] || u).join(', ');
+    showNotification(`✨ Slay Upgrades: ${selectedNames}`);
+
+    closeSlayUpgradesModal();
+    saveToCloud();
+}
+
+function closeSlayUpgradesModal() {
+    const modal = document.getElementById('slayUpgradesModal');
+    modal.classList.add('hidden');
+    slaySelectedUpgrades = [];
+}
+
+// ================================
+// GET A CLUE MODAL (Placeholder)
+// ================================
+
+function openGetAClueModal(clues, hasComplications) {
+    // Simple alert for now - will be replaced with full modal
+    let message = `🔍 GET A CLUE!\n\nYou gained ${clues} Clue${clues !== 1 ? 's' : ''}!\n\nUse them to ask the MC or other players questions.`;
+
+    if (hasComplications) {
+        message += '\n\n⚠️ MC picks ONE complication:\n🔄 Counter Question\n😰 Side Effects (tier-1 status)\n🎭 Drama';
+    }
+
+    alert(message);
+}
+
+// ================================
+// TALK IT OUT MODAL (Placeholder)
+// ================================
+
+function openTalkItOutModal(hasComplications, power) {
+    let message = `💬 TALK IT OUT!\n\nChoose ONE:\n🎯 Make progress\n🤝 Strike a deal\n💕 Bond (relationship status, tier ${power})`;
+
+    if (hasComplications) {
+        message += '\n\n⚠️ MC/Target also picks ONE:\n💰 Condition/Price\n👁️ Show Understanding\n💔 Get Attached';
+    }
+
+    alert(message);
+}
+
+// ================================
+// CARE MODAL (Placeholder)
+// ================================
+
+function openCareModal(power, hasSideEffect) {
+    let message = `❤️ CARE!\n\nRemove up to ${power} tier${power !== 1 ? 's' : ''} from statuses/tags.\n\nYou choose how to distribute the removal.`;
+
+    if (hasSideEffect) {
+        message += '\n\n⚠️ MC gives you tier-1 negative status\n(concerned, tired, saddened, dirty, drained)';
+    }
+
+    alert(message);
+}
+
+// ================================
+// BE VULNERABLE COMPLICATIONS (Placeholder)
+// ================================
+
+function showBeVulnerableComplications() {
+    alert('💔 BE VULNERABLE (7-9)\n\nYou do it, but MC picks ONE:\n\n😰 Side Effects (negative status)\n🔥 Burnout (one tag burnt)\n🎭 Drama (story complication)');
 }
 
 // ================================
