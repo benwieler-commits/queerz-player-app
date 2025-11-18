@@ -605,6 +605,82 @@
         </div>
     </div>
 
+    <!-- SLAY UPGRADES MODAL -->
+    <div id="slayUpgradesModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>⚔️ SLAY - Choose Your Upgrades</h2>
+                <p id="slayUpgradeCount" class="upgrade-count">Choose 2 upgrades (can pick same twice)</p>
+            </div>
+
+            <div class="slay-upgrades-container">
+                <div class="upgrade-option" data-upgrade="killing-it">
+                    <input type="checkbox" id="upgrade-killing-it" class="upgrade-checkbox">
+                    <label for="upgrade-killing-it">
+                        <span class="upgrade-icon">⚡</span>
+                        <span class="upgrade-name">Killing it!</span>
+                        <span class="upgrade-desc">They can't counterattack (fight/argument) OR no concessions (threatening)</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="more-power">
+                    <input type="checkbox" id="upgrade-more-power" class="upgrade-checkbox">
+                    <label for="upgrade-more-power">
+                        <span class="upgrade-icon">💪</span>
+                        <span class="upgrade-name">More power</span>
+                        <span class="upgrade-desc">+1 status tier</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="more-coverage">
+                    <input type="checkbox" id="upgrade-more-coverage" class="upgrade-checkbox">
+                    <label for="upgrade-more-coverage">
+                        <span class="upgrade-icon">👥</span>
+                        <span class="upgrade-name">More coverage</span>
+                        <span class="upgrade-desc">Affect small group instead of one person</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="take-something">
+                    <input type="checkbox" id="upgrade-take-something" class="upgrade-checkbox">
+                    <label for="upgrade-take-something">
+                        <span class="upgrade-icon">🎯</span>
+                        <span class="upgrade-name">Take something</span>
+                        <span class="upgrade-desc">Remove/get story tag from them</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="keep-focused">
+                    <input type="checkbox" id="upgrade-keep-focused" class="upgrade-checkbox">
+                    <label for="upgrade-keep-focused">
+                        <span class="upgrade-icon">👀</span>
+                        <span class="upgrade-name">Keep focused</span>
+                        <span class="upgrade-desc">They stay focused on you</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="make-comeback">
+                    <input type="checkbox" id="upgrade-make-comeback" class="upgrade-checkbox">
+                    <label for="upgrade-make-comeback">
+                        <span class="upgrade-icon">🔄</span>
+                        <span class="upgrade-name">Make a comeback</span>
+                        <span class="upgrade-desc">Reduce your own negative status by 1 tier</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="selected-upgrades-display">
+                <h4>Selected Upgrades:</h4>
+                <div id="selectedSlayUpgrades" class="selected-list">None yet</div>
+            </div>
+
+            <div class="move-modal-footer">
+                <button id="confirmSlayUpgradesBtn" class="btn-move-confirm" disabled>Confirm Selection</button>
+                <button id="cancelSlayUpgradesBtn" class="btn-move-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- DOWNTIME DEEPEN RELATIONSHIP MODAL (NEW) -->
     <div id="deepenRelationshipModal" class="deepen-modal hidden">
         <div class="deepen-modal-content">
@@ -691,74 +767,74 @@
             <div class="moves-grid">
                 <div class="move-card">
                     <h3 class="move-name">STRIKE A POSE</h3>
-                    <p class="move-trigger">When you <strong>attempt to give yourself or your allies a positive status</strong>, or <strong>make an impression or influence others</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Give self/ally positive status or make an impression</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Gain Juice equal to Power used (min 2). Spend Juice to create tags/statuses + upgrades</p>
-                        <p><strong>7-9:</strong> Gain Juice equal to Power used. Spend Juice to create tags/statuses</p>
-                        <p><strong>6-:</strong> MC makes a move</p>
+                        <p><strong>ON A HIT (7+):</strong> Gain Juice = Power (min 2 on 10+). Spend Juice to create story tags (1 each) or statuses (1 per tier).</p>
+                        <p><strong>ON A 10+:</strong> Also buy upgrades (1 Juice each): ⏰ Prolong effect (ongoing), 📏 Scale up, ✨ Make flashier</p>
+                        <p><strong>ON A MISS (6-):</strong> MC makes a hard move</p>
                     </div>
-                    <p class="move-upgrades"><strong>Spend Juice:</strong> Create story tags (1 each), Create positive statuses (1 per tier). On 10+: Prolong, Scale up, Make flashier (1 each)</p>
                 </div>
 
                 <div class="move-card">
                     <h3 class="move-name">SLAY</h3>
-                    <p class="move-trigger">When you <strong>give your opponents a negative status or overcome their Ignorance Limit</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Give opponent status or overcome Ignorance Limit</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Choose 2 upgrades, gain 3 Juice</p>
-                        <p><strong>7-9:</strong> Choose 1 upgrade, gain 1 Juice</p>
-                        <p><strong>6-:</strong> MC makes a move</p>
+                        <p><strong>ON A HIT (7+):</strong> Give them status with tier = Power</p>
+                        <p><strong>ON A 10+:</strong> Choose TWO upgrades (can pick same twice)</p>
+                        <p><strong>ON A 7-9:</strong> Choose ONE upgrade</p>
+                        <p><strong>ON A MISS (6-):</strong> MC makes a hard move</p>
                     </div>
-                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting</p>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> ⚡ Killing it! (no counterattack/concessions) • 💪 More power (+1 tier) • 👥 More coverage (small group) • 🎯 Take something (remove/get story tag) • 👀 Keep focused • 🔄 Make comeback (reduce own negative -1)</p>
                 </div>
 
                 <div class="move-card">
                     <h3 class="move-name">GET A CLUE</h3>
-                    <p class="move-trigger">When you <strong>investigate, research, or gather information</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Investigate, research, gather information</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Gain a Story Tag and ask 2 questions, gain 3 Juice</p>
-                        <p><strong>7-9:</strong> Ask 1 question or gain a Story Tag, gain 1 Juice</p>
-                        <p><strong>6-:</strong> MC makes a move</p>
+                        <p><strong>ON A HIT (7+):</strong> Get Clues = Power. Spend each to ask MC/player a question (honest, not necessarily direct)</p>
+                        <p><strong>ON A 7-9:</strong> MC also picks ONE complication: 🔄 Counter Question • 😰 Side Effects (tier-1 status, cannot Resist) • 🎭 Drama</p>
+                        <p><strong>ON A MISS (6-):</strong> MC makes a hard move</p>
                     </div>
                 </div>
 
                 <div class="move-card">
                     <h3 class="move-name">TALK IT OUT</h3>
-                    <p class="move-trigger">When you <strong>de-escalate or negotiate in good faith</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> De-escalate or negotiate in good faith</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Make progress or bond, gain 3 Juice</p>
-                        <p><strong>7-9:</strong> Succeed with cost, gain 1 Juice</p>
-                        <p><strong>6-:</strong> They put up walls</p>
+                        <p><strong>ON A HIT (7+):</strong> Choose ONE: 🎯 Make progress • 🤝 Strike a deal • 💕 Bond (relationship status, tier = Power)</p>
+                        <p><strong>ON A 7-9:</strong> MC/target also picks ONE: 💰 Condition/Price • 👁️ Show Understanding • 💔 Get Attached (you receive relationship status)</p>
+                        <p><strong>ON A MISS (6-):</strong> They put up walls / MC makes a hard move</p>
                     </div>
                 </div>
 
                 <div class="move-card">
                     <h3 class="move-name">CARE</h3>
-                    <p class="move-trigger">When you <strong>help someone with their emotional or physical needs</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Help with emotional/physical needs</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Remove negative or give positive status, gain 3 Juice</p>
-                        <p><strong>7-9:</strong> As above but take status or mark Growth, gain 1 Juice</p>
-                        <p><strong>6-:</strong> Your care backfires</p>
+                        <p><strong>ON A HIT (7+):</strong> Remove story tags or status tiers = Power (you distribute)</p>
+                        <p><strong>ON A 7-9:</strong> MC gives you tier-1 negative status (concerned, tired, saddened, dirty, drained). Cannot Resist.</p>
+                        <p><strong>ON A MISS (6-):</strong> Care backfires / MC makes a hard move</p>
                     </div>
-                </div>
-
-                <div class="move-card">
-                    <h3 class="move-name">BE VULNERABLE</h3>
-                    <p class="move-trigger">When you <strong>open up emotionally or share something difficult</strong>, roll 2d6 + Power.</p>
-                    <div class="move-results">
-                        <p><strong>10+:</strong> Mark Growth, choose 2 benefits, gain 3 Juice</p>
-                        <p><strong>7-9:</strong> Mark Growth, choose 1 benefit, gain 1 Juice</p>
-                        <p><strong>6-:</strong> Mark Growth but MC makes a move</p>
-                    </div>
-                    <p class="move-upgrades"><strong>Benefits:</strong> Gain support, clear status, earn trust, inspire others</p>
                 </div>
 
                 <div class="move-card">
                     <h3 class="move-name">RESIST</h3>
-                    <p class="move-trigger">When you <strong>fight against a status being applied or try to reduce its tier</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Avoid status being imposed on you</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Fully resist or reduce by 2 tiers, gain 3 Juice</p>
-                        <p><strong>7-9:</strong> Reduce status by 1 tier, gain 1 Juice</p>
-                        <p><strong>6-:</strong> Take the full status</p>
+                        <p><strong>ON A 10+:</strong> Fend off effect - take NO status</p>
+                        <p><strong>ON A 7-9:</strong> Take status with one less tier (e.g., Guilty-3 → Guilty-2)</p>
+                        <p><strong>ON A MISS (6-):</strong> Take full status</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Note:</strong> Cannot Resist side effects from Care (7-9), Get a Clue (7-9), or Be Vulnerable (7-9)</p>
+                </div>
+
+                <div class="move-card">
+                    <h3 class="move-name">BE VULNERABLE</h3>
+                    <p class="move-trigger"><strong>Trigger:</strong> Put yourself on the line - action that could end badly</p>
+                    <div class="move-results">
+                        <p><strong>ON A 10+:</strong> You do it and it's wonderful!</p>
+                        <p><strong>ON A 7-9:</strong> You do it, but MC picks ONE: 😰 Side Effects (negative status, cannot Resist) • 🔥 Burnout (one tag burnt) • 🎭 Drama</p>
+                        <p><strong>ON A MISS (6-):</strong> You fail OR succeed but MC makes hard move</p>
                     </div>
                 </div>
             </div>

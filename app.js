@@ -40,7 +40,8 @@ let characterData = {
     clickedTags: [], // Track clicked tags for current roll
     usedWeakness: false,
     lastRollResult: null, // NEW: Track last roll for Juice spending
-    createdItemsThisRoll: [] // NEW: Track items created during Juice spending
+    createdItemsThisRoll: [], // NEW: Track items created during Juice spending
+    lastRoll: null // NEW: Last dice roll for MC broadcast
 };
 
 function createEmptyTheme(type = 'rainbow') {
@@ -523,6 +524,124 @@ function setupMoveSelection() {
 // DICE ROLLING & JUICE
 // ================================
 
+// Helper function to get display name for moves
+function getMoveDisplayName(moveKey) {
+    const moveNames = {
+        'strike-a-pose': 'Strike a Pose',
+        'slay': 'Slay',
+        'get-a-clue': 'Get a Clue',
+        'talk-it-out': 'Talk It Out',
+        'care': 'Care',
+        'be-vulnerable': 'Be Vulnerable',
+        'resist': 'Resist'
+    };
+    return moveNames[moveKey] || moveKey;
+}
+
+// ================================
+// MOVE-SPECIFIC RESULT HANDLERS
+// ================================
+
+function handleMoveSpecificResult(move, total, power) {
+    // Determine result type
+    const isSuccess = total >= 10;
+    const isPartial = total >= 7 && total < 10;
+    const isMiss = total < 7;
+
+    // Route to move-specific handler
+    switch(move) {
+        case 'strike-a-pose':
+            handleStrikeAPoseResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'slay':
+            handleSlayResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'get-a-clue':
+            handleGetAClueResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'talk-it-out':
+            handleTalkItOutResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'care':
+            handleCareResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'resist':
+            handleResistResult(isSuccess, isPartial, isMiss, power);
+            break;
+        case 'be-vulnerable':
+            handleBeVulnerableResult(isSuccess, isPartial, isMiss, power);
+            break;
+        default:
+            console.warn('Unknown move:', move);
+    }
+}
+
+// STRIKE A POSE - Juice spending
+function handleStrikeAPoseResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    // Open Juice spending modal after a brief delay
+    setTimeout(() => {
+        openJuiceSpendingModal();
+    }, 500);
+}
+
+// SLAY - Upgrade selection
+function handleSlayResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    const numUpgrades = isSuccess ? 2 : 1;
+    setTimeout(() => {
+        openSlayUpgradesModal(numUpgrades, power);
+    }, 500);
+}
+
+// GET A CLUE - Questions and complications
+function handleGetAClueResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    const cluesGained = power;
+    characterData.clues += cluesGained;
+    updateCluesDisplay();
+
+    setTimeout(() => {
+        openGetAClueModal(cluesGained, isPartial);
+    }, 500);
+}
+
+// TALK IT OUT - Outcomes and complications
+function handleTalkItOutResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    setTimeout(() => {
+        openTalkItOutModal(isPartial, power);
+    }, 500);
+}
+
+// CARE - Remove statuses/tags
+function handleCareResult(isSuccess, isPartial, isMiss, power) {
+    if (isMiss) return; // No special handling for miss
+
+    setTimeout(() => {
+        openCareModal(power, isPartial);
+    }, 500);
+}
+
+// RESIST - Simple result display (no modal needed)
+function handleResistResult(isSuccess, isPartial, isMiss, power) {
+    // Results already shown in main roll display
+    // No additional UI needed
+}
+
+// BE VULNERABLE - Complication display
+function handleBeVulnerableResult(isSuccess, isPartial, isMiss, power) {
+    if (!isPartial) return; // Only show complications on 7-9
+
+    setTimeout(() => {
+        showBeVulnerableComplications();
+    }, 500);
+}
+
 function setupDiceRoller() {
     const rollBtn = document.getElementById('rollBtn');
     const burnForGuaranteedHitBtn = document.getElementById('burnForGuaranteedHitBtn');
@@ -605,6 +724,19 @@ function setupDiceRoller() {
             timestamp: Date.now()
         };
 
+        // Store roll data for MC broadcast
+        characterData.lastRoll = {
+            move: characterData.selectedMove,
+            moveName: getMoveDisplayName(characterData.selectedMove),
+            dice: [die1, die2],
+            baseBonus: 1,
+            power: power,
+            total: total,
+            result: total >= 10 ? 'success' : (total >= 7 ? 'partial' : 'miss'),
+            resultText: resultText,
+            timestamp: Date.now()
+        };
+
         // Add juice
         characterData.juice += juiceGained;
         updateJuiceDisplay();
@@ -625,12 +757,8 @@ function setupDiceRoller() {
 
         saveToCloud();
 
-        // If Strike a Pose and hit (7+), open Juice spending modal
-        if (isStrikeAPose && total >= 7) {
-            setTimeout(() => {
-                openJuiceSpendingModal();
-            }, 500);
-        }
+        // Handle move-specific results
+        handleMoveSpecificResult(characterData.selectedMove, total, power);
     });
 
     // BURN TAG FOR GUARANTEED HIT
@@ -978,7 +1106,8 @@ function updateJuiceDisplay() {
     const comboBtn = document.getElementById('useComboBtn');
 
     spendBtn.disabled = characterData.juice === 0;
-    comboBtn.disabled = characterData.juice < 3;
+    // Combos no longer require Juice - they only burn tags
+    comboBtn.disabled = false;
 }
 
 // ================================
@@ -2096,6 +2225,169 @@ function confirmDeepenRelationship() {
     showNotification(`💖 Deepen Relationship: +${cluesGained} Clues, +${juiceGained} Juice`);
 
     saveToCloud();
+}
+
+// ================================
+// SLAY UPGRADES MODAL
+// ================================
+
+let slaySelectedUpgrades = [];
+let slayMaxUpgrades = 2;
+
+function openSlayUpgradesModal(numUpgrades, power) {
+    slaySelectedUpgrades = [];
+    slayMaxUpgrades = numUpgrades;
+
+    const modal = document.getElementById('slayUpgradesModal');
+    const countText = document.getElementById('slayUpgradeCount');
+    const confirmBtn = document.getElementById('confirmSlayUpgradesBtn');
+
+    countText.textContent = `Choose ${numUpgrades} upgrade${numUpgrades > 1 ? 's' : ''} (can pick same twice)`;
+
+    // Reset all checkboxes
+    document.querySelectorAll('.upgrade-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+
+    // Setup checkbox listeners
+    document.querySelectorAll('.upgrade-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', handleSlayUpgradeSelection);
+    });
+
+    // Setup confirm button
+    confirmBtn.addEventListener('click', confirmSlayUpgrades);
+
+    // Setup cancel button
+    document.getElementById('cancelSlayUpgradesBtn').addEventListener('click', closeSlayUpgradesModal);
+
+    updateSlaySelectedDisplay();
+    modal.classList.remove('hidden');
+}
+
+function handleSlayUpgradeSelection(e) {
+    const upgrade = e.target.id.replace('upgrade-', '');
+
+    if (e.target.checked) {
+        // Add to selected list
+        if (slaySelectedUpgrades.length < slayMaxUpgrades) {
+            slaySelectedUpgrades.push(upgrade);
+        } else {
+            // Already at max, uncheck
+            e.target.checked = false;
+            alert(`You can only select ${slayMaxUpgrades} upgrade${slayMaxUpgrades > 1 ? 's' : ''}!`);
+            return;
+        }
+    } else {
+        // Remove from selected list (remove first occurrence)
+        const index = slaySelectedUpgrades.indexOf(upgrade);
+        if (index > -1) {
+            slaySelectedUpgrades.splice(index, 1);
+        }
+    }
+
+    updateSlaySelectedDisplay();
+}
+
+function updateSlaySelectedDisplay() {
+    const display = document.getElementById('selectedSlayUpgrades');
+    const confirmBtn = document.getElementById('confirmSlayUpgradesBtn');
+
+    if (slaySelectedUpgrades.length === 0) {
+        display.textContent = 'None yet';
+        confirmBtn.disabled = true;
+    } else {
+        const upgradeNames = {
+            'killing-it': '⚡ Killing it!',
+            'more-power': '💪 More power',
+            'more-coverage': '👥 More coverage',
+            'take-something': '🎯 Take something',
+            'keep-focused': '👀 Keep focused',
+            'make-comeback': '🔄 Make a comeback'
+        };
+
+        display.innerHTML = slaySelectedUpgrades.map(u => `<div class="selected-upgrade-pill">${upgradeNames[u] || u}</div>`).join('');
+        confirmBtn.disabled = slaySelectedUpgrades.length !== slayMaxUpgrades;
+    }
+}
+
+function confirmSlayUpgrades() {
+    if (slaySelectedUpgrades.length !== slayMaxUpgrades) {
+        alert(`Please select exactly ${slayMaxUpgrades} upgrade${slayMaxUpgrades > 1 ? 's' : ''}!`);
+        return;
+    }
+
+    // Show notification of selected upgrades
+    const upgradeNames = {
+        'killing-it': 'Killing it!',
+        'more-power': 'More power',
+        'more-coverage': 'More coverage',
+        'take-something': 'Take something',
+        'keep-focused': 'Keep focused',
+        'make-comeback': 'Make a comeback'
+    };
+
+    const selectedNames = slaySelectedUpgrades.map(u => upgradeNames[u] || u).join(', ');
+    showNotification(`✨ Slay Upgrades: ${selectedNames}`);
+
+    closeSlayUpgradesModal();
+    saveToCloud();
+}
+
+function closeSlayUpgradesModal() {
+    const modal = document.getElementById('slayUpgradesModal');
+    modal.classList.add('hidden');
+    slaySelectedUpgrades = [];
+}
+
+// ================================
+// GET A CLUE MODAL (Placeholder)
+// ================================
+
+function openGetAClueModal(clues, hasComplications) {
+    // Simple alert for now - will be replaced with full modal
+    let message = `🔍 GET A CLUE!\n\nYou gained ${clues} Clue${clues !== 1 ? 's' : ''}!\n\nUse them to ask the MC or other players questions.`;
+
+    if (hasComplications) {
+        message += '\n\n⚠️ MC picks ONE complication:\n🔄 Counter Question\n😰 Side Effects (tier-1 status)\n🎭 Drama';
+    }
+
+    alert(message);
+}
+
+// ================================
+// TALK IT OUT MODAL (Placeholder)
+// ================================
+
+function openTalkItOutModal(hasComplications, power) {
+    let message = `💬 TALK IT OUT!\n\nChoose ONE:\n🎯 Make progress\n🤝 Strike a deal\n💕 Bond (relationship status, tier ${power})`;
+
+    if (hasComplications) {
+        message += '\n\n⚠️ MC/Target also picks ONE:\n💰 Condition/Price\n👁️ Show Understanding\n💔 Get Attached';
+    }
+
+    alert(message);
+}
+
+// ================================
+// CARE MODAL (Placeholder)
+// ================================
+
+function openCareModal(power, hasSideEffect) {
+    let message = `❤️ CARE!\n\nRemove up to ${power} tier${power !== 1 ? 's' : ''} from statuses/tags.\n\nYou choose how to distribute the removal.`;
+
+    if (hasSideEffect) {
+        message += '\n\n⚠️ MC gives you tier-1 negative status\n(concerned, tired, saddened, dirty, drained)';
+    }
+
+    alert(message);
+}
+
+// ================================
+// BE VULNERABLE COMPLICATIONS (Placeholder)
+// ================================
+
+function showBeVulnerableComplications() {
+    alert('💔 BE VULNERABLE (7-9)\n\nYou do it, but MC picks ONE:\n\n😰 Side Effects (negative status)\n🔥 Burnout (one tag burnt)\n🎭 Drama (story complication)');
 }
 
 // ================================
