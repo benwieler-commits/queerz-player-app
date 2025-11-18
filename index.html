@@ -629,6 +629,246 @@
         </div>
     </div>
 
+    <!-- SLAY UPGRADES MODAL -->
+    <div id="slayUpgradesModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>⚔️ SLAY UPGRADES</h2>
+                <p class="upgrade-instruction">Choose <span id="slayUpgradeCount">1</span> upgrade(s)</p>
+                <p class="power-used">Power Used: <span id="slayPowerDisplay">0</span></p>
+            </div>
+
+            <div class="upgrades-list">
+                <label class="upgrade-option">
+                    <input type="checkbox" value="Killing it!">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">⚡</span>
+                        <div>
+                            <strong>Killing it!</strong><br>
+                            <span class="upgrade-desc">They can't counterattack (fight/argument) OR no concessions (threatening)</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="More power">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">💪</span>
+                        <div>
+                            <strong>More power</strong><br>
+                            <span class="upgrade-desc">+1 status tier</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="More coverage">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">👥</span>
+                        <div>
+                            <strong>More coverage</strong><br>
+                            <span class="upgrade-desc">Affect small group</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="Take something">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">🎯</span>
+                        <div>
+                            <strong>Take something</strong><br>
+                            <span class="upgrade-desc">Remove/get story tag from them</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="Keep focused">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">👀</span>
+                        <div>
+                            <strong>Keep focused</strong><br>
+                            <span class="upgrade-desc">They stay focused on you</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="Make a comeback">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">🔄</span>
+                        <div>
+                            <strong>Make a comeback</strong><br>
+                            <span class="upgrade-desc">Reduce your own negative status by 1 tier</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="move-modal-footer">
+                <button onclick="confirmSlayUpgrades()" class="btn-confirm">Confirm Selection</button>
+                <button onclick="closeSlayUpgradesModal()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GET A CLUE MODAL -->
+    <div id="getAClueModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>🔍 GET A CLUE</h2>
+                <p class="clues-gained">You gained <span id="getAClueCluesCount">0</span> Clues!</p>
+                <p class="clues-remaining">Clues Remaining: <span id="getAClueCluesRemaining">0</span></p>
+            </div>
+
+            <div class="clue-questions-section">
+                <h3>Ask Questions (1 Clue each)</h3>
+                <div class="question-input-group">
+                    <input type="text" id="clueQuestionInput" class="clue-question-field" placeholder="Type your question for the MC...">
+                    <button onclick="askClueQuestion()" class="btn-ask-question">Ask Question (1 Clue)</button>
+                </div>
+
+                <div class="questions-asked">
+                    <h4>Questions Asked:</h4>
+                    <div id="clueQuestionsList">
+                        <p class="empty-message">No questions asked yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="getAClueComplications" class="complications-section" style="display: none;">
+                <h3>⚠️ MC Chooses ONE Complication:</h3>
+                <div class="complications-list">
+                    <button class="complication-option" onclick="applyGetAClueComplication('counter-question')">
+                        🔄 <strong>Counter Question</strong><br>
+                        <span>They ask you a question for each Clue spent (answer honestly but not directly)</span>
+                    </button>
+                    <button class="complication-option" onclick="applyGetAClueComplication('side-effects')">
+                        😰 <strong>Side Effects</strong><br>
+                        <span>Take tier-1 relevant status (muddy-1, infatuated-1) - cannot Resist</span>
+                    </button>
+                    <button class="complication-option" onclick="applyGetAClueComplication('drama')">
+                        🎭 <strong>Drama</strong><br>
+                        <span>Dramatic story complication (seen spying, someone notices, etc.)</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="move-modal-footer">
+                <button onclick="closeGetAClueModal()" class="btn-confirm">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TALK IT OUT MODAL -->
+    <div id="talkItOutModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>💬 TALK IT OUT</h2>
+                <p class="power-used">Power Used: <span id="talkItOutPower">0</span></p>
+            </div>
+
+            <div class="outcomes-section">
+                <h3>Choose ONE Outcome:</h3>
+                <div class="outcomes-list">
+                    <label class="outcome-option">
+                        <input type="radio" name="talkItOutOutcome" value="make-progress">
+                        <div class="outcome-details">
+                            <span class="outcome-icon">🎯</span>
+                            <div>
+                                <strong>Make Progress</strong><br>
+                                <span class="outcome-desc">They see things more your way</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="outcome-option">
+                        <input type="radio" name="talkItOutOutcome" value="strike-deal">
+                        <div class="outcome-details">
+                            <span class="outcome-icon">🤝</span>
+                            <div>
+                                <strong>Strike a Deal</strong><br>
+                                <span class="outcome-desc">Agree to trade/compromise</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="outcome-option">
+                        <input type="radio" name="talkItOutOutcome" value="bond">
+                        <div class="outcome-details">
+                            <span class="outcome-icon">💕</span>
+                            <div>
+                                <strong>Bond</strong><br>
+                                <span class="outcome-desc">Give them relationship status with tier = Power</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="talkItOutComplications" class="complications-section" style="display: none;">
+                <h3>⚠️ MC or Target PC Chooses ONE Complication:</h3>
+                <div class="complications-list">
+                    <button class="complication-option" onclick="applyTalkItOutComplication('condition')">
+                        💰 <strong>Condition/Price</strong><br>
+                        <span>They have a condition or price you won't like</span>
+                    </button>
+                    <button class="complication-option" onclick="applyTalkItOutComplication('understanding')">
+                        👁️ <strong>Show Understanding</strong><br>
+                        <span>They want you to prove you understand their perspective</span>
+                    </button>
+                    <button class="complication-option" onclick="applyTalkItOutComplication('attached')">
+                        💔 <strong>Get Attached</strong><br>
+                        <span>They give YOU a relationship status with tier = Power</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="move-modal-footer">
+                <button onclick="confirmTalkItOut()" class="btn-confirm">Confirm Selection</button>
+                <button onclick="closeTalkItOutModal()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARE MODAL -->
+    <div id="careModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>💖 CARE</h2>
+                <p class="power-used">Power: <span id="carePowerDisplay">0</span> | Points Remaining: <span id="carePointsRemaining">0</span></p>
+                <p class="care-instruction">Select statuses/tags to remove (statuses = tier cost, tags = 1 point each)</p>
+            </div>
+
+            <div class="care-removal-section">
+                <div class="care-category">
+                    <h3>Current Statuses:</h3>
+                    <div id="careStatusList" class="care-items-list">
+                        <p class="empty-message">No current statuses</p>
+                    </div>
+                </div>
+
+                <div class="care-category">
+                    <h3>Story Tags:</h3>
+                    <div id="careStoryTagList" class="care-items-list">
+                        <p class="empty-message">No story tags</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="careSideEffect" class="side-effect-warning" style="display: none;">
+                <h3>⚠️ Side Effect (7-9):</h3>
+                <p>You will gain a random tier-1 negative status (concerned-1, tired-1, saddened-1, dirty-1, or drained-1) - cannot Resist</p>
+            </div>
+
+            <div class="move-modal-footer">
+                <button onclick="confirmCare()" class="btn-confirm">Confirm Removal</button>
+                <button onclick="closeCareModal()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TAG COMBOS SECTION -->
     <section class="combos-section">
         <div class="combos-container">
