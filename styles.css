@@ -2254,6 +2254,551 @@ body {
 }
 
 /* ================================
+   MOVE-SPECIFIC MODALS & UI
+   ================================ */
+
+/* General Move Modal Styling */
+.move-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease;
+}
+
+.move-modal.hidden {
+    display: none;
+}
+
+.move-modal-content {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 3px solid var(--teal-primary);
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 50px rgba(74, 124, 126, 0.4);
+    animation: slideUp 0.3s ease;
+}
+
+.move-modal-header {
+    text-align: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--teal-primary);
+}
+
+.move-modal-header h2 {
+    color: var(--coral-accent);
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.move-modal-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 5px 0;
+}
+
+.move-modal-header span {
+    color: var(--gold-tag);
+    font-weight: bold;
+}
+
+.move-modal-footer {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 2px solid rgba(74, 124, 126, 0.3);
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.btn-confirm,
+.btn-cancel {
+    padding: 15px 40px;
+    border: 2px solid;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    min-height: 50px;
+}
+
+.btn-confirm {
+    background: linear-gradient(135deg, var(--success-green), #22C55E);
+    color: white;
+    border-color: var(--success-green);
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+}
+
+.btn-confirm:hover {
+    background: linear-gradient(135deg, #22C55E, #16A34A);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(74, 222, 128, 0.5);
+}
+
+.btn-cancel {
+    background: transparent;
+    color: var(--danger-red);
+    border-color: var(--danger-red);
+}
+
+.btn-cancel:hover {
+    background: var(--danger-red);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* SLAY UPGRADES MODAL */
+.upgrade-instruction {
+    color: var(--accent-cyan);
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.upgrades-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.upgrade-option {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(74, 124, 126, 0.1);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 60px;
+}
+
+.upgrade-option:hover {
+    background: rgba(74, 124, 126, 0.2);
+    border-color: var(--teal-primary);
+}
+
+.upgrade-option input[type="checkbox"] {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    accent-color: var(--success-green);
+    flex-shrink: 0;
+}
+
+.upgrade-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.upgrade-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.upgrade-option strong {
+    color: var(--gold-tag);
+    font-size: 1.1rem;
+}
+
+.upgrade-desc {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+/* GET A CLUE MODAL */
+.clues-gained {
+    color: var(--success-green);
+    font-size: 1.3rem;
+    font-weight: bold;
+}
+
+.clues-remaining {
+    color: var(--accent-cyan);
+    font-size: 1.1rem;
+}
+
+.clue-questions-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    border: 2px solid rgba(74, 124, 126, 0.3);
+}
+
+.clue-questions-section h3 {
+    color: var(--accent-cyan);
+    margin-bottom: 15px;
+}
+
+.question-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.clue-question-field {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    border: 2px solid var(--teal-primary);
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+.clue-question-field:focus {
+    outline: none;
+    border-color: var(--gold-tag);
+    box-shadow: 0 0 10px rgba(244, 211, 94, 0.3);
+}
+
+.btn-ask-question {
+    padding: 12px 24px;
+    background: var(--gold-tag);
+    color: var(--bg-dark);
+    border: 2px solid var(--gold-tag);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    min-height: 48px;
+    white-space: nowrap;
+}
+
+.btn-ask-question:hover {
+    background: transparent;
+    color: var(--gold-tag);
+    transform: translateY(-2px);
+}
+
+.questions-asked {
+    margin-top: 20px;
+}
+
+.questions-asked h4 {
+    color: var(--success-green);
+    margin-bottom: 10px;
+}
+
+.clue-question-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    margin: 8px 0;
+    background: rgba(74, 222, 128, 0.1);
+    border: 1px solid var(--success-green);
+    border-radius: 6px;
+    color: var(--text-primary);
+}
+
+.question-number {
+    color: var(--gold-tag);
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.question-text {
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+/* COMPLICATIONS SECTION (Used by Get a Clue, Talk It Out, Be Vulnerable) */
+.complications-section {
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid var(--danger-red);
+    border-radius: 12px;
+}
+
+.complications-section h3 {
+    color: var(--coral-accent);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.complications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.complication-option {
+    padding: 15px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    min-height: 60px;
+    color: var(--text-primary);
+}
+
+.complication-option:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: var(--coral-accent);
+    transform: translateY(-2px);
+}
+
+.complication-option strong {
+    color: var(--gold-tag);
+    font-size: 1.1rem;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.complication-option span {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+/* TALK IT OUT MODAL */
+.outcomes-section {
+    margin: 20px 0;
+}
+
+.outcomes-section h3 {
+    color: var(--accent-cyan);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.outcomes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.outcome-option {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(74, 124, 126, 0.1);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 60px;
+}
+
+.outcome-option:hover {
+    background: rgba(74, 124, 126, 0.2);
+    border-color: var(--teal-primary);
+}
+
+.outcome-option input[type="radio"] {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    accent-color: var(--success-green);
+    flex-shrink: 0;
+}
+
+.outcome-details {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.outcome-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.outcome-option strong {
+    color: var(--gold-tag);
+    font-size: 1.1rem;
+}
+
+.outcome-desc {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+/* CARE MODAL */
+.care-instruction {
+    color: var(--accent-cyan);
+    font-size: 0.95rem;
+    font-style: italic;
+}
+
+.care-removal-section {
+    margin: 20px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.care-category {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid rgba(74, 124, 126, 0.3);
+}
+
+.care-category h3 {
+    color: var(--accent-cyan);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.care-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.care-removable-item {
+    padding: 10px;
+    background: rgba(74, 124, 126, 0.1);
+    border: 1px solid rgba(74, 124, 126, 0.3);
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.care-removable-item:hover {
+    background: rgba(74, 124, 126, 0.2);
+    border-color: var(--teal-primary);
+}
+
+.care-removable-item label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.care-removable-item input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    accent-color: var(--success-green);
+}
+
+.care-removable-item input[type="checkbox"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.side-effect-warning {
+    margin: 20px 0;
+    padding: 15px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid var(--danger-red);
+    border-radius: 10px;
+}
+
+.side-effect-warning h3 {
+    color: var(--coral-accent);
+    margin-bottom: 10px;
+}
+
+.side-effect-warning p {
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* MOVE RESULT DETAILS (For Resist & Be Vulnerable inline displays) */
+.move-result-detail {
+    margin-top: 15px;
+    padding: 20px;
+    background: rgba(74, 124, 126, 0.1);
+    border: 2px solid var(--teal-primary);
+    border-radius: 12px;
+    animation: slideUp 0.3s ease;
+}
+
+.move-result-detail h3 {
+    color: var(--gold-tag);
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+.move-result-detail p {
+    color: var(--text-primary);
+    margin: 8px 0;
+    line-height: 1.5;
+    font-size: 1.05rem;
+}
+
+.move-result-detail strong {
+    color: var(--success-green);
+}
+
+.move-result-detail.success {
+    border-color: var(--success-green);
+    background: rgba(74, 222, 128, 0.1);
+}
+
+.move-result-detail.success h3 {
+    color: var(--success-green);
+}
+
+.move-result-detail.partial {
+    border-color: var(--gold-tag);
+    background: rgba(244, 211, 94, 0.1);
+}
+
+.move-result-detail.miss {
+    border-color: var(--danger-red);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.move-result-detail.miss h3 {
+    color: var(--danger-red);
+}
+
+.example-text {
+    font-style: italic;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* RESIST ICON INDICATOR (when MC sends status) */
+.move-icon.resist-ready {
+    animation: resistPulse 2s infinite;
+    border-color: var(--gold-tag) !important;
+    box-shadow: 0 0 20px rgba(244, 211, 94, 0.6);
+}
+
+@keyframes resistPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(244, 211, 94, 0.6);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(244, 211, 94, 0.9);
+    }
+}
+
+/* ================================
    ANIMATIONS
    ================================ */
 

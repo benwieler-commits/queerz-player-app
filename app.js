@@ -897,6 +897,579 @@ function setupDiceRoller() {
     });
 }
 
+// ================================
+// MOVE-SPECIFIC HANDLERS
+// ================================
+
+/**
+ * Main move handler - dispatches to specific move functions
+ */
+function handleMoveRoll(rollTotal, power, selectedMove) {
+    if (!selectedMove) return;
+
+    setTimeout(() => {
+        switch (selectedMove) {
+            case 'slay':
+                displaySlayResult(rollTotal, power);
+                break;
+            case 'strike-a-pose':
+                // Strike a Pose opens Juice spending modal on hit
+                if (rollTotal >= 7) {
+                    openJuiceSpendingModal();
+                }
+                break;
+            case 'get-a-clue':
+                displayGetAClueResult(rollTotal, power);
+                break;
+            case 'talk-it-out':
+                displayTalkItOutResult(rollTotal, power);
+                break;
+            case 'care':
+                displayCareResult(rollTotal, power);
+                break;
+            case 'resist':
+                displayResistResult(rollTotal, power);
+                break;
+            case 'be-vulnerable':
+                displayBeVulnerableResult(rollTotal, power);
+                break;
+            default:
+                console.log('No specific handler for move:', selectedMove);
+        }
+    }, 500);
+}
+
+/**
+ * SLAY - Choose upgrades based on result
+ */
+function displaySlayResult(rollTotal, power) {
+    if (rollTotal >= 7) {
+        const numUpgrades = rollTotal >= 10 ? 2 : 1;
+        openSlayUpgradesModal(numUpgrades, power);
+    }
+    // Miss: MC makes hard move (no special UI needed)
+}
+
+/**
+ * GET A CLUE - Generate Clues and handle complications
+ */
+function displayGetAClueResult(rollTotal, power) {
+    if (rollTotal >= 7) {
+        // Generate Clues = Power
+        const cluesGained = power;
+        characterData.clues += cluesGained;
+        updateCluesDisplay();
+
+        // Open Get a Clue modal
+        const hasComplications = rollTotal >= 7 && rollTotal < 10;
+        openGetAClueModal(cluesGained, hasComplications);
+
+        saveToCloud();
+    }
+    // Miss: MC makes hard move (no special UI needed)
+}
+
+/**
+ * TALK IT OUT - Choose outcome and handle complications
+ */
+function displayTalkItOutResult(rollTotal, power) {
+    if (rollTotal >= 7) {
+        const hasComplications = rollTotal >= 7 && rollTotal < 10;
+        openTalkItOutModal(power, hasComplications);
+    }
+    // Miss: They put up walls / MC makes hard move
+}
+
+/**
+ * CARE - Remove statuses/tags equal to Power
+ */
+function displayCareResult(rollTotal, power) {
+    if (rollTotal >= 7) {
+        const hasSideEffect = rollTotal >= 7 && rollTotal < 10;
+        openCareModal(power, hasSideEffect);
+    }
+    // Miss: Care backfires / MC makes hard move
+}
+
+/**
+ * RESIST - Show tier reduction result
+ */
+function displayResistResult(rollTotal, power) {
+    const rollResultDiv = document.getElementById('rollResult');
+
+    if (rollTotal >= 10) {
+        // Full resist - take NO status
+        rollResultDiv.innerHTML += `<div class="move-result-detail resist-result">
+            <h3>🛡️ RESIST: Full Defense!</h3>
+            <p>You completely fend off the effect - take NO status!</p>
+        </div>`;
+    } else if (rollTotal >= 7) {
+        // Partial resist - reduce by 1 tier
+        rollResultDiv.innerHTML += `<div class="move-result-detail resist-result">
+            <h3>🛡️ RESIST: Partial Defense</h3>
+            <p>Take the status with <strong>ONE LESS TIER</strong></p>
+            <p class="example-text">Example: Guilty-3 becomes Guilty-2</p>
+        </div>`;
+    } else {
+        // Miss - take full status
+        rollResultDiv.innerHTML += `<div class="move-result-detail resist-result miss">
+            <h3>❌ RESIST: Failed</h3>
+            <p>You take the <strong>FULL STATUS</strong> as intended</p>
+        </div>`;
+    }
+}
+
+/**
+ * BE VULNERABLE - Show complications on 7-9
+ */
+function displayBeVulnerableResult(rollTotal, power) {
+    const rollResultDiv = document.getElementById('rollResult');
+
+    if (rollTotal >= 10) {
+        // Success - it's wonderful!
+        rollResultDiv.innerHTML += `<div class="move-result-detail vulnerable-result success">
+            <h3>✨ BE VULNERABLE: Success!</h3>
+            <p>You do it and it's <strong>WONDERFUL</strong>! 🌟</p>
+            <p>The MC will narrate the positive outcome.</p>
+        </div>`;
+    } else if (rollTotal >= 7) {
+        // Partial - MC chooses complication
+        rollResultDiv.innerHTML += `<div class="move-result-detail vulnerable-result partial">
+            <h3>⚡ BE VULNERABLE: Partial Success</h3>
+            <p>You do it, but the MC chooses ONE complication:</p>
+            <div class="complications-list">
+                <button class="complication-option" onclick="applyBeVulnerableComplication('side-effects')">
+                    😰 <strong>Side Effects</strong><br>
+                    <span>Take negative status (sweaty-2, laughing-stock-1, etc.) - cannot Resist</span>
+                </button>
+                <button class="complication-option" onclick="applyBeVulnerableComplication('burnout')">
+                    🔥 <strong>Burnout</strong><br>
+                    <span>One of your tags is burnt</span>
+                </button>
+                <button class="complication-option" onclick="applyBeVulnerableComplication('drama')">
+                    🎭 <strong>Drama</strong><br>
+                    <span>Dramatic story complication (seen by wrong person, etc.)</span>
+                </button>
+            </div>
+        </div>`;
+    } else {
+        // Miss - fail OR succeed with hard move
+        rollResultDiv.innerHTML += `<div class="move-result-detail vulnerable-result miss">
+            <h3>💥 BE VULNERABLE: Miss</h3>
+            <p>You <strong>FAIL</strong> OR succeed but MC makes a hard move</p>
+        </div>`;
+    }
+}
+
+/**
+ * BE VULNERABLE - Apply complication (called by MC)
+ */
+window.applyBeVulnerableComplication = function(complicationType) {
+    let message = '';
+
+    switch (complicationType) {
+        case 'side-effects':
+            message = '😰 Side Effects applied! MC will assign a negative status (cannot be Resisted).';
+            break;
+        case 'burnout':
+            message = '🔥 Burnout! MC will choose one of your tags to burn.';
+            break;
+        case 'drama':
+            message = '🎭 Drama! MC will narrate a dramatic story complication.';
+            break;
+    }
+
+    showNotification(message);
+    saveToCloud();
+};
+
+// ================================
+// MODAL FUNCTIONS FOR MOVES
+// ================================
+
+/**
+ * SLAY UPGRADES MODAL
+ */
+function openSlayUpgradesModal(numUpgrades, power) {
+    const modal = document.getElementById('slayUpgradesModal');
+    const upgradeCount = document.getElementById('slayUpgradeCount');
+    const powerDisplay = document.getElementById('slayPowerDisplay');
+
+    upgradeCount.textContent = numUpgrades;
+    powerDisplay.textContent = power;
+
+    // Reset all checkboxes
+    document.querySelectorAll('#slayUpgradesModal input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+
+    modal.classList.remove('hidden');
+}
+
+function closeSlayUpgradesModal() {
+    document.getElementById('slayUpgradesModal').classList.add('hidden');
+}
+
+function confirmSlayUpgrades() {
+    const numUpgrades = parseInt(document.getElementById('slayUpgradeCount').textContent);
+    const checkboxes = document.querySelectorAll('#slayUpgradesModal input[type="checkbox"]:checked');
+
+    if (checkboxes.length !== numUpgrades) {
+        alert(`Please select exactly ${numUpgrades} upgrade(s)!`);
+        return;
+    }
+
+    const selectedUpgrades = Array.from(checkboxes).map(cb => cb.value);
+    showNotification(`Slay upgrades selected: ${selectedUpgrades.join(', ')}`);
+
+    closeSlayUpgradesModal();
+    saveToCloud();
+}
+
+/**
+ * GET A CLUE MODAL
+ */
+function openGetAClueModal(cluesGained, hasComplications) {
+    const modal = document.getElementById('getAClueModal');
+    const cluesCount = document.getElementById('getAClueCluesCount');
+    const cluesRemaining = document.getElementById('getAClueCluesRemaining');
+    const complicationsSection = document.getElementById('getAClueComplications');
+    const questionInput = document.getElementById('clueQuestionInput');
+    const questionsList = document.getElementById('clueQuestionsList');
+
+    cluesCount.textContent = cluesGained;
+    cluesRemaining.textContent = characterData.clues;
+
+    // Show/hide complications
+    if (hasComplications) {
+        complicationsSection.style.display = 'block';
+    } else {
+        complicationsSection.style.display = 'none';
+    }
+
+    // Clear previous questions
+    questionInput.value = '';
+    questionsList.innerHTML = '<p class="empty-message">No questions asked yet</p>';
+
+    // Track questions asked this roll
+    if (!characterData.currentClueQuestions) {
+        characterData.currentClueQuestions = [];
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeGetAClueModal() {
+    document.getElementById('getAClueModal').classList.add('hidden');
+    characterData.currentClueQuestions = [];
+}
+
+function askClueQuestion() {
+    const questionInput = document.getElementById('clueQuestionInput');
+    const question = questionInput.value.trim();
+
+    if (!question) {
+        alert('Please enter a question!');
+        return;
+    }
+
+    if (characterData.clues < 1) {
+        alert('Not enough Clues! You need 1 Clue per question.');
+        return;
+    }
+
+    // Deduct Clue
+    characterData.clues--;
+    updateCluesDisplay();
+    document.getElementById('getAClueCluesRemaining').textContent = characterData.clues;
+
+    // Track question
+    if (!characterData.currentClueQuestions) {
+        characterData.currentClueQuestions = [];
+    }
+    characterData.currentClueQuestions.push(question);
+
+    // Update questions list
+    updateClueQuestionsList();
+
+    // Clear input
+    questionInput.value = '';
+
+    showNotification(`Question asked: "${question}" (1 Clue spent)`);
+    saveToCloud();
+}
+
+function updateClueQuestionsList() {
+    const questionsList = document.getElementById('clueQuestionsList');
+
+    if (!characterData.currentClueQuestions || characterData.currentClueQuestions.length === 0) {
+        questionsList.innerHTML = '<p class="empty-message">No questions asked yet</p>';
+        return;
+    }
+
+    questionsList.innerHTML = '';
+    characterData.currentClueQuestions.forEach((q, index) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'clue-question-item';
+        questionDiv.innerHTML = `
+            <span class="question-number">${index + 1}.</span>
+            <span class="question-text">${q}</span>
+        `;
+        questionsList.appendChild(questionDiv);
+    });
+}
+
+window.applyGetAClueComplication = function(complicationType) {
+    let message = '';
+
+    switch (complicationType) {
+        case 'counter-question':
+            message = '🔄 Counter Question! The MC/player asks YOU a question for each Clue you spent.';
+            break;
+        case 'side-effects':
+            message = '😰 Side Effects! Take tier-1 relevant status (muddy-1, infatuated-1, etc.) - cannot Resist.';
+            break;
+        case 'drama':
+            message = '🎭 Drama! A dramatic story complication occurs (seen spying, someone notices, etc.).';
+            break;
+    }
+
+    showNotification(message);
+    saveToCloud();
+};
+
+/**
+ * TALK IT OUT MODAL
+ */
+function openTalkItOutModal(power, hasComplications) {
+    const modal = document.getElementById('talkItOutModal');
+    const powerDisplay = document.getElementById('talkItOutPower');
+    const complicationsSection = document.getElementById('talkItOutComplications');
+
+    powerDisplay.textContent = power;
+
+    // Reset radio buttons
+    document.querySelectorAll('#talkItOutModal input[type="radio"]').forEach(radio => {
+        radio.checked = false;
+    });
+
+    // Show/hide complications
+    if (hasComplications) {
+        complicationsSection.style.display = 'block';
+    } else {
+        complicationsSection.style.display = 'none';
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeTalkItOutModal() {
+    document.getElementById('talkItOutModal').classList.add('hidden');
+}
+
+function confirmTalkItOut() {
+    const selectedOutcome = document.querySelector('#talkItOutModal input[name="talkItOutOutcome"]:checked');
+
+    if (!selectedOutcome) {
+        alert('Please select an outcome!');
+        return;
+    }
+
+    const outcomeLabels = {
+        'make-progress': 'Make Progress - They see things more your way',
+        'strike-deal': 'Strike a Deal - Agree to trade/compromise',
+        'bond': `Bond - Give them relationship status (tier = ${document.getElementById('talkItOutPower').textContent})`
+    };
+
+    showNotification(`Talk It Out: ${outcomeLabels[selectedOutcome.value]}`);
+
+    closeTalkItOutModal();
+    saveToCloud();
+}
+
+window.applyTalkItOutComplication = function(complicationType) {
+    let message = '';
+
+    switch (complicationType) {
+        case 'condition':
+            message = '💰 Condition/Price! They have a condition or price you won\'t like.';
+            break;
+        case 'understanding':
+            message = '👁️ Show Understanding! They want you to prove you understand their perspective.';
+            break;
+        case 'attached':
+            const power = document.getElementById('talkItOutPower').textContent;
+            message = `💔 Get Attached! They give YOU a relationship status (tier = ${power}).`;
+            break;
+    }
+
+    showNotification(message);
+    saveToCloud();
+};
+
+/**
+ * CARE MODAL
+ */
+function openCareModal(power, hasSideEffect) {
+    const modal = document.getElementById('careModal');
+    const powerDisplay = document.getElementById('carePowerDisplay');
+    const pointsRemaining = document.getElementById('carePointsRemaining');
+    const statusList = document.getElementById('careStatusList');
+    const storyTagList = document.getElementById('careStoryTagList');
+    const sideEffectSection = document.getElementById('careSideEffect');
+
+    powerDisplay.textContent = power;
+    pointsRemaining.textContent = power;
+
+    // Populate current statuses
+    statusList.innerHTML = '';
+    if (characterData.currentStatuses.length === 0) {
+        statusList.innerHTML = '<p class="empty-message">No current statuses</p>';
+    } else {
+        characterData.currentStatuses.forEach((status, index) => {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'care-removable-item';
+            const tier = status.tier || Math.abs(status.modifier) || 1;
+            statusDiv.innerHTML = `
+                <label>
+                    <input type="checkbox" data-type="status" data-index="${index}" data-tier="${tier}">
+                    <span>${status.name} (Tier ${tier})</span>
+                </label>
+            `;
+            statusList.appendChild(statusDiv);
+        });
+    }
+
+    // Populate story tags
+    storyTagList.innerHTML = '';
+    if (characterData.storyTags.length === 0) {
+        storyTagList.innerHTML = '<p class="empty-message">No story tags</p>';
+    } else {
+        characterData.storyTags.forEach((tag, index) => {
+            const tagDiv = document.createElement('div');
+            tagDiv.className = 'care-removable-item';
+            tagDiv.innerHTML = `
+                <label>
+                    <input type="checkbox" data-type="story-tag" data-index="${index}" data-tier="1">
+                    <span>${tag.name} (1 point)</span>
+                </label>
+            `;
+            storyTagList.appendChild(tagDiv);
+        });
+    }
+
+    // Add change listeners to update remaining points
+    modal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateCarePointsRemaining);
+    });
+
+    // Show/hide side effect warning
+    if (hasSideEffect) {
+        sideEffectSection.style.display = 'block';
+    } else {
+        sideEffectSection.style.display = 'none';
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function updateCarePointsRemaining() {
+    const power = parseInt(document.getElementById('carePowerDisplay').textContent);
+    const checkboxes = document.querySelectorAll('#careModal input[type="checkbox"]:checked');
+
+    let pointsUsed = 0;
+    checkboxes.forEach(cb => {
+        pointsUsed += parseInt(cb.dataset.tier);
+    });
+
+    const remaining = power - pointsUsed;
+    document.getElementById('carePointsRemaining').textContent = Math.max(0, remaining);
+
+    // Disable checkboxes if no points remaining
+    const allCheckboxes = document.querySelectorAll('#careModal input[type="checkbox"]');
+    allCheckboxes.forEach(cb => {
+        if (!cb.checked && remaining <= 0) {
+            cb.disabled = true;
+        } else if (!cb.checked) {
+            cb.disabled = false;
+        }
+    });
+}
+
+function closeCareModal() {
+    document.getElementById('careModal').classList.add('hidden');
+}
+
+function confirmCare() {
+    const power = parseInt(document.getElementById('carePowerDisplay').textContent);
+    const checkboxes = document.querySelectorAll('#careModal input[type="checkbox"]:checked');
+
+    let pointsUsed = 0;
+    checkboxes.forEach(cb => {
+        pointsUsed += parseInt(cb.dataset.tier);
+    });
+
+    if (pointsUsed > power) {
+        alert(`You can only remove ${power} points worth of statuses/tags!`);
+        return;
+    }
+
+    // Remove selected items
+    const toRemove = {
+        statuses: [],
+        storyTags: []
+    };
+
+    checkboxes.forEach(cb => {
+        const type = cb.dataset.type;
+        const index = parseInt(cb.dataset.index);
+
+        if (type === 'status') {
+            toRemove.statuses.push(index);
+        } else if (type === 'story-tag') {
+            toRemove.storyTags.push(index);
+        }
+    });
+
+    // Remove in reverse order to avoid index issues
+    toRemove.statuses.sort((a, b) => b - a).forEach(index => {
+        characterData.currentStatuses.splice(index, 1);
+    });
+    toRemove.storyTags.sort((a, b) => b - a).forEach(index => {
+        characterData.storyTags.splice(index, 1);
+    });
+
+    // Update displays
+    updateStatusTagsDisplay();
+    updateStoryTagsDisplay();
+
+    showNotification(`Care: Removed ${pointsUsed} tiers of statuses/tags`);
+
+    // Handle side effect (7-9)
+    const hasSideEffect = document.getElementById('careSideEffect').style.display !== 'none';
+    if (hasSideEffect) {
+        const sideEffects = ['concerned-1', 'tired-1', 'saddened-1', 'dirty-1', 'drained-1'];
+        const randomEffect = sideEffects[Math.floor(Math.random() * sideEffects.length)];
+
+        characterData.currentStatuses.push({
+            name: randomEffect.replace('-1', ''),
+            tier: 1,
+            modifier: -1,
+            positive: false,
+            isOngoing: false,
+            isTemporary: true,
+            clicked: false,
+            playerCreated: false
+        });
+
+        updateStatusTagsDisplay();
+        showNotification(`Side Effect: You gain ${randomEffect} (cannot Resist)`);
+    }
+
+    closeCareModal();
+    saveToCloud();
+}
+
 // Helper function to clear applied tags (not burned tags)
 function clearAppliedTags() {
     // Clear clicked/applied tags
@@ -1480,7 +2053,27 @@ function handleMCTagUpdate(event) {
         showNotification(`📥 Received ${tagCount} tag(s) from MC`);
     }
 
+    // Highlight Resist move icon if new status tags were received
+    if (statusTags && statusTags.length > 0) {
+        highlightResistMove();
+    }
+
     saveToCloud();
+}
+
+/**
+ * Highlight the Resist move icon when MC sends a status
+ */
+function highlightResistMove() {
+    const resistIcon = document.querySelector('.move-icon[data-move="resist"]');
+    if (resistIcon) {
+        resistIcon.classList.add('resist-ready');
+
+        // Auto-remove after 30 seconds
+        setTimeout(() => {
+            resistIcon.classList.remove('resist-ready');
+        }, 30000);
+    }
 }
 
 function updateStatusTagsDisplay() {
