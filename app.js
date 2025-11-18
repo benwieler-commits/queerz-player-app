@@ -41,7 +41,8 @@ let characterData = {
     usedWeakness: false,
     lastRollResult: null, // NEW: Track last roll for Juice spending
     createdItemsThisRoll: [], // NEW: Track items created during Juice spending
-    lastRoll: null // NEW: Last dice roll for MC broadcast
+    lastRoll: null, // NEW: Last dice roll for MC broadcast
+    activeCombo: null // NEW: Track active combo (stores combo power and move until reset)
 };
 
 function createEmptyTheme(type = 'rainbow') {
@@ -538,6 +539,20 @@ function getMoveDisplayName(moveKey) {
     return moveNames[moveKey] || moveKey;
 }
 
+// Helper function to get move ID from display name (for combos)
+function getMoveIdFromName(displayName) {
+    const moveIds = {
+        'Strike a Pose': 'strike-a-pose',
+        'Slay': 'slay',
+        'Get a Clue': 'get-a-clue',
+        'Talk It Out': 'talk-it-out',
+        'Care': 'care',
+        'Be Vulnerable': 'be-vulnerable',
+        'Resist': 'resist'
+    };
+    return moveIds[displayName] || displayName.toLowerCase().replace(/\s+/g, '-');
+}
+
 // ================================
 // MOVE-SPECIFIC RESULT HANDLERS
 // ================================
@@ -749,8 +764,8 @@ function setupDiceRoller() {
             }
         }
 
-        // CLEAR APPLIED TAGS (not permanent - tags return after roll)
-        clearAppliedTags();
+        // NOTE: Tags remain clicked until player presses "Reset Dice & Clear Applied Tags"
+        // This allows players to see which tags they used for the roll
 
         // Remove Temporary MC tags that were clicked
         removeTemporaryMCTags();
@@ -882,8 +897,8 @@ function setupDiceRoller() {
         updateAllThemes();
         updateBurntTagsDisplay();
 
-        // CLEAR APPLIED TAGS
-        clearAppliedTags();
+        // NOTE: Tags remain clicked until player presses "Reset Dice & Clear Applied Tags"
+        // This allows players to see which tags they used for the roll
 
         // Remove Temporary MC tags that were clicked
         removeTemporaryMCTags();
@@ -1631,6 +1646,13 @@ function calculateTotalPower() {
         breakdown.push(`MC Tags: ${statusModifier > 0 ? '+' : ''}${statusModifier}`);
     }
 
+    // Add active combo power if a combo is being used
+    if (characterData.activeCombo && characterData.activeCombo.power) {
+        const comboPower = parseInt(characterData.activeCombo.power);
+        power += comboPower;
+        breakdown.push(`Combo: +${comboPower}`);
+    }
+
     // Update display
     document.getElementById('totalPower').value = power;
     updatePowerBreakdown(breakdown.join(' | ') || 'No modifiers');
@@ -1652,6 +1674,9 @@ function resetDiceRoll() {
     clearAppliedTags();
 
     characterData.selectedMove = null;
+
+    // Clear active combo
+    characterData.activeCombo = null;
 
     // Clear unused juice
     characterData.juice = 0;
@@ -2004,7 +2029,31 @@ function updateCombosDisplay() {
                 updateAllThemes();
                 updateBurntTagsDisplay();
 
-                alert(`✨ Combo Activated: ${combo.name}!\n\nCore Move: ${combo.coreMove}\nPower: ${combo.power}\n\nTags Used (BURNT): ${tag1.name}, ${tag2.name}\n\n⚠️ Both tags have been burnt and must be recovered before you can use this combo again!`);
+                // Set the active combo (this will add its power to dice rolls until reset)
+                characterData.activeCombo = {
+                    name: combo.name,
+                    power: combo.power,
+                    coreMove: combo.coreMove
+                };
+
+                // If a core move is specified, auto-select it
+                if (combo.coreMove) {
+                    characterData.selectedMove = getMoveIdFromName(combo.coreMove);
+                    // Update UI to show selected move
+                    document.querySelectorAll('.move-icon').forEach(icon => {
+                        icon.classList.remove('selected');
+                        if (icon.dataset.move === characterData.selectedMove) {
+                            icon.classList.add('selected');
+                        }
+                    });
+                    document.getElementById('selectedMoveDisplay').textContent = combo.coreMove;
+                    document.getElementById('selectedMoveDisplay').style.background = 'rgba(74, 124, 126, 0.6)';
+                }
+
+                // Update power display to include combo power
+                updatePowerDisplay();
+
+                alert(`✨ Combo Activated: ${combo.name}!\n\nCore Move: ${combo.coreMove}\nPower: ${combo.power}\n\nTags Used (BURNT): ${tag1.name}, ${tag2.name}\n\n⚠️ Both tags have been burnt and must be recovered before you can use this combo again!\n\n💡 The combo power (+${combo.power}) will be added to your next dice roll. Click "Reset Dice & Clear Applied Tags" after rolling to clear the combo.`);
             } else {
                 // Old format combo
                 const tagNames = combo.tags.map(tag => typeof tag === 'string' ? tag : tag.name);
