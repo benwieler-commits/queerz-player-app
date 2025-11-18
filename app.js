@@ -1088,45 +1088,6 @@ window.applyBeVulnerableComplication = function(complicationType) {
 // ================================
 
 /**
- * SLAY UPGRADES MODAL
- */
-function openSlayUpgradesModal(numUpgrades, power) {
-    const modal = document.getElementById('slayUpgradesModal');
-    const upgradeCount = document.getElementById('slayUpgradeCount');
-    const powerDisplay = document.getElementById('slayPowerDisplay');
-
-    upgradeCount.textContent = numUpgrades;
-    powerDisplay.textContent = power;
-
-    // Reset all checkboxes
-    document.querySelectorAll('#slayUpgradesModal input[type="checkbox"]').forEach(cb => {
-        cb.checked = false;
-    });
-
-    modal.classList.remove('hidden');
-}
-
-function closeSlayUpgradesModal() {
-    document.getElementById('slayUpgradesModal').classList.add('hidden');
-}
-
-function confirmSlayUpgrades() {
-    const numUpgrades = parseInt(document.getElementById('slayUpgradeCount').textContent);
-    const checkboxes = document.querySelectorAll('#slayUpgradesModal input[type="checkbox"]:checked');
-
-    if (checkboxes.length !== numUpgrades) {
-        alert(`Please select exactly ${numUpgrades} upgrade(s)!`);
-        return;
-    }
-
-    const selectedUpgrades = Array.from(checkboxes).map(cb => cb.value);
-    showNotification(`Slay upgrades selected: ${selectedUpgrades.join(', ')}`);
-
-    closeSlayUpgradesModal();
-    saveToCloud();
-}
-
-/**
  * GET A CLUE MODAL
  */
 function openGetAClueModal(cluesGained, hasComplications) {
