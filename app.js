@@ -659,10 +659,10 @@ function setupDiceRoller() {
         // Calculate power
         const power = calculateTotalPower();
 
-        // Roll 2d6 + 1 (baseline bonus to reduce failure rate)
+        // Roll 2d6 (standard PbtA dice roll)
         const die1 = Math.floor(Math.random() * 6) + 1;
         const die2 = Math.floor(Math.random() * 6) + 1;
-        const baseRoll = die1 + die2 + 1; // +1 baseline bonus
+        const baseRoll = die1 + die2;
         const total = baseRoll + power;
 
         // Display result
@@ -708,13 +708,13 @@ function setupDiceRoller() {
 
         rollResult.className = `roll-result ${resultClass}`;
         const powerDisplay = power !== 0 ? ` + ${power} (power)` : '';
-        rollResult.textContent = `${resultText}\nRolled: ${die1} + ${die2} + 1 (base)${powerDisplay} = ${total}`;
+        rollResult.textContent = `${resultText}\nRolled: ${die1} + ${die2}${powerDisplay} = ${total}`;
 
         // Store roll result for Juice spending and MC display
         characterData.lastRollResult = {
             die1: die1,
             die2: die2,
-            baseBonus: 1,
+            baseBonus: 0,
             power: power,
             total: total,
             resultClass: resultClass,
@@ -729,7 +729,7 @@ function setupDiceRoller() {
             move: characterData.selectedMove,
             moveName: getMoveDisplayName(characterData.selectedMove),
             dice: [die1, die2],
-            baseBonus: 1,
+            baseBonus: 0,
             power: power,
             total: total,
             result: total >= 10 ? 'success' : (total >= 7 ? 'partial' : 'miss'),
@@ -850,18 +850,17 @@ function setupDiceRoller() {
         });
 
         const finalPower = 3 + statusModifier;
-        // Add +1 baseline bonus to guaranteed hit for consistency with new dice system
-        const finalTotal = 7 + 1 + statusModifier;
+        const finalTotal = 7 + statusModifier;
 
         // Display guaranteed hit result
         rollResult.className = 'roll-result partial guaranteed-hit';
-        rollResult.innerHTML = `🔥 <strong>TAG BURNED FOR GUARANTEED HIT!</strong><br><br>Result: 7 + 1 (base) + Power ${finalPower} = ${finalTotal}<br><br>Tag Burnt: "${selectedTag.name}"<br><br>⚡ PARTIAL SUCCESS (Guaranteed)`;
+        rollResult.innerHTML = `🔥 <strong>TAG BURNED FOR GUARANTEED HIT!</strong><br><br>Result: 7 + Power ${finalPower} = ${finalTotal}<br><br>Tag Burnt: "${selectedTag.name}"<br><br>⚡ PARTIAL SUCCESS (Guaranteed)`;
 
         // Store roll result for MC display
         characterData.lastRollResult = {
             die1: '🔥',
             die2: '🔥',
-            baseBonus: 1,
+            baseBonus: 0,
             power: finalPower,
             total: finalTotal,
             resultClass: 'partial',
@@ -1282,42 +1281,19 @@ function openCareModal(power, hasSideEffect) {
     powerDisplay.textContent = power;
     pointsRemaining.textContent = power;
 
-    // Populate current statuses
-    statusList.innerHTML = '';
-    if (characterData.currentStatuses.length === 0) {
-        statusList.innerHTML = '<p class="empty-message">No current statuses</p>';
-    } else {
-        characterData.currentStatuses.forEach((status, index) => {
-            const statusDiv = document.createElement('div');
-            statusDiv.className = 'care-removable-item';
-            const tier = status.tier || Math.abs(status.modifier) || 1;
-            statusDiv.innerHTML = `
-                <label>
-                    <input type="checkbox" data-type="status" data-index="${index}" data-tier="${tier}">
-                    <span>${status.name} (Tier ${tier})</span>
-                </label>
-            `;
-            statusList.appendChild(statusDiv);
-        });
+    // Store modal state for filtering
+    if (!window.careModalState) {
+        window.careModalState = {
+            showPositive: false,
+            showNegative: true,
+            showStoryStatuses: false,
+            showStoryTags: false
+        };
     }
 
-    // Populate story tags
-    storyTagList.innerHTML = '';
-    if (characterData.storyTags.length === 0) {
-        storyTagList.innerHTML = '<p class="empty-message">No story tags</p>';
-    } else {
-        characterData.storyTags.forEach((tag, index) => {
-            const tagDiv = document.createElement('div');
-            tagDiv.className = 'care-removable-item';
-            tagDiv.innerHTML = `
-                <label>
-                    <input type="checkbox" data-type="story-tag" data-index="${index}" data-tier="1">
-                    <span>${tag.name} (1 point)</span>
-                </label>
-            `;
-            storyTagList.appendChild(tagDiv);
-        });
-    }
+    // Render the status lists with current filters
+    renderCareStatusList();
+    renderCareStoryTagList();
 
     // Add change listeners to update remaining points
     modal.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
@@ -1332,6 +1308,133 @@ function openCareModal(power, hasSideEffect) {
     }
 
     modal.classList.remove('hidden');
+}
+
+function renderCareStatusList() {
+    const statusList = document.getElementById('careStatusList');
+    statusList.innerHTML = '';
+
+    if (characterData.currentStatuses.length === 0) {
+        statusList.innerHTML = '<p class="empty-message">No current statuses</p>';
+        return;
+    }
+
+    // Add filter controls
+    const filterDiv = document.createElement('div');
+    filterDiv.style.cssText = 'margin-bottom: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;';
+    filterDiv.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 8px; color: var(--text-primary);">Filter Statuses:</div>
+        <label style="display: block; margin: 5px 0; cursor: pointer;">
+            <input type="checkbox" id="careShowNegative" ${window.careModalState.showNegative ? 'checked' : ''} style="margin-right: 8px;">
+            Show Negative (debuffs) - Recommended
+        </label>
+        <label style="display: block; margin: 5px 0; cursor: pointer;">
+            <input type="checkbox" id="careShowPositive" ${window.careModalState.showPositive ? 'checked' : ''} style="margin-right: 8px;">
+            Show Positive (buffs)
+        </label>
+        <label style="display: block; margin: 5px 0; cursor: pointer;">
+            <input type="checkbox" id="careShowStoryStatuses" ${window.careModalState.showStoryStatuses ? 'checked' : ''} style="margin-right: 8px;">
+            Show Story Statuses
+        </label>
+    `;
+    statusList.appendChild(filterDiv);
+
+    // Add filter change listeners
+    document.getElementById('careShowNegative').addEventListener('change', (e) => {
+        window.careModalState.showNegative = e.target.checked;
+        renderCareStatusList();
+    });
+    document.getElementById('careShowPositive').addEventListener('change', (e) => {
+        window.careModalState.showPositive = e.target.checked;
+        renderCareStatusList();
+    });
+    document.getElementById('careShowStoryStatuses').addEventListener('change', (e) => {
+        window.careModalState.showStoryStatuses = e.target.checked;
+        renderCareStatusList();
+    });
+
+    // Filter and display statuses
+    let visibleCount = 0;
+    characterData.currentStatuses.forEach((status, index) => {
+        const category = categorizeStatus(status.name);
+
+        // Apply filters
+        if (category === 'negative' && !window.careModalState.showNegative) return;
+        if (category === 'positive' && !window.careModalState.showPositive) return;
+        if (category === 'story' && !window.careModalState.showStoryStatuses) return;
+
+        visibleCount++;
+        const statusDiv = document.createElement('div');
+        statusDiv.className = 'care-removable-item';
+        const tier = status.tier || Math.abs(status.modifier) || 1;
+
+        // Add category indicator
+        let categoryIcon = '';
+        if (category === 'positive') categoryIcon = '✓';
+        else if (category === 'negative') categoryIcon = '✗';
+        else categoryIcon = '○';
+
+        statusDiv.innerHTML = `
+            <label>
+                <input type="checkbox" data-type="status" data-index="${index}" data-tier="${tier}">
+                <span>${categoryIcon} ${status.name} (Tier ${tier})</span>
+            </label>
+        `;
+        statusList.appendChild(statusDiv);
+    });
+
+    if (visibleCount === 0) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.className = 'empty-message';
+        emptyMsg.textContent = 'No statuses match current filters';
+        statusList.appendChild(emptyMsg);
+    }
+}
+
+function renderCareStoryTagList() {
+    const storyTagList = document.getElementById('careStoryTagList');
+    storyTagList.innerHTML = '';
+
+    if (characterData.storyTags.length === 0) {
+        storyTagList.innerHTML = '<p class="empty-message">No story tags</p>';
+        return;
+    }
+
+    // Add filter toggle
+    const filterDiv = document.createElement('div');
+    filterDiv.style.cssText = 'margin-bottom: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px;';
+    filterDiv.innerHTML = `
+        <label style="display: block; margin: 5px 0; cursor: pointer;">
+            <input type="checkbox" id="careShowStoryTags" ${window.careModalState.showStoryTags ? 'checked' : ''} style="margin-right: 8px;">
+            Show Story Tags
+        </label>
+    `;
+    storyTagList.appendChild(filterDiv);
+
+    document.getElementById('careShowStoryTags').addEventListener('change', (e) => {
+        window.careModalState.showStoryTags = e.target.checked;
+        renderCareStoryTagList();
+    });
+
+    if (!window.careModalState.showStoryTags) {
+        const emptyMsg = document.createElement('p');
+        emptyMsg.className = 'empty-message';
+        emptyMsg.textContent = 'Story tags hidden (use checkbox above to show)';
+        storyTagList.appendChild(emptyMsg);
+        return;
+    }
+
+    characterData.storyTags.forEach((tag, index) => {
+        const tagDiv = document.createElement('div');
+        tagDiv.className = 'care-removable-item';
+        tagDiv.innerHTML = `
+            <label>
+                <input type="checkbox" data-type="story-tag" data-index="${index}" data-tier="1">
+                <span>○ ${tag.name} (1 point)</span>
+            </label>
+        `;
+        storyTagList.appendChild(tagDiv);
+    });
 }
 
 function updateCarePointsRemaining() {
