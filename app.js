@@ -540,10 +540,11 @@ function setupDiceRoller() {
         // Calculate power
         const power = calculateTotalPower();
 
-        // Roll 2d6
+        // Roll 2d6 + 1 (baseline bonus to reduce failure rate)
         const die1 = Math.floor(Math.random() * 6) + 1;
         const die2 = Math.floor(Math.random() * 6) + 1;
-        const total = die1 + die2 + power;
+        const baseRoll = die1 + die2 + 1; // +1 baseline bonus
+        const total = baseRoll + power;
 
         // Display result
         let resultClass = '';
@@ -587,7 +588,8 @@ function setupDiceRoller() {
         }
 
         rollResult.className = `roll-result ${resultClass}`;
-        rollResult.textContent = `${resultText}\nRolled: ${die1} + ${die2} + ${power} = ${total}`;
+        const powerDisplay = power !== 0 ? ` + ${power} (power)` : '';
+        rollResult.textContent = `${resultText}\nRolled: ${die1} + ${die2} + 1 (base)${powerDisplay} = ${total}`;
 
         // Store roll result for Juice spending
         characterData.lastRollResult = {
@@ -714,11 +716,12 @@ function setupDiceRoller() {
         });
 
         const finalPower = 3 + statusModifier;
-        const finalTotal = 7 + statusModifier;
+        // Add +1 baseline bonus to guaranteed hit for consistency with new dice system
+        const finalTotal = 7 + 1 + statusModifier;
 
         // Display guaranteed hit result
         rollResult.className = 'roll-result partial guaranteed-hit';
-        rollResult.innerHTML = `🔥 <strong>TAG BURNED FOR GUARANTEED HIT!</strong><br><br>Result: 7 + Power ${finalPower} = ${finalTotal}<br><br>Tag Burnt: "${selectedTag.name}"<br><br>⚡ PARTIAL SUCCESS (Guaranteed)`;
+        rollResult.innerHTML = `🔥 <strong>TAG BURNED FOR GUARANTEED HIT!</strong><br><br>Result: 7 + 1 (base) + Power ${finalPower} = ${finalTotal}<br><br>Tag Burnt: "${selectedTag.name}"<br><br>⚡ PARTIAL SUCCESS (Guaranteed)`;
 
         // Add juice (partial success = 1 juice)
         characterData.juice += 1;
