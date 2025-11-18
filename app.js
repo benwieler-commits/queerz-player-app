@@ -2894,57 +2894,6 @@ function closeSlayUpgradesModal() {
 }
 
 // ================================
-// GET A CLUE MODAL (Placeholder)
-// ================================
-
-function openGetAClueModal(clues, hasComplications) {
-    // Simple alert for now - will be replaced with full modal
-    let message = `🔍 GET A CLUE!\n\nYou gained ${clues} Clue${clues !== 1 ? 's' : ''}!\n\nUse them to ask the MC or other players questions.`;
-
-    if (hasComplications) {
-        message += '\n\n⚠️ MC picks ONE complication:\n🔄 Counter Question\n😰 Side Effects (tier-1 status)\n🎭 Drama';
-    }
-
-    alert(message);
-}
-
-// ================================
-// TALK IT OUT MODAL (Placeholder)
-// ================================
-
-function openTalkItOutModal(hasComplications, power) {
-    let message = `💬 TALK IT OUT!\n\nChoose ONE:\n🎯 Make progress\n🤝 Strike a deal\n💕 Bond (relationship status, tier ${power})`;
-
-    if (hasComplications) {
-        message += '\n\n⚠️ MC/Target also picks ONE:\n💰 Condition/Price\n👁️ Show Understanding\n💔 Get Attached';
-    }
-
-    alert(message);
-}
-
-// ================================
-// CARE MODAL (Placeholder)
-// ================================
-
-function openCareModal(power, hasSideEffect) {
-    let message = `❤️ CARE!\n\nRemove up to ${power} tier${power !== 1 ? 's' : ''} from statuses/tags.\n\nYou choose how to distribute the removal.`;
-
-    if (hasSideEffect) {
-        message += '\n\n⚠️ MC gives you tier-1 negative status\n(concerned, tired, saddened, dirty, drained)';
-    }
-
-    alert(message);
-}
-
-// ================================
-// BE VULNERABLE COMPLICATIONS (Placeholder)
-// ================================
-
-function showBeVulnerableComplications() {
-    alert('💔 BE VULNERABLE (7-9)\n\nYou do it, but MC picks ONE:\n\n😰 Side Effects (negative status)\n🔥 Burnout (one tag burnt)\n🎭 Drama (story complication)');
-}
-
-// ================================
 // MISC UI
 // ================================
 
