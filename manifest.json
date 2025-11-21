@@ -2,7 +2,7 @@
   "name": "QUEERZ! Player Companion",
   "short_name": "QUEERZ Player",
   "description": "Digital companion app for players in the QUEERZ! tabletop role-playing game",
-  "start_url": "./index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#1a1a2e",
   "theme_color": "#4A7C7E",
@@ -64,7 +64,7 @@
       "name": "Roll Dice",
       "short_name": "Roll",
       "description": "Quick access to dice roller",
-      "url": "./index.html#dice-roller",
+      "url": "./#dice-roller",
       "icons": [{ "src": "./icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ]
