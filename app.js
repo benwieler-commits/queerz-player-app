@@ -26,6 +26,9 @@ let characterData = {
     juice: 0,
     clues: 0, // NEW: Clues tracker
     characterLocked: false, // NEW: Lock character after creation
+    houseAffiliation: 'Unknown House', // Creator Guide: House membership
+    houseBasicAttack: 'Basic Attack', // Creator Guide: House shared attack
+    signatureThemeIndex: 0, // Creator Guide: Which theme is the Signature
     themes: [
         createEmptyTheme('rainbow'),
         createEmptyTheme('rainbow'),
@@ -48,8 +51,12 @@ let characterData = {
 function createEmptyTheme(type = 'rainbow') {
     return {
         type: type, // 'rainbow' or 'anchor'
+        themeCategory: 'Unknown', // Creator Guide: Signature, Fighting Style, Personality, etc.
         name: '',
         quote: '',
+        runway: '', // Creator Guide: For Signature themes
+        motivation: '', // Creator Guide: For Rainbow themes
+        identity: '', // Creator Guide: For Anchor themes
         growth: 0,
         shade: 0, // For rainbow themes
         release: 0, // For anchor themes
@@ -219,6 +226,37 @@ function updateTrackDisplay(card, themeIndex) {
     releaseBoxes.forEach((box, i) => {
         box.classList.toggle('filled', i < theme.release);
     });
+
+    // Creator Guide: Add fade warnings when shade/release reaches 2
+    const shadeTrack = card.querySelector('.shade-track');
+    const releaseTrack = card.querySelector('.release-track');
+
+    // Remove existing warning text
+    card.querySelectorAll('.fade-warning-text').forEach(el => el.remove());
+
+    if (theme.type === 'rainbow' && theme.shade >= 2 && shadeTrack) {
+        shadeTrack.classList.add('fade-warning');
+        if (theme.shade === 2) {
+            const warning = document.createElement('div');
+            warning.className = 'fade-warning-text';
+            warning.textContent = '⚠️ FADING SOON! One more Shade and this theme must be replaced!';
+            shadeTrack.appendChild(warning);
+        }
+    } else if (shadeTrack) {
+        shadeTrack.classList.remove('fade-warning');
+    }
+
+    if (theme.type === 'anchor' && theme.release >= 2 && releaseTrack) {
+        releaseTrack.classList.add('fade-warning');
+        if (theme.release === 2) {
+            const warning = document.createElement('div');
+            warning.className = 'fade-warning-text';
+            warning.textContent = '⚠️ FADING SOON! One more Release and this theme must be replaced!';
+            releaseTrack.appendChild(warning);
+        }
+    } else if (releaseTrack) {
+        releaseTrack.classList.remove('fade-warning');
+    }
 }
 
 function checkGrowthCompletion(themeIndex) {
@@ -2510,6 +2548,22 @@ function setupFileHandling() {
             reader.onload = (event) => {
                 try {
                     const imported = JSON.parse(event.target.result);
+
+                    // Ensure Creator Guide fields have defaults
+                    imported.houseAffiliation = imported.houseAffiliation || 'Unknown House';
+                    imported.houseBasicAttack = imported.houseBasicAttack || 'Basic Attack';
+                    imported.signatureThemeIndex = imported.signatureThemeIndex ?? 0;
+
+                    // Ensure theme fields have Creator Guide defaults
+                    if (imported.themes) {
+                        imported.themes.forEach((theme, index) => {
+                            theme.themeCategory = theme.themeCategory || 'Unknown';
+                            theme.runway = theme.runway || '';
+                            theme.motivation = theme.motivation || '';
+                            theme.identity = theme.identity || '';
+                        });
+                    }
+
                     characterData = imported;
                     loadCharacterToUI();
                     alert('✅ Character loaded successfully!');
@@ -2543,6 +2597,12 @@ function loadCharacterToUI() {
     document.getElementById('themeColor').value = characterData.themeColor;
     applyThemeColor(characterData.themeColor);
 
+    // House Affiliation (Creator Guide)
+    const houseDisplay = document.getElementById('houseNameDisplay');
+    if (houseDisplay) {
+        houseDisplay.textContent = characterData.houseAffiliation || 'Unknown House';
+    }
+
     // Store character name in localStorage for MC broadcast matching
     if (characterData.name) {
         localStorage.setItem('currentCharacterName', characterData.name);
@@ -2568,15 +2628,53 @@ function loadCharacterToUI() {
     // Themes
     document.querySelectorAll('.theme-card').forEach((card, index) => {
         const theme = characterData.themes[index];
+        const isSignature = (index === characterData.signatureThemeIndex);
+
+        // Add/remove signature theme class
+        card.classList.toggle('signature-theme', isSignature);
+
+        // Add signature badge if this is the signature theme
+        let signatureBadge = card.querySelector('.signature-badge');
+        if (isSignature && !signatureBadge) {
+            signatureBadge = document.createElement('div');
+            signatureBadge.className = 'signature-badge';
+            signatureBadge.textContent = '⭐ SIGNATURE';
+            card.insertBefore(signatureBadge, card.firstChild);
+        } else if (!isSignature && signatureBadge) {
+            signatureBadge.remove();
+        }
 
         card.querySelector('.theme-type-selector').value = theme.type;
         card.querySelector('.theme-name-input').value = theme.name;
-        card.querySelector('.runway-quote-input').value = theme.quote;
+
+        // Display runway/motivation/identity based on theme type (Creator Guide)
+        const quoteInput = card.querySelector('.runway-quote-input');
+        if (isSignature && theme.runway) {
+            quoteInput.value = theme.runway;
+            quoteInput.placeholder = 'Runway: Your signature statement...';
+        } else if (theme.type === 'rainbow' && theme.motivation) {
+            quoteInput.value = theme.motivation;
+            quoteInput.placeholder = 'Motivation: What drives this theme...';
+        } else if (theme.type === 'anchor' && theme.identity) {
+            quoteInput.value = theme.identity;
+            quoteInput.placeholder = 'Identity: Who you are at your core...';
+        } else {
+            quoteInput.value = theme.quote || '';
+            quoteInput.placeholder = 'Your runway quote or identity statement...';
+        }
 
         // Power tags
         const tagInputs = card.querySelectorAll('.tag-input');
         tagInputs.forEach((input, i) => {
             input.value = theme.powerTags[i] || '';
+
+            // Mark first tag of signature theme as House Basic Attack
+            if (isSignature && i === 0 && theme.powerTags[i]) {
+                input.classList.add('house-attack');
+                input.title = '🏠 House Basic Attack - ' + (characterData.houseBasicAttack || 'Basic Attack');
+            } else {
+                input.classList.remove('house-attack');
+            }
         });
 
         // Weakness

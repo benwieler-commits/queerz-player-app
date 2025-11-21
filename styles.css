@@ -3204,3 +3204,123 @@ body {
         width: 100%;
     }
 }
+
+/* ================================
+   CREATOR GUIDE COMPLIANCE STYLES
+   ================================ */
+
+/* House Affiliation Display */
+.house-affiliation {
+    background: rgba(143, 115, 153, 0.2);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 4px solid #8F7399;
+    margin: 8px 0;
+    display: inline-block;
+}
+
+.house-affiliation .house-label {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin-right: 4px;
+}
+
+.house-affiliation .house-name {
+    font-weight: bold;
+    color: #8F7399;
+    font-size: 1.1em;
+}
+
+/* Signature Theme Styling */
+.theme-card.signature-theme {
+    border: 3px solid #FFD700 !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    position: relative;
+}
+
+.signature-badge {
+    position: absolute;
+    top: -12px;
+    left: 10px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #333;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.7em;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+/* House Basic Attack Styling */
+.tag-input.house-attack {
+    border: 2px solid #8F7399 !important;
+    background: rgba(143, 115, 153, 0.15) !important;
+    font-weight: bold;
+}
+
+.tag-input.house-attack:hover {
+    background: rgba(143, 115, 153, 0.25) !important;
+}
+
+/* Fade Warning Styling */
+.fade-warning {
+    background: rgba(255, 69, 0, 0.15) !important;
+    border: 2px solid #FF4500 !important;
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        opacity: 1;
+        border-color: #FF4500;
+    }
+    50% {
+        opacity: 0.85;
+        border-color: #FF6347;
+    }
+}
+
+.fade-warning-text {
+    color: #FF4500;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin-top: 8px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    text-align: center;
+}
+
+/* Story Tag Single-Use Badge */
+.tag-pill.temporary-tag::after {
+    content: 'SINGLE USE';
+    background: rgba(255, 255, 255, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.6em;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Motivation/Runway/Identity Label Styling */
+.runway-quote-input::placeholder {
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+.theme-card.signature-theme .runway-quote-input {
+    background: rgba(255, 215, 0, 0.1);
+    border-left: 4px solid #FFD700;
+}
+
+.theme-card[data-theme-type="rainbow"] .runway-quote-input {
+    background: rgba(143, 115, 153, 0.1);
+    border-left: 4px solid #8F7399;
+}
+
+.theme-card[data-theme-type="anchor"] .runway-quote-input {
+    background: rgba(92, 74, 102, 0.1);
+    border-left: 4px solid #5C4A66;
+}
