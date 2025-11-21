@@ -1,13 +1,13 @@
 const CACHE_NAME = 'queerz-player-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/styles.css',
-  '/firebase-config.js',
-  '/firebase-broadcast.js',
-  '/blank-character-v2.json',
-  '/manifest.json'
+  './',
+  './index.html',
+  './app.js',
+  './styles.css',
+  './firebase-config.js',
+  './firebase-broadcast.js',
+  './blank-character-v2.json',
+  './manifest.json'
 ];
 
 // Install event - cache resources
@@ -62,7 +62,7 @@ self.addEventListener('fetch', (event) => {
           return response;
         }).catch(() => {
           // Network request failed, try to return cached version
-          return caches.match('/index.html');
+          return caches.match('./index.html');
         });
       })
   );
