@@ -44,6 +44,11 @@ export async function broadcastPlayerToMc(characterData) {
       name: characterData.name || 'Unnamed Character',
       pronouns: characterData.pronouns || '',
 
+      // Creator Guide: House affiliation
+      houseAffiliation: characterData.houseAffiliation || 'Unknown House',
+      houseBasicAttack: characterData.houseBasicAttack || 'Basic Attack',
+      signatureThemeIndex: characterData.signatureThemeIndex ?? 0,
+
       // Portrait
       portraitUrl: characterData.currentPortraitMode === 'civilian'
         ? (characterData.civilianPortrait || '')
