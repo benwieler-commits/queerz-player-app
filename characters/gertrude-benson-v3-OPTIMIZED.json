@@ -1,0 +1,239 @@
+{
+  "_VERSION": "QUEERZ! Character Sheet v3 - Creator Guide Compliant",
+  "_INSTRUCTIONS": "This character follows the official QUEERZ! Creator Guide structure",
+  "_SYSTEM_NOTES": {
+    "signature_theme": "Theme at index 0 is the Signature theme (defines character's core Rainbow connection and Runway)",
+    "house_basic_attack": "House Basic Attack 'Rainbow Flash' is included in Signature theme power tags",
+    "theme_balance": "2 Rainbow themes + 2 Anchor/Realness themes (valid configuration)",
+    "fade_mechanics": "3 Shade on Rainbow = replace with Realness; 3 Release on Anchor = replace with Rainbow",
+    "initial_tags": "Each theme starts with 3 unlocked power tags (Signature has 4 due to House Basic Attack)"
+  },
+  
+  "name": "Gertrude Benson",
+  "pronouns": "She/Her",
+  "civilianPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/gertrude-benson-streetwear.png",
+  "qfactorPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/gertrude-benson-qfactor.png",
+  "currentPortraitMode": "civilian",
+  "themeColor": "#8F7399",
+  "juice": 0,
+  
+  "houseAffiliation": "Queerz (Club Duckie)",
+  "houseBasicAttack": "Rainbow Flash",
+  "signatureThemeIndex": 0,
+  
+  "themes": [
+    {
+      "_DESIGNATION": "SIGNATURE THEME - Primary Rainbow Connection",
+      "type": "rainbow",
+      "themeCategory": "Signature",
+      "name": "Self Assurance Isn't Arrogance",
+      "runway": "This Is Where I Stand And I Won't Back Down",
+      "growth": 0,
+      "shade": 0,
+      "powerTags": [
+        "Rainbow Flash",
+        "I Know What I'm Talking About",
+        "Check Your Facts",
+        "Explain it Like I'm Five",
+        "Break The Echo Chamber",
+        "Get An Outside Opinion",
+        "Cite Your Sources"
+      ],
+      "unlockedTags": 4,
+      "weaknessTag": "Am I REALLY Sure About That?",
+      "burntPowerTags": [false, false, false, false, false, false, false],
+      "burntWeakness": false,
+      "locked": false
+    },
+    {
+      "_DESIGNATION": "RAINBOW THEME #2 - Fighting Style/Approach",
+      "type": "rainbow",
+      "themeCategory": "Fighting Style",
+      "name": "It Was NEVER A Phase!",
+      "motivation": "S.E.G.A. Does What Nintendon't",
+      "growth": 0,
+      "shade": 0,
+      "powerTags": [
+        "Have You SCENE These Fists",
+        "Rant and RAVE",
+        "EMO-tional Damage!",
+        "ALT-RIGHT HOOK!",
+        "Dummy GOTHICC",
+        "Silent Raves, Not Silent Witnesses"
+      ],
+      "unlockedTags": 3,
+      "weaknessTag": "Is This Just Another Mask?",
+      "burntPowerTags": [false, false, false, false, false, false],
+      "burntWeakness": false,
+      "locked": false
+    },
+    {
+      "_DESIGNATION": "REALNESS THEME #1 (ANCHOR) - Personality",
+      "type": "anchor",
+      "themeCategory": "Personality",
+      "name": "Giving 110% Is The Least I Can Do",
+      "identity": "I Have To Keep Pushing",
+      "growth": 0,
+      "release": 0,
+      "powerTags": [
+        "Everyone's Working So Hard",
+        "You'd Do The Same In My Shoes",
+        "There's Still Gas In Tank",
+        "Time To Dig In",
+        "They're An Inspiration!",
+        "No Sleep 'Til Brooklyn!"
+      ],
+      "unlockedTags": 3,
+      "weaknessTag": "I'm Not Doing Enough",
+      "burntPowerTags": [false, false, false, false, false, false],
+      "burntWeakness": false,
+      "locked": false
+    },
+    {
+      "_DESIGNATION": "REALNESS THEME #2 (ANCHOR) - Relationship",
+      "type": "anchor",
+      "themeCategory": "Relationship",
+      "name": "Communities and Pillars Support EACH OTHER!",
+      "identity": "I am Strong, but WE Are Unstoppable",
+      "growth": 0,
+      "release": 0,
+      "powerTags": [
+        "Kindness Costs Nothing",
+        "My Income Isn't My Value",
+        "If I Can Help, I Will",
+        "Compassion Without Cameras",
+        "A Home Is Better Than A House",
+        "We Love You As You Are"
+      ],
+      "unlockedTags": 3,
+      "weaknessTag": "Will I Ever Know True Belonging?",
+      "burntPowerTags": [false, false, false, false, false, false],
+      "burntWeakness": false,
+      "locked": false
+    }
+  ],
+  
+  "currentStatuses": [],
+  "storyTags": [],
+  "burntTags": [],
+  
+  "tagCombos": [
+    {
+      "name": "Go-THICC Or Go Home!",
+      "power": 3,
+      "coreMove": "Slay",
+      "tags": [
+        {
+          "name": "Dummy GOTHICC",
+          "themeIndex": 1,
+          "tagIndex": 4
+        },
+        {
+          "name": "There's Still Gas In Tank",
+          "themeIndex": 2,
+          "tagIndex": 2
+        }
+      ],
+      "id": 1763374101944
+    },
+    {
+      "name": "I'll Be Your Safe Space",
+      "power": 2,
+      "coreMove": "Resist",
+      "tags": [
+        {
+          "name": "If I Can Help, I Will",
+          "themeIndex": 3,
+          "tagIndex": 2
+        },
+        {
+          "name": "Kindness Costs Nothing",
+          "themeIndex": 3,
+          "tagIndex": 0
+        }
+      ],
+      "id": 1763374197628
+    },
+    {
+      "name": "It's Not Feminism, You're A Misogynist",
+      "power": 2,
+      "coreMove": "Slay",
+      "tags": [
+        {
+          "name": "EMO-tional Damage!",
+          "themeIndex": 1,
+          "tagIndex": 2
+        },
+        {
+          "name": "Break The Echo Chamber",
+          "themeIndex": 0,
+          "tagIndex": 4
+        }
+      ],
+      "id": 1763374423455
+    },
+    {
+      "name": "Build Each Other Up",
+      "power": 4,
+      "coreMove": "Strike a Pose",
+      "tags": [
+        {
+          "name": "They're An Inspiration!",
+          "themeIndex": 2,
+          "tagIndex": 4
+        },
+        {
+          "name": "My Income Isn't My Value",
+          "themeIndex": 3,
+          "tagIndex": 1
+        }
+      ],
+      "id": 1763374519463
+    }
+  ],
+  
+  "selectedMove": null,
+  "clickedTags": [],
+  "usedWeakness": false,
+  
+  "_GROWTH_MECHANICS": {
+    "description": "Fill 3 Growth boxes to unlock 1 greyed-out tag",
+    "progression": "Start with 3 tags unlocked per theme (4 for Signature with House Basic Attack), unlock up to 6 total",
+    "rainbow_fade": "Fill 3 Shade boxes → theme fades completely, must replace with new Anchor/Realness theme",
+    "anchor_fade": "Fill 3 Release boxes → theme fades completely, must replace with new Rainbow theme",
+    "becoming_icon": "Replace all themes with Rainbow → become Icon temporarily, then burn out",
+    "becoming_basic": "Replace all themes with Anchor/Realness → lose touch with Rainbow Empathy",
+    "weakness_bonus": "If you use Weakness AND roll 6-, automatically gain +1 Growth"
+  },
+  
+  "_TAG_SYSTEM": {
+    "power_tags": "Click to add +1 power to roll (once per roll)",
+    "weakness_tag": "Click to use (triggers Growth on 6- rolls)",
+    "burn_tags": "Click flame icon to burn a tag (unusable until MC prompts recovery)",
+    "greyed_tags": "Locked until Growth boxes are filled",
+    "house_basic_attack": "Included in Signature theme, represents core combat ability taught by House"
+  },
+  
+  "_DICE_MECHANICS": {
+    "core_move_required": "Must select a core move before rolling",
+    "juice_generation": "7-9 = +1 Juice, 10+ = +3 Juice",
+    "juice_spending": "Spend up to 3 Juice to add to Power, OR spend 3 Juice to use a Combo",
+    "reset": "Reset button clears unused Juice and all clicked tags"
+  },
+  
+  "_FIREBASE_BROADCAST": {
+    "to_mc": "Player broadcasts: Name, Pronouns, Portrait, Status Tags, Story Tags, House Affiliation",
+    "from_mc": "Player receives: Scene, Music, NPC Portrait, Status Tags, Story Tags"
+  },
+  
+  "characterLocked": false,
+  
+  "_THEME_MOTIVATIONS": {
+    "signature_runway": "This Is Where I Stand And I Won't Back Down - Gertrude's core belief in standing firm with facts and truth",
+    "rainbow_motivation": "S.E.G.A. Does What Nintendon't - Her alternative/punk approach to fighting, embracing outsider status",
+    "anchor_identities": [
+      "I Have To Keep Pushing - Her drive to work harder than everyone else, often to exhaustion",
+      "I am Strong, but WE Are Unstoppable - Her belief in community support and collective strength"
+    ]
+  }
+}
