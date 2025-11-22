@@ -11,7 +11,7 @@
   
   "name": "Gertrude Benson",
   "pronouns": "She/Her",
-  "civilianPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/gertrude_streetware.png",
+  "civilianPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/characters/gertrude_streetware.png",
   "qfactorPortrait": "https://raw.githubusercontent.com/benwieler-commits/queerz-player-app/main/images/characters/gertrude-q-factor.png",
   "currentPortraitMode": "civilian",
   "themeColor": "#8F7399",
