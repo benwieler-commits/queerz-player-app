@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.queerz.player',
   appName: 'QUEERZ Player',
-  webDir: '.',
+  webDir: 'www',
   server: {
     androidScheme: 'https'
   }
