@@ -53,9 +53,6 @@ body {
     color: var(--text-primary);
     min-height: 100vh;
     overflow-x: hidden;
-
-       /* Add safe area padding for bottom nav bars and rounded corners */
-    padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* ================================
@@ -63,15 +60,15 @@ body {
    ================================ */
 
 .app-header {
-    background: rgba(30, 30, 50, 0.95);
-    backdrop-filter: blur(15px);
-    padding: 15px 30px;
-    /* Add safe area padding for notches/status bars */
-    padding-top: max(15px, env(safe-area-inset-top));
-    padding-left: max(30px, env(safe-area-inset-left));
-    padding-right: max(30px, env(safe-area-inset-right));
-    border-bottom: 3px solid #4A7C7E;
-    ...
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px 20px;
+    border-bottom: 3px solid var(--character-theme-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    transition: border-color 0.3s ease;
 }
 
 .app-title {
