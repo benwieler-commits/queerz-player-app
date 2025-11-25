@@ -4,7 +4,8 @@
 // ================================
 
 import {
-    saveCharacterToCloud    
+    saveCharacterToCloud,
+    loadCharactersFromCloud
 } from './firebase-config.js';
 
 import {
@@ -25,9 +26,6 @@ let characterData = {
     juice: 0,
     clues: 0, // NEW: Clues tracker
     characterLocked: false, // NEW: Lock character after creation
-    houseAffiliation: 'Unknown House', // Creator Guide: House membership
-    houseBasicAttack: 'Basic Attack', // Creator Guide: House shared attack
-    signatureThemeIndex: 0, // Creator Guide: Which theme is the Signature
     themes: [
         createEmptyTheme('rainbow'),
         createEmptyTheme('rainbow'),
@@ -50,12 +48,8 @@ let characterData = {
 function createEmptyTheme(type = 'rainbow') {
     return {
         type: type, // 'rainbow' or 'anchor'
-        themeCategory: 'Unknown', // Creator Guide: Signature, Fighting Style, Personality, etc.
         name: '',
         quote: '',
-        runway: '', // Creator Guide: For Signature themes
-        motivation: '', // Creator Guide: For Rainbow themes
-        identity: '', // Creator Guide: For Anchor themes
         growth: 0,
         shade: 0, // For rainbow themes
         release: 0, // For anchor themes
@@ -225,37 +219,6 @@ function updateTrackDisplay(card, themeIndex) {
     releaseBoxes.forEach((box, i) => {
         box.classList.toggle('filled', i < theme.release);
     });
-
-    // Creator Guide: Add fade warnings when shade/release reaches 2
-    const shadeTrack = card.querySelector('.shade-track');
-    const releaseTrack = card.querySelector('.release-track');
-
-    // Remove existing warning text
-    card.querySelectorAll('.fade-warning-text').forEach(el => el.remove());
-
-    if (theme.type === 'rainbow' && theme.shade >= 2 && shadeTrack) {
-        shadeTrack.classList.add('fade-warning');
-        if (theme.shade === 2) {
-            const warning = document.createElement('div');
-            warning.className = 'fade-warning-text';
-            warning.textContent = '⚠️ FADING SOON! One more Shade and this theme must be replaced!';
-            shadeTrack.appendChild(warning);
-        }
-    } else if (shadeTrack) {
-        shadeTrack.classList.remove('fade-warning');
-    }
-
-    if (theme.type === 'anchor' && theme.release >= 2 && releaseTrack) {
-        releaseTrack.classList.add('fade-warning');
-        if (theme.release === 2) {
-            const warning = document.createElement('div');
-            warning.className = 'fade-warning-text';
-            warning.textContent = '⚠️ FADING SOON! One more Release and this theme must be replaced!';
-            releaseTrack.appendChild(warning);
-        }
-    } else if (releaseTrack) {
-        releaseTrack.classList.remove('fade-warning');
-    }
 }
 
 function checkGrowthCompletion(themeIndex) {
@@ -806,22 +769,6 @@ function setupDiceRoller() {
 
         // Remove Temporary MC tags that were clicked
         removeTemporaryMCTags();
-
-                // Broadcast dice roll to MC App
-        if (window.broadcastDiceRoll) {
-            window.broadcastDiceRoll({
-                characterName: characterData.name,
-                roll: total,
-                result: characterData.lastRoll.result,
-                move: characterData.selectedMove,
-                moveName: getMoveDisplayName(characterData.selectedMove),
-                modifier: power
-            }).then(() => {
-                console.log('🎲 Dice roll broadcasted to MC');
-            }).catch(err => {
-                console.error('❌ Failed to broadcast dice roll:', err);
-            });
-        }
 
         saveToCloud();
 
@@ -2124,42 +2071,45 @@ function updateCombosDisplay() {
 
 /**
  * Parse tag string from MC
- * Format: "Tag Name (±number) Temporary/Ongoing" OR "tag-name (+1 Temporary)"
- * Example: "Inspired (+2) Ongoing" or "mama-jays-blessing (+1 Temporary)"
+ * NEW FORMAT:
+ * - STATUS TAGS: "example-status-tag-1" through "example-status-tag-6" (numerical suffix 1-6, always Ongoing)
+ * - STORY TAGS: "example-story-tag" (no suffix, always Ongoing, no modifier)
+ * Examples: "weakened-2" (status), "guilty-4" (status), "investigating-the-crime" (story)
  */
 function parseTagFromMC(tagString) {
     console.log('🔍 Parsing tag string:', tagString);
 
-    // Try format 1: "Tag Name (±number) Temporary/Ongoing" with space before parenthesis
-    let match = tagString.match(/^(.+?)\s*\(([+-]?\d+)\)\s*(Temporary|Ongoing)$/i);
+    // NEW FORMAT (Current):
+    // STATUS TAGS: "example-status-tag-1" through "example-status-tag-6" (always Ongoing, numerical suffix 1-6)
+    // STORY TAGS: "example-story-tag" (always Ongoing, no modifier)
 
-    // Try format 2: "tag-name (+1 Temporary)" with number AND type inside parenthesis
-    if (!match) {
-        match = tagString.match(/^(.+?)\s*\(([+-]?\d+)\s+(Temporary|Ongoing)\)$/i);
-    }
+    // Check if tag ends with a numerical suffix (1-6) - indicates STATUS TAG
+    const statusMatch = tagString.match(/^(.+)-([1-6])$/);
 
-    if (match) {
-        const [, name, modifier, type] = match;
+    if (statusMatch) {
+        // STATUS TAG with tier 1-6
+        const [, name, tier] = statusMatch;
         const parsed = {
             name: name.trim(),
-            modifier: parseInt(modifier),
-            isTemporary: type.toLowerCase() === 'temporary',
-            isOngoing: type.toLowerCase() === 'ongoing',
+            modifier: parseInt(tier), // Tier 1-6 becomes the modifier
+            isTemporary: false,        // STATUS tags are always Ongoing
+            isOngoing: true,           // STATUS tags are always Ongoing
             rawString: tagString
         };
-        console.log('✅ Parsed successfully:', parsed);
+        console.log('✅ Parsed STATUS tag:', parsed);
         return parsed;
     }
 
-    // Fallback for tags without proper format
-    console.warn('⚠️ Could not parse tag format, using fallback:', tagString);
-    return {
-        name: tagString,
-        modifier: 0,
-        isTemporary: false,
-        isOngoing: false,
+    // If no numerical suffix, it's a STORY TAG (always Ongoing, no modifier)
+    const parsed = {
+        name: tagString.trim(),
+        modifier: 0,           // STORY tags have no modifier
+        isTemporary: false,    // STORY tags are always Ongoing
+        isOngoing: true,       // STORY tags are always Ongoing
         rawString: tagString
     };
+    console.log('✅ Parsed STORY tag:', parsed);
+    return parsed;
 }
 
 /**
@@ -2171,33 +2121,22 @@ function handleMCTagUpdate(event) {
     console.log('📥 Received tag update from MC:', { statusTags, storyTags });
 
     // Process status tags
-    // ⭐ IMPORTANT: All MC-broadcasted Status tags are:
-    //    1. Always NEGATIVE (impact dice rolls negatively)
-    //    2. Always ONGOING (persist until MC removes them)
     if (statusTags && Array.isArray(statusTags)) {
         characterData.currentStatuses = statusTags.map(tag => {
             if (typeof tag === 'string') {
                 const parsed = parseTagFromMC(tag);
-
-                // Force modifier to be negative (MC statuses always hinder)
-                let forcedModifier = parsed.modifier;
-                if (forcedModifier > 0) {
-                    forcedModifier = -forcedModifier; // Convert positive to negative
-                    console.log(`  ⚠️ Converted positive modifier to negative: ${parsed.modifier} → ${forcedModifier}`);
-                }
-
-                console.log('  Parsed status tag:', parsed, '→ Forced negative & ongoing');
+                console.log('  Parsed status tag:', parsed);
                 return {
                     name: parsed.name,
-                    modifier: forcedModifier, // Always negative
-                    isTemporary: false, // MC statuses are never temporary
-                    isOngoing: true, // MC statuses are always ongoing
+                    modifier: parsed.modifier,
+                    isTemporary: parsed.isTemporary,
+                    isOngoing: parsed.isOngoing,
                     clicked: false // Track if temporary tag has been clicked
                 };
             }
             return tag; // Already an object
         });
-        console.log('  Updated currentStatuses (all forced negative & ongoing):', characterData.currentStatuses);
+        console.log('  Updated currentStatuses:', characterData.currentStatuses);
     }
 
     // Process story tags
@@ -2574,22 +2513,6 @@ function setupFileHandling() {
             reader.onload = (event) => {
                 try {
                     const imported = JSON.parse(event.target.result);
-
-                    // Ensure Creator Guide fields have defaults
-                    imported.houseAffiliation = imported.houseAffiliation || 'Unknown House';
-                    imported.houseBasicAttack = imported.houseBasicAttack || 'Basic Attack';
-                    imported.signatureThemeIndex = imported.signatureThemeIndex ?? 0;
-
-                    // Ensure theme fields have Creator Guide defaults
-                    if (imported.themes) {
-                        imported.themes.forEach((theme, index) => {
-                            theme.themeCategory = theme.themeCategory || 'Unknown';
-                            theme.runway = theme.runway || '';
-                            theme.motivation = theme.motivation || '';
-                            theme.identity = theme.identity || '';
-                        });
-                    }
-
                     characterData = imported;
                     loadCharacterToUI();
                     alert('✅ Character loaded successfully!');
@@ -2623,12 +2546,6 @@ function loadCharacterToUI() {
     document.getElementById('themeColor').value = characterData.themeColor;
     applyThemeColor(characterData.themeColor);
 
-    // House Affiliation (Creator Guide)
-    const houseDisplay = document.getElementById('houseNameDisplay');
-    if (houseDisplay) {
-        houseDisplay.textContent = characterData.houseAffiliation || 'Unknown House';
-    }
-
     // Store character name in localStorage for MC broadcast matching
     if (characterData.name) {
         localStorage.setItem('currentCharacterName', characterData.name);
@@ -2654,53 +2571,15 @@ function loadCharacterToUI() {
     // Themes
     document.querySelectorAll('.theme-card').forEach((card, index) => {
         const theme = characterData.themes[index];
-        const isSignature = (index === characterData.signatureThemeIndex);
-
-        // Add/remove signature theme class
-        card.classList.toggle('signature-theme', isSignature);
-
-        // Add signature badge if this is the signature theme
-        let signatureBadge = card.querySelector('.signature-badge');
-        if (isSignature && !signatureBadge) {
-            signatureBadge = document.createElement('div');
-            signatureBadge.className = 'signature-badge';
-            signatureBadge.textContent = '⭐ SIGNATURE';
-            card.insertBefore(signatureBadge, card.firstChild);
-        } else if (!isSignature && signatureBadge) {
-            signatureBadge.remove();
-        }
 
         card.querySelector('.theme-type-selector').value = theme.type;
         card.querySelector('.theme-name-input').value = theme.name;
-
-        // Display runway/motivation/identity based on theme type (Creator Guide)
-        const quoteInput = card.querySelector('.runway-quote-input');
-        if (isSignature && theme.runway) {
-            quoteInput.value = theme.runway;
-            quoteInput.placeholder = 'Runway: Your signature statement...';
-        } else if (theme.type === 'rainbow' && theme.motivation) {
-            quoteInput.value = theme.motivation;
-            quoteInput.placeholder = 'Motivation: What drives this theme...';
-        } else if (theme.type === 'anchor' && theme.identity) {
-            quoteInput.value = theme.identity;
-            quoteInput.placeholder = 'Identity: Who you are at your core...';
-        } else {
-            quoteInput.value = theme.quote || '';
-            quoteInput.placeholder = 'Your runway quote or identity statement...';
-        }
+        card.querySelector('.runway-quote-input').value = theme.quote;
 
         // Power tags
         const tagInputs = card.querySelectorAll('.tag-input');
         tagInputs.forEach((input, i) => {
             input.value = theme.powerTags[i] || '';
-
-            // Mark first tag of signature theme as House Basic Attack
-            if (isSignature && i === 0 && theme.powerTags[i]) {
-                input.classList.add('house-attack');
-                input.title = '🏠 House Basic Attack - ' + (characterData.houseBasicAttack || 'Basic Attack');
-            } else {
-                input.classList.remove('house-attack');
-            }
         });
 
         // Weakness
@@ -3400,17 +3279,17 @@ document.head.appendChild(style);
 window.testAddTags = function() {
     console.log('🧪 Testing tag display with sample data...');
 
-    // Simulate MC sending tags
+    // Simulate MC sending tags with NEW FORMAT
     const testEvent = new CustomEvent('mc-tag-update', {
         detail: {
             statusTags: [
-                "Inspired (+2) Ongoing",
-                "Weakened (-1) Temporary",
-                "Focused (+1) Ongoing"
+                "inspired-2",    // Status tag with tier 2
+                "weakened-1",    // Status tag with tier 1
+                "focused-3"      // Status tag with tier 3
             ],
             storyTags: [
-                "Undercover (+1) Temporary",
-                "Suspicious (-2) Ongoing"
+                "undercover",              // Story tag (no modifier)
+                "investigating-the-crime"  // Story tag (no modifier)
             ]
         }
     });
@@ -3429,18 +3308,20 @@ window.testMCBroadcast = function() {
     const currentCharName = localStorage.getItem('currentCharacterName');
     console.log('  Current character name in localStorage:', currentCharName);
 
-    // Simulate the actual MC broadcast structure with ACTUAL format from MC
+    // Simulate the actual MC broadcast structure with NEW format from MC
     const mockBroadcast = {
         players: [
             {
                 name: currentCharName || "Test Character",
                 tags: {
                     status: [
-                        "mama-jays-blessing (+1 Temporary)",  // Actual MC format
-                        "weakened (-2 Ongoing)"               // Actual MC format
+                        "mama-jays-blessing-1",  // NEW FORMAT: Status tag with tier 1
+                        "weakened-2",            // NEW FORMAT: Status tag with tier 2
+                        "guilty-4"               // NEW FORMAT: Status tag with tier 4
                     ],
                     story: [
-                        "investigating-the-crime (+1 Temporary)"
+                        "investigating-the-crime",  // NEW FORMAT: Story tag (no modifier)
+                        "undercover-at-the-bar"     // NEW FORMAT: Story tag (no modifier)
                     ]
                 }
             }
