@@ -144,8 +144,45 @@ function initializeBroadcastListener() {
     const data = snapshot.val();
     if (!data) return;
 
-    // Scene / Music / NPC handling (unchanged for brevity)
-    // ... your existing DOM updates ...
+    // Scene / Music / NPC handling
+    // Update scene information
+    const sceneInfo = document.getElementById('sceneInfo');
+    const sceneImage = document.getElementById('sceneImage');
+    if (sceneInfo) {
+      sceneInfo.textContent = data.scene || 'Waiting for scene...';
+    }
+    if (sceneImage && data.sceneImage) {
+      sceneImage.src = data.sceneImage;
+      sceneImage.style.display = 'block';
+    } else if (sceneImage) {
+      sceneImage.style.display = 'none';
+    }
+
+    // Update music information
+    const musicInfo = document.getElementById('musicInfo');
+    const musicPlayer = document.getElementById('musicPlayer');
+    if (musicInfo) {
+      musicInfo.textContent = data.music || 'No music playing';
+    }
+    if (musicPlayer && data.musicUrl) {
+      musicPlayer.src = data.musicUrl;
+      musicPlayer.style.display = 'block';
+    } else if (musicPlayer) {
+      musicPlayer.style.display = 'none';
+    }
+
+    // Update NPC/Spotlight information
+    const spotlightInfo = document.getElementById('spotlightInfo');
+    const spotlightPortrait = document.getElementById('spotlightPortrait');
+    if (spotlightInfo) {
+      spotlightInfo.textContent = data.spotlight || data.npc || '—';
+    }
+    if (spotlightPortrait && data.spotlightPortrait) {
+      spotlightPortrait.src = data.spotlightPortrait;
+      spotlightPortrait.style.display = 'block';
+    } else if (spotlightPortrait) {
+      spotlightPortrait.style.display = 'none';
+    }
 
     // Tag extraction (kept exactly as you wrote it)
     let statusTags = [];
@@ -195,8 +232,75 @@ function startBroadcastPolling() {
       const data = snap.val();
       if (!data) return;
 
-      // Same tag-extraction logic as above (omitted for brevity – copy-paste from listener)
-      // ... then dispatch mc-tag-update again
+      // Scene / Music / NPC handling (same as listener)
+      const sceneInfo = document.getElementById('sceneInfo');
+      const sceneImage = document.getElementById('sceneImage');
+      if (sceneInfo) {
+        sceneInfo.textContent = data.scene || 'Waiting for scene...';
+      }
+      if (sceneImage && data.sceneImage) {
+        sceneImage.src = data.sceneImage;
+        sceneImage.style.display = 'block';
+      } else if (sceneImage) {
+        sceneImage.style.display = 'none';
+      }
+
+      const musicInfo = document.getElementById('musicInfo');
+      const musicPlayer = document.getElementById('musicPlayer');
+      if (musicInfo) {
+        musicInfo.textContent = data.music || 'No music playing';
+      }
+      if (musicPlayer && data.musicUrl) {
+        musicPlayer.src = data.musicUrl;
+        musicPlayer.style.display = 'block';
+      } else if (musicPlayer) {
+        musicPlayer.style.display = 'none';
+      }
+
+      const spotlightInfo = document.getElementById('spotlightInfo');
+      const spotlightPortrait = document.getElementById('spotlightPortrait');
+      if (spotlightInfo) {
+        spotlightInfo.textContent = data.spotlight || data.npc || '—';
+      }
+      if (spotlightPortrait && data.spotlightPortrait) {
+        spotlightPortrait.src = data.spotlightPortrait;
+        spotlightPortrait.style.display = 'block';
+      } else if (spotlightPortrait) {
+        spotlightPortrait.style.display = 'none';
+      }
+
+      // Tag extraction (same as listener)
+      let statusTags = [];
+      let storyTags = [];
+
+      if (data.players && Array.isArray(data.players)) {
+        const currentCharName = localStorage.getItem('currentCharacterName');
+        let player = data.players.find(p => p.name === currentCharName) ||
+                    data.players[0];
+
+        if (player?.tags) {
+          statusTags = player.tags.status || [];
+          storyTags = player.tags.story || [];
+        }
+      }
+
+      if (data.playerUpdates?.[window.currentUserId]) {
+        const upd = data.playerUpdates[window.currentUserId];
+        statusTags = upd.statusTags || statusTags;
+        storyTags = upd.storyTags || storyTags;
+      }
+
+      ['statusTags', 'storyTags'].forEach(key => {
+        if (data[key]) statusTags = key === 'statusTags' ? data[key] : statusTags;
+        if (data[key]) storyTags = key === 'storyTags' ? data[key] : storyTags;
+      });
+
+      if (statusTags.length || storyTags.length) {
+        const totalModifier = calculateStatusModifier(statusTags);
+        document.dispatchEvent(new CustomEvent('mc-tag-update', {
+          detail: { statusTags, storyTags, totalModifier }
+        }));
+      }
     } catch (e) {
       console.error('Polling error:', e);
     }
