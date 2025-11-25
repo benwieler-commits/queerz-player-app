@@ -3324,3 +3324,89 @@ body {
     background: rgba(92, 74, 102, 0.1);
     border-left: 4px solid #5C4A66;
 }
+/* ================================ */
+/* MC BROADCAST PANEL STYLES */
+/* ================================ */
+
+.mc-sync-panel {
+    background: rgba(74, 124, 126, 0.1);
+    border: 2px solid #4A7C7E;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.mc-broadcast-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.broadcast-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.broadcast-card h4 {
+    margin: 0 0 10px 0;
+    color: #4A7C7E;
+    font-size: 1em;
+    font-weight: 600;
+}
+
+.broadcast-content {
+    color: #E0E0E0;
+    font-size: 0.9em;
+    line-height: 1.5;
+    min-height: 40px;
+}
+
+.broadcast-content em {
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+.broadcast-content strong {
+    color: #FFD700;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.broadcast-content small {
+    display: block;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 5px;
+}
+
+.broadcast-image {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-top: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#syncBadge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+#syncBadge.online {
+    background: rgba(0, 255, 0, 0.2);
+    color: #00FF00;
+    border: 1px solid rgba(0, 255, 0, 0.5);
+}
+
+#syncBadge.offline {
+    background: rgba(255, 0, 0, 0.2);
+    color: #FF6B6B;
+    border: 1px solid rgba(255, 0, 0, 0.5);
+}

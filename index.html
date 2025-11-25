@@ -61,6 +61,54 @@
                         <option value="rainbow">🌈 Rainbow (Runway)</option>
                         <option value="anchor">⚓ Anchor (Realness)</option>
                     </select>
+<!-- ================================ -->
+<!-- MC BROADCAST PANEL (ADD THIS TO PLAYER APP) -->
+<!-- ================================ -->
+<!-- INSERT THIS SECTION IN index.html AFTER THE CHARACTER INFO PANEL -->
+
+<section class="panel mc-sync-panel">
+    <div class="panel-header">
+        <h3>📡 Live from MC</h3>
+        <span id="syncBadge" class="badge offline">● Offline</span>
+    </div>
+
+    <div class="mc-broadcast-container">
+        <!-- LOCATION/SCENE INFO -->
+        <div class="broadcast-card location-card">
+            <h4>📍 Current Location</h4>
+            <div id="sceneFromMC" class="broadcast-content">
+                <em>Waiting for MC broadcast...</em>
+            </div>
+            <img id="locationImage" class="broadcast-image" style="display: none;" alt="Location">
+        </div>
+
+        <!-- NPC INFO -->
+        <div class="broadcast-card npc-card">
+            <h4>👤 Active NPC</h4>
+            <div id="npcInfo" class="broadcast-content">
+                <em>No NPC in scene</em>
+            </div>
+            <img id="npcPortrait" class="broadcast-image" style="display: none;" alt="NPC Portrait">
+        </div>
+
+        <!-- MUSIC INFO -->
+        <div class="broadcast-card music-card">
+            <h4>🎵 Current Music</h4>
+            <div id="musicFromMC" class="broadcast-content">
+                <em>No music playing</em>
+            </div>
+            <audio id="musicPlayer" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
+        </div>
+
+        <!-- SPOTLIGHT INFO -->
+        <div class="broadcast-card spotlight-card" style="display: none;">
+            <h4>🎭 Character Spotlight</h4>
+            <div id="spotlightInfo" class="broadcast-content">
+                <em>No spotlight active</em>
+            </div>
+        </div>
+    </div>
+</section>
                     <input type="text" class="theme-name-input" placeholder="Theme Name">
                 </div>
 
