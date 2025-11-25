@@ -1,6 +1,6 @@
 // ================================
-// FIREBASE CONFIG - PLAYER APP
-// ENHANCED VERSION - Music + Tags Fix
+// FIREBASE CONFIG - PLAYER APP  
+// COMPLETE FIX - Music, Tags, & Rolls
 // ================================
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -96,7 +96,7 @@ if (database) {
     // LOCATION UPDATE (environment OR location)
     // ================================
     const locationData = data.location || data.environment;
-    if (locationData) {
+    if (locationData && !data.tagsOnly) {  // Skip if tags-only update
       const sceneInfo = document.getElementById('sceneInfo');
       if (sceneInfo) {
         sceneInfo.textContent = locationData.name || 'Unknown Location';
@@ -121,7 +121,7 @@ if (database) {
     // ================================
     // NPC/SPOTLIGHT UPDATE
     // ================================
-    if (data.npc) {
+    if (data.npc && !data.tagsOnly) {  // Skip if tags-only update
       const spotlightInfo = document.getElementById('spotlightInfo');
       if (spotlightInfo) {
         spotlightInfo.textContent = `NPC: ${data.npc.name || 'Unknown'}`;
@@ -143,7 +143,9 @@ if (database) {
       console.log('👤 NPC updated:', data.npc.name);
     }
     
-    // Check for character spotlight
+    // ================================
+    // CHARACTER SPOTLIGHT CHECK
+    // ================================
     if (data.spotlight) {
       const spotlightInfo = document.getElementById('spotlightInfo');
       if (spotlightInfo) {
@@ -155,7 +157,7 @@ if (database) {
     // ================================
     // MUSIC UPDATE - ENHANCED!
     // ================================
-    if (data.music) {
+    if (data.music && !data.tagsOnly) {  // Skip if tags-only update
       const musicInfo = document.getElementById('musicInfo');
       if (musicInfo) {
         musicInfo.textContent = data.music.name || 'Unknown Track';
@@ -176,8 +178,7 @@ if (database) {
           // Set loop if needed
           audioPlayer.loop = !!(data.music.loop || data.music.isLooping);
           
-          // Try to auto-play (will fail if user hasn't interacted yet)
-          // We try even if isPlaying isn't set, because the URL being present implies intent to play
+          // Try to auto-play
           audioPlayer.play().then(() => {
             console.log('✅ Music autoplaying:', data.music.name);
           }).catch(err => {
@@ -199,10 +200,78 @@ if (database) {
     }
     
     // ================================
-    // TAG UPDATES (STATUS + STORY)
+    // TAG UPDATES - FIXED STRUCTURE!
+    // MC sends: {players: [{name, storyTags, currentStatuses}], spotlightedPlayer: "name"}
     // ================================
-    if (data.tags) {
-      console.log('🏷️ Tags received from MC:', data.tags);
+    if (data.players && Array.isArray(data.players)) {
+      console.log('🏷️ Player tags received from MC:', data.players);
+      console.log('🎯 Spotlighted player:', data.spotlightedPlayer);
+      
+      // Get our character name
+      const ourCharacterName = window.characterData?.name;
+      
+      if (!ourCharacterName) {
+        console.log('ℹ️ No character loaded yet, skipping tag update');
+        return;
+      }
+      
+      // Find our player data in the broadcast
+      const ourPlayerData = data.players.find(p => p.name === ourCharacterName);
+      
+      if (ourPlayerData) {
+        console.log('✅ Found our character data in broadcast:', ourPlayerData);
+        
+        // Check if we're spotlighted
+        const isSpotlighted = data.spotlightedPlayer === ourCharacterName;
+        if (isSpotlighted) {
+          console.log('🎭 WE ARE SPOTLIGHTED!');
+        }
+        
+        // Update character data with tags from MC
+        if (window.characterData) {
+          // Update story tags
+          if (ourPlayerData.storyTags) {
+            window.characterData.storyTags = [...ourPlayerData.storyTags];
+            console.log('📖 Story tags updated:', window.characterData.storyTags);
+          }
+          
+          // Update status tags (already formatted by MC)
+          if (ourPlayerData.currentStatuses) {
+            window.characterData.currentStatuses = [...ourPlayerData.currentStatuses];
+            console.log('📌 Status tags updated:', window.characterData.currentStatuses);
+          }
+          
+          // Dispatch custom event for UI update
+          const tagEvent = new CustomEvent('mc-tags-updated', {
+            detail: {
+              storyTags: ourPlayerData.storyTags || [],
+              currentStatuses: ourPlayerData.currentStatuses || [],
+              isSpotlighted: isSpotlighted
+            }
+          });
+          document.dispatchEvent(tagEvent);
+          console.log('📡 Tag update event dispatched');
+          
+          // Call update function if it exists
+          if (window.updateCharacterDisplay) {
+            window.updateCharacterDisplay();
+            console.log('🔄 Character display updated');
+          }
+          
+          // Calculate power with new status tags if function exists
+          if (window.calculateTotalPower) {
+            window.calculateTotalPower();
+            console.log('⚡ Power recalculated with status modifiers');
+          }
+        }
+      } else {
+        console.log('ℹ️ Our character not found in MC broadcast (we might not be in the session yet)');
+      }
+    }
+    
+    // Legacy tag format support (direct tags object)
+    if (data.tags && !data.players) {
+      console.log('🏷️ Legacy tag format received:', data.tags);
       
       // Dispatch custom event for tag updates
       const tagEvent = new CustomEvent('mc-tag-update', {
@@ -215,10 +284,8 @@ if (database) {
       
       // Apply tags to character if function exists
       if (window.applyMcTagsToCharacter) {
-        console.log('📝 Applying tags to character...');
+        console.log('📝 Applying legacy tags to character...');
         window.applyMcTagsToCharacter(data.tags);
-      } else {
-        console.warn('⚠️ applyMcTagsToCharacter function not found!');
       }
     }
     
@@ -231,26 +298,7 @@ if (database) {
   });
   
   console.log('✅ MC broadcast listener active');
-}
-
-// ================================
-// LISTEN FOR PLAYER ROLLS IN MC
-// (This helps debug if MC is receiving)
-// ================================
-
-if (database && window.currentUserId) {
-  // Listen to OUR OWN roll to see if it's being saved
-  window.addEventListener('firebaseAuthReady', () => {
-    const ourRollRef = ref(database, `playerRolls/${window.currentUserId}`);
-    
-    onValue(ourRollRef, (snapshot) => {
-      const rollData = snapshot.val();
-      if (rollData) {
-        console.log('🎲 Our roll in Firebase:', rollData);
-        console.log('   → MC should be able to see this!');
-      }
-    });
-  });
+  console.log('   📥 Listening for: location, music, npc, players (with tags), spotlightedPlayer');
 }
 
 // ================================
@@ -473,9 +521,10 @@ window.deleteCharacterFromCloud = deleteCharacterFromCloud;
 window.saveLastCharacterToCloud = saveLastCharacterToCloud;
 window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
 
-console.log('✅ firebase-config.js loaded');
+console.log('✅ firebase-config.js loaded - COMPLETE FIX VERSION');
 console.log('   📥 Listening: mcBroadcast');
 console.log('   📤 Broadcasting: playerCharacters/{userId}, playerRolls/{userId}');
 console.log('   ☁️ Cloud storage: users/{userId}/characters');
 console.log('   🎵 Music player: ALWAYS shows when URL present');
+console.log('   🏷️ Tags: Handles players array with spotlightedPlayer');
 console.log('   🎯 Element IDs: sceneInfo, musicInfo, spotlightInfo, musicPlayer');
