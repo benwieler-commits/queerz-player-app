@@ -215,11 +215,195 @@ function updateSyncBadge(isConnected) {
 }
 
 // ================================
+// CLOUD STORAGE FUNCTIONS
+// ================================
+// These functions save/load character data to Firebase
+// Used by player-app.js for cross-device character access
+
+/**
+ * Save a character to cloud storage
+ */
+export async function saveCharacterToCloud(characterData) {
+  if (!database || !window.currentUserId) {
+    console.error('❌ Cannot save to cloud - not authenticated');
+    return false;
+  }
+  
+  if (!characterData || !characterData.name) {
+    console.error('❌ Cannot save to cloud - invalid character data');
+    return false;
+  }
+  
+  try {
+    const charRef = ref(database, `users/${window.currentUserId}/characters/${characterData.name}`);
+    
+    // Add timestamp
+    const dataToSave = {
+      ...characterData,
+      lastModified: Date.now()
+    };
+    
+    await set(charRef, dataToSave);
+    console.log('☁️ Character saved to cloud:', characterData.name);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to save character to cloud:', error);
+    return false;
+  }
+}
+
+/**
+ * Load a specific character from cloud storage by name
+ */
+export async function loadCharacterFromCloud(characterName) {
+  if (!database || !window.currentUserId) {
+    console.error('❌ Cannot load from cloud - not authenticated');
+    return null;
+  }
+  
+  if (!characterName) {
+    console.error('❌ Cannot load from cloud - no character name provided');
+    return null;
+  }
+  
+  try {
+    const { get } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+    const charRef = ref(database, `users/${window.currentUserId}/characters/${characterName}`);
+    
+    console.log('☁️ Loading character from cloud:', characterName);
+    
+    const snapshot = await get(charRef);
+    
+    if (snapshot.exists()) {
+      const character = snapshot.val();
+      console.log('✅ Character loaded from cloud:', characterName);
+      return character;
+    } else {
+      console.log('ℹ️ Character not found in cloud:', characterName);
+      return null;
+    }
+  } catch (error) {
+    console.error('❌ Failed to load character from cloud:', error);
+    return null;
+  }
+}
+
+/**
+ * Load all characters from cloud storage
+ */
+export async function loadCharactersFromCloud() {
+  if (!database || !window.currentUserId) {
+    console.error('❌ Cannot load from cloud - not authenticated');
+    return null;
+  }
+  
+  try {
+    const { get } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+    const charsRef = ref(database, `users/${window.currentUserId}/characters`);
+    
+    console.log('☁️ Loading characters from cloud...');
+    
+    const snapshot = await get(charsRef);
+    
+    if (snapshot.exists()) {
+      const characters = snapshot.val();
+      console.log('✅ Characters loaded from cloud:', Object.keys(characters));
+      return characters;
+    } else {
+      console.log('ℹ️ No characters found in cloud');
+      return {};
+    }
+  } catch (error) {
+    console.error('❌ Failed to load characters from cloud:', error);
+    return null;
+  }
+}
+
+/**
+ * Delete a character from cloud storage
+ */
+export async function deleteCharacterFromCloud(characterName) {
+  if (!database || !window.currentUserId) {
+    console.error('❌ Cannot delete from cloud - not authenticated');
+    return false;
+  }
+  
+  try {
+    const { remove } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+    const charRef = ref(database, `users/${window.currentUserId}/characters/${characterName}`);
+    
+    console.log('☁️ Deleting character from cloud:', characterName);
+    
+    await remove(charRef);
+    console.log('✅ Character deleted from cloud successfully!');
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to delete character from cloud:', error);
+    return false;
+  }
+}
+
+/**
+ * Save the name of the last character used
+ */
+export async function saveLastCharacterToCloud(characterName) {
+  if (!database || !window.currentUserId) {
+    return false;
+  }
+  
+  try {
+    const lastCharRef = ref(database, `users/${window.currentUserId}/lastCharacter`);
+    await set(lastCharRef, characterName);
+    console.log('☁️ Last character saved to cloud:', characterName);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to save last character to cloud:', error);
+    return false;
+  }
+}
+
+/**
+ * Load the name of the last character used
+ */
+export async function loadLastCharacterFromCloud() {
+  if (!database || !window.currentUserId) {
+    return null;
+  }
+  
+  try {
+    const { get } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+    const lastCharRef = ref(database, `users/${window.currentUserId}/lastCharacter`);
+    
+    const snapshot = await get(lastCharRef);
+    
+    if (snapshot.exists()) {
+      const lastCharName = snapshot.val();
+      console.log('☁️ Last character loaded from cloud:', lastCharName);
+      return lastCharName;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('❌ Failed to load last character from cloud:', error);
+    return null;
+  }
+}
+
+// ================================
 // EXPORTS
 // ================================
 
 export { database, ref, set };
 
+// Make all cloud functions available globally for player-app.js
+window.saveCharacterToCloud = saveCharacterToCloud;
+window.loadCharacterFromCloud = loadCharacterFromCloud;
+window.loadCharactersFromCloud = loadCharactersFromCloud;
+window.deleteCharacterFromCloud = deleteCharacterFromCloud;
+window.saveLastCharacterToCloud = saveLastCharacterToCloud;
+window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
+
 console.log('✅ player-firebase-config.js loaded');
 console.log('   📥 Listening: mcBroadcast');
 console.log('   📤 Broadcasting: playerCharacters/{userId}, playerRolls/{userId}');
+console.log('   ☁️ Cloud storage: characters, lastCharacter');
