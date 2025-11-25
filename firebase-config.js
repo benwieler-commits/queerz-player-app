@@ -114,6 +114,15 @@ if (database) {
       } else if (sceneImage) {
         sceneImage.style.display = 'none';
       }
+
+            // STOP MUSIC on location change (if no new music provided)
+      // Music should only continue if explicitly sent with location change
+      const audioPlayer = document.getElementById('musicPlayer');
+      if (audioPlayer && !data.music) {
+        audioPlayer.pause();
+        audioPlayer.src = '';
+        console.log('🎵 Music stopped due to location change');
+      }
       
       console.log('📍 Location updated:', locationData.name);
     }

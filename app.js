@@ -807,6 +807,22 @@ function setupDiceRoller() {
         // Remove Temporary MC tags that were clicked
         removeTemporaryMCTags();
 
+                // Broadcast dice roll to MC App
+        if (window.broadcastDiceRoll) {
+            window.broadcastDiceRoll({
+                characterName: characterData.name,
+                roll: total,
+                result: characterData.lastRoll.result,
+                move: characterData.selectedMove,
+                moveName: getMoveDisplayName(characterData.selectedMove),
+                modifier: power
+            }).then(() => {
+                console.log('🎲 Dice roll broadcasted to MC');
+            }).catch(err => {
+                console.error('❌ Failed to broadcast dice roll:', err);
+            });
+        }
+
         saveToCloud();
 
         // Handle move-specific results
