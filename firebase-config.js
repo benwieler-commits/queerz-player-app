@@ -1,6 +1,6 @@
 // ================================
 // FIREBASE CONFIG - PLAYER APP
-// EMERGENCY FIX - CORRECT ELEMENT IDs
+// ENHANCED VERSION - Music + Tags Fix
 // ================================
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -110,6 +110,7 @@ if (database) {
       if (sceneImage && locationData.imageUrl) {
         sceneImage.src = locationData.imageUrl;
         sceneImage.style.display = 'block';
+        console.log('🖼️ Location image loaded:', locationData.imageUrl);
       } else if (sceneImage) {
         sceneImage.style.display = 'none';
       }
@@ -134,6 +135,7 @@ if (database) {
       if (spotlightPortrait && (data.npc.portraitUrl || data.npc.imageUrl)) {
         spotlightPortrait.src = data.npc.portraitUrl || data.npc.imageUrl;
         spotlightPortrait.style.display = 'block';
+        console.log('👤 NPC portrait loaded:', data.npc.portraitUrl || data.npc.imageUrl);
       } else if (spotlightPortrait) {
         spotlightPortrait.style.display = 'none';
       }
@@ -151,7 +153,7 @@ if (database) {
     }
     
     // ================================
-    // MUSIC UPDATE
+    // MUSIC UPDATE - ENHANCED!
     // ================================
     if (data.music) {
       const musicInfo = document.getElementById('musicInfo');
@@ -159,27 +161,38 @@ if (database) {
         musicInfo.textContent = data.music.name || 'Unknown Track';
       }
       
-      // Update audio player if available
+      // Update audio player - ALWAYS show if URL exists
       const audioPlayer = document.getElementById('musicPlayer');
-      if (audioPlayer && data.music.url) {
-        audioPlayer.src = data.music.url;
-        audioPlayer.style.display = 'block';
-        
-        // Auto-play if MC is playing
-        if (data.music.isPlaying || data.music.isLooping) {
-          audioPlayer.play().catch(err => {
-            console.log('ℹ️ Autoplay blocked - user must interact first');
+      if (audioPlayer) {
+        if (data.music.url) {
+          console.log('🎵 Music URL found:', data.music.url);
+          
+          // Set source
+          audioPlayer.src = data.music.url;
+          
+          // ALWAYS show player if there's a URL
+          audioPlayer.style.display = 'block';
+          
+          // Set loop if needed
+          audioPlayer.loop = !!(data.music.loop || data.music.isLooping);
+          
+          // Try to auto-play (will fail if user hasn't interacted yet)
+          // We try even if isPlaying isn't set, because the URL being present implies intent to play
+          audioPlayer.play().then(() => {
+            console.log('✅ Music autoplaying:', data.music.name);
+          }).catch(err => {
+            console.log('ℹ️ Autoplay blocked - user must click play button');
+            console.log('   (This is normal browser behavior for security)');
           });
+          
+          console.log('🎵 Music player ready:', data.music.name);
         } else {
-          audioPlayer.pause();
+          // No URL, hide player
+          audioPlayer.style.display = 'none';
+          console.log('ℹ️ No music URL provided');
         }
-        
-        // Set loop if needed
-        if (data.music.loop || data.music.isLooping) {
-          audioPlayer.loop = true;
-        }
-      } else if (audioPlayer && !data.music.url) {
-        audioPlayer.style.display = 'none';
+      } else {
+        console.warn('⚠️ Music player element (#musicPlayer) not found in HTML!');
       }
       
       console.log('🎵 Music updated:', data.music.name);
@@ -202,7 +215,10 @@ if (database) {
       
       // Apply tags to character if function exists
       if (window.applyMcTagsToCharacter) {
+        console.log('📝 Applying tags to character...');
         window.applyMcTagsToCharacter(data.tags);
+      } else {
+        console.warn('⚠️ applyMcTagsToCharacter function not found!');
       }
     }
     
@@ -215,6 +231,26 @@ if (database) {
   });
   
   console.log('✅ MC broadcast listener active');
+}
+
+// ================================
+// LISTEN FOR PLAYER ROLLS IN MC
+// (This helps debug if MC is receiving)
+// ================================
+
+if (database && window.currentUserId) {
+  // Listen to OUR OWN roll to see if it's being saved
+  window.addEventListener('firebaseAuthReady', () => {
+    const ourRollRef = ref(database, `playerRolls/${window.currentUserId}`);
+    
+    onValue(ourRollRef, (snapshot) => {
+      const rollData = snapshot.val();
+      if (rollData) {
+        console.log('🎲 Our roll in Firebase:', rollData);
+        console.log('   → MC should be able to see this!');
+      }
+    });
+  });
 }
 
 // ================================
@@ -441,4 +477,5 @@ console.log('✅ firebase-config.js loaded');
 console.log('   📥 Listening: mcBroadcast');
 console.log('   📤 Broadcasting: playerCharacters/{userId}, playerRolls/{userId}');
 console.log('   ☁️ Cloud storage: users/{userId}/characters');
-console.log('   🎯 Element IDs: sceneInfo, musicInfo, spotlightInfo');
+console.log('   🎵 Music player: ALWAYS shows when URL present');
+console.log('   🎯 Element IDs: sceneInfo, musicInfo, spotlightInfo, musicPlayer');
