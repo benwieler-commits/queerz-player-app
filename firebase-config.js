@@ -95,6 +95,73 @@ onAuthStateChanged(auth, (user) => {
 forceSignInAnonymously();
 
 // ================================
+// TAG FORMAT PARSING
+// ================================
+
+/**
+ * Parse tag format: "this-is-a-tag-1" where the number is a negative modifier
+ * @param {string} tag - Tag in format "text-text-number"
+ * @returns {Object} { displayText, modifier, originalTag }
+ */
+function parseTagFormat(tag) {
+  if (!tag || typeof tag !== 'string') {
+    return { displayText: tag, modifier: 0, originalTag: tag };
+  }
+
+  // Split by hyphens
+  const parts = tag.split('-');
+
+  // Check if last part is a number
+  const lastPart = parts[parts.length - 1];
+  const modifier = parseInt(lastPart);
+
+  if (!isNaN(modifier) && parts.length > 1) {
+    // Last part is a number - it's a negative modifier
+    const textParts = parts.slice(0, -1);
+    const displayText = textParts.join(' '); // Convert hyphens to spaces for display
+
+    return {
+      displayText: displayText,
+      modifier: -Math.abs(modifier), // Always negative
+      originalTag: tag
+    };
+  }
+
+  // No modifier found - just convert hyphens to spaces for display
+  return {
+    displayText: tag.replace(/-/g, ' '),
+    modifier: 0,
+    originalTag: tag
+  };
+}
+
+/**
+ * Calculate total modifier from all status tags
+ * @param {Array} statusTags - Array of status tag strings
+ * @returns {number} Total negative modifier
+ */
+function calculateStatusModifier(statusTags) {
+  if (!Array.isArray(statusTags) || statusTags.length === 0) {
+    return 0;
+  }
+
+  let totalModifier = 0;
+  statusTags.forEach(tag => {
+    const parsed = parseTagFormat(tag);
+    totalModifier += parsed.modifier;
+    if (parsed.modifier !== 0) {
+      console.log(`   📊 Tag "${parsed.displayText}" → ${parsed.modifier} modifier`);
+    }
+  });
+
+  return totalModifier;
+}
+
+// Make available globally for dice rolling
+window.parseTagFormat = parseTagFormat;
+window.calculateStatusModifier = calculateStatusModifier;
+
+// ================================
 // BROADCAST LISTENER (FIREBASE-ONLY)
 // ================================
 
