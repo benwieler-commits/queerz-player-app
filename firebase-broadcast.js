@@ -1,161 +1,95 @@
 // ================================
 // FIREBASE BROADCAST - PLAYER APP
-// Broadcasts player character data to MC
 // ================================
 
-import { database, auth, currentUserId, ref, set } from './firebase-config.js';
+import { database, ref, set } from './firebase-config.js';
 
 let lastBroadcastData = null;
 let broadcastCount = 0;
- 
-// Track which tags came from MC (to prevent broadcasting them back)
-let mcCreatedStatusTags = new Set();
-let mcCreatedStoryTags = new Set();
 
-// Listen for MC tag updates to track MC-created tags
-document.addEventListener('mc-tag-update', (event) => {
-  const { statusTags, storyTags } = event.detail;
+// Track MC-created tags to avoid echo
+const mcCreatedStatusTags = new Set();
+const mcCreatedStoryTags = new Set();
 
-  // Track all MC-created tags
-  if (statusTags && Array.isArray(statusTags)) {
-    statusTags.forEach(tag => mcCreatedStatusTags.add(tag));
-  }
-  if (storyTags && Array.isArray(storyTags)) {
-    storyTags.forEach(tag => mcCreatedStoryTags.add(tag));
-  }
-
-  console.log('📝 Tracking MC tags:', {
-    statusCount: mcCreatedStatusTags.size,
-    storyCount: mcCreatedStoryTags.size
-  });
+document.addEventListener('mc-tag-update', e => {
+  const { statusTags = [], storyTags = [] } = e.detail || {};
+  statusTags.forEach(t => mcCreatedStatusTags.add(t));
+  storyTags.forEach(t => mcCreatedStoryTags.add(t));
 });
+
 // ================================
-// BROADCAST PLAYER DATA TO MC
+// MAIN BROADCAST FUNCTION
 // ================================
 
-/**
- * Broadcast player character data to Firebase for MC to receive
- * @param {Object} characterData - Complete character data object
- * @returns {Promise<boolean>} Success status
- */
 export async function broadcastPlayerToMc(characterData) {
-  // Validation
-  if (!database) {
-    console.error('❌ Firebase database not initialized');
-    return false;
-  }
-
-  if (!window.currentUserId) {
-    console.warn('⚠️ Cannot broadcast: Not authenticated yet');
-    return false;
-  }
-
-  if (!characterData) {
-    console.warn('⚠️ Cannot broadcast: No character data provided');
+  if (!database || !window.currentUserId || !characterData) {
+    console.warn('Cannot broadcast – missing db/auth/data');
     return false;
   }
 
   try {
-    // Broadcast to playerCharacters/{userId} - where MC is listening
     const playerRef = ref(database, `playerCharacters/${window.currentUserId}`);
 
-    // Prepare broadcast data
     const broadcastData = {
-      // Core character info
       name: characterData.name || 'Unnamed Character',
       pronouns: characterData.pronouns || '',
-
-      // Creator Guide: House affiliation
       houseAffiliation: characterData.houseAffiliation || 'Unknown House',
       houseBasicAttack: characterData.houseBasicAttack || 'Basic Attack',
       signatureThemeIndex: characterData.signatureThemeIndex ?? 0,
 
-      // Portrait
       portraitUrl: characterData.currentPortraitMode === 'civilian'
         ? (characterData.civilianPortrait || '')
         : (characterData.qfactorPortrait || ''),
       currentPortraitMode: characterData.currentPortraitMode || 'civilian',
 
-      // Theme color
       themeColor: characterData.themeColor || '#4A7C7E',
 
-      // Game state
       juice: characterData.juice || 0,
       clues: characterData.clues || 0,
-
-      // Last dice roll (for MC to see player's roll results)
       lastRoll: characterData.lastRoll || null,
-
-      // Dice roll result (NEW - for MC to display)
       lastRollResult: characterData.lastRollResult || null,
       selectedMove: characterData.selectedMove || null,
 
-      // Themes (simplified for MC display)
-      themes: (characterData.themes || []).map(theme => ({
-        name: theme.name || 'Unnamed Theme',
-        type: theme.type || 'rainbow',
-        locked: theme.locked || false,
-        growth: theme.growth || 0,
-        shade: theme.shade || 0,
-        release: theme.release || 0
+      themes: (characterData.themes || []).map(t => ({
+        name: t.name || 'Unnamed Theme',
+        type: t.type || 'rainbow',
+        locked: !!t.locked,
+        growth: t.growth || 0,
+        shade: t.shade || 0,
+        release: t.release || 0
       })),
 
-            // Tags - ONLY broadcast player-created tags (filter out MC-created to prevent duplicates)
+      // Filter out MC-created tags
       currentStatuses: filterPlayerCreatedTags(characterData.currentStatuses || [], mcCreatedStatusTags),
       storyTags: filterPlayerCreatedTags(characterData.storyTags || [], mcCreatedStoryTags),
 
-      // Metadata
       lastBroadcast: Date.now(),
       sessionId: window.currentUserId,
-      characterLocked: characterData.characterLocked || false
+      characterLocked: !!characterData.characterLocked
     };
 
-    // Broadcast to Firebase
     await set(playerRef, broadcastData);
-
     broadcastCount++;
     lastBroadcastData = broadcastData;
 
-    console.log(`📤 Broadcasting to MC (${broadcastCount}):`, {
-      name: broadcastData.name,
-      pronouns: broadcastData.pronouns,
-      juice: broadcastData.juice,
-      themes: broadcastData.themes.length
-    });
-
+    console.log(`Broadcast #${broadcastCount} – ${broadcastData.name}`);
     return true;
-
-  } catch (error) {
-    console.error('❌ Broadcast to MC failed:', error.code || error.message);
+  } catch (err) {
+    console.error('Broadcast failed:', err);
     return false;
   }
 }
 
 // ================================
-// BROADCAST DICE ROLL TO MC
+// DICE ROLL BROADCAST
 // ================================
 
-/**
- * Broadcast ONLY dice roll results to MC (separate from character data)
- * @param {Object} rollData - Dice roll information
- * @returns {Promise<boolean>} Success status
- */
 export async function broadcastDiceRoll(rollData) {
-  if (!database || !window.currentUserId) {
-    console.warn('⚠️ Cannot broadcast roll: Not authenticated');
-    return false;
-  }
+  if (!database || !window.currentUserId || !rollData) return false;
 
-  if (!rollData) {
-    console.warn('⚠️ Cannot broadcast roll: No roll data provided');
-    return false;
-  }
-
-   try {
-    // Broadcast to playerRolls/{userId} - where MC is listening
+  try {
     const rollRef = ref(database, `playerRolls/${window.currentUserId}`);
-
-    const rollBroadcast = {
+    const payload = {
       characterName: rollData.characterName || 'Unknown',
       roll: rollData.roll || 0,
       result: rollData.result || null,
@@ -165,73 +99,29 @@ export async function broadcastDiceRoll(rollData) {
       sessionId: window.currentUserId
     };
 
-    await set(rollRef, rollBroadcast);
-
-    console.log('🎲 Broadcasting dice roll to MC:', {
-      character: rollBroadcast.characterName,
-      roll: rollBroadcast.roll,
-      result: rollBroadcast.result
-    });
-
+    await set(rollRef, payload);
+    console.log('Dice roll broadcast:', payload);
     return true;
-
-  } catch (error) {
-    console.error('❌ Dice roll broadcast failed:', error.code || error.message);
+  } catch (err) {
+    console.error('Dice roll broadcast failed:', err);
     return false;
   }
 }
- 
+
 // ================================
 // UTILITIES
 // ================================
 
-/**
- * Filter out MC-created tags to only broadcast player-created tags
- * @param {Array} tags - All tags
- * @param {Set} mcTags - Set of MC-created tags
- * @returns {Array} Only player-created tags
- */
-
-function filterPlayerCreatedTags(tags, mcTags) {
+function filterPlayerCreatedTags(tags, mcSet) {
   if (!Array.isArray(tags)) return [];
-
-  // Filter out any tags that were created by MC
-  const playerTags = tags.filter(tag => !mcTags.has(tag));
-
-  if (playerTags.length !== tags.length) {
-    console.log('🔍 Filtered MC tags:', {
-      total: tags.length,
-      playerCreated: playerTags.length,
-      filtered: tags.length - playerTags.length
-    });
-  }
-
-  return playerTags;
-}
-/**
- * Get last broadcast data for debugging
- */
-export function getLastBroadcast() {
-  return lastBroadcastData;
+  return tags.filter(t => !mcSet.has(t));
 }
 
-/**
- * Get broadcast count for debugging
- */
-export function getBroadcastCount() {
-  return broadcastCount;
-}
+export function getLastBroadcast() { return lastBroadcastData; }
+export function getBroadcastCount() { return broadcastCount; }
 
-// ================================
-// EXPORTS
-// ================================
-
+// Global fall-backs (for code that still uses window.)
 window.broadcastPlayerToMc = broadcastPlayerToMc;
 window.broadcastDiceRoll = broadcastDiceRoll;
 
-export { broadcastPlayerToMc };
-
-console.log('✅ firebase-broadcast.js (Player) loaded');
-console.log('   📤 Character data → playerCharacters/{userId}');
-console.log('   🎲 Dice rolls → playerRolls/{userId}');
-console.log('   🚫 MC-created tags filtered to prevent duplicates');
+console.log('firebase-broadcast.js loaded – clean & deduplicated');
