@@ -285,12 +285,20 @@ function initializeBroadcastListener() {
 
     // Dispatch if we have any tags
     if (statusTags.length > 0 || storyTags.length > 0) {
-      console.log('📥 Broadcasting tag update:', { statusTags, storyTags });
+      // Calculate total modifier from status tags
+      const totalModifier = calculateStatusModifier(statusTags);
+
+      console.log('📥 Broadcasting tag update:', {
+        statusTags,
+        storyTags,
+        totalModifier
+      });
+
       document.dispatchEvent(new CustomEvent('mc-tag-update', {
         detail: {
           statusTags: statusTags,
-          storyTags: storyTags
-        }
+          storyTags: storyTags,
+          totalModifier: totalModifier  // Include calculated modifier for immediate application        }
       }));
     }
 
@@ -367,11 +375,13 @@ function startBroadcastPolling() {
       }
 
       // Dispatch if we have any tags
-      if (statusTags.length > 0 || storyTags.length > 0) {
+        const totalModifier = calculateStatusModifier(statusTags);
+
         document.dispatchEvent(new CustomEvent('mc-tag-update', {
           detail: {
             statusTags: statusTags,
-            storyTags: storyTags
+            storyTags: storyTags,
+            totalModifier: totalModifier
           }
         }));
       }
@@ -570,8 +580,10 @@ export {
   saveCharacterToCloud, loadCharactersFromCloud,
   saveLastCharacterToCloud, loadLastCharacterFromCloud,
   toggleCloudSync,
+  parseTagFormat, calculateStatusModifier,
   ref, set, get, onValue, off
 };
 
-console.log('✅ Config v6 loaded - Loop guards added');
-console.log('💡 Initial load guarded—no infinite dispatches');
+console.log('✅ Config v7 loaded - Tag format parsing added');
+console.log('💡 Status tags format: "text-text-number" → negative modifier');
+console.log('💡 Modifiers calculated and dispatched with mc-tag-update event');
