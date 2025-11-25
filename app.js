@@ -4,8 +4,7 @@
 // ================================
 
 import {
-    saveCharacterToCloud,
-    loadCharactersFromCloud
+    saveCharacterToCloud    
 } from './firebase-config.js';
 
 import {
