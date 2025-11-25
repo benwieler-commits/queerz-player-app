@@ -243,6 +243,80 @@ function initializeBroadcastListener() {
 // Start broadcast IMMEDIATELY
 initializeBroadcastListener();
 
+// Add polling fallback to ensure tags are fetched frequently (every 2 seconds)
+// This ensures immediate application of MC-broadcasted status/story tags
+let pollingInterval = null;
+
+function startBroadcastPolling() {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+  }
+
+  console.log('⏱️ Starting broadcast polling (every 2 seconds for immediate tag sync)');
+
+  pollingInterval = setInterval(async () => {
+    try {
+      const broadcastRef = ref(database, 'mcBroadcast');
+      const snapshot = await get(broadcastRef);
+      const data = snapshot.val();
+
+      if (!data) return;
+
+      // Extract tags using same logic as real-time listener
+      let statusTags = [];
+      let storyTags = [];
+
+      if (data.players && Array.isArray(data.players)) {
+        const currentCharName = localStorage.getItem('currentCharacterName');
+        let currentPlayer = null;
+
+        if (currentCharName) {
+          currentPlayer = data.players.find(p => p.name === currentCharName);
+        }
+
+        if (!currentPlayer && data.players.length > 0) {
+          currentPlayer = data.players[0];
+        }
+
+        if (currentPlayer && currentPlayer.tags) {
+          statusTags = currentPlayer.tags.status || [];
+          storyTags = currentPlayer.tags.story || [];
+        }
+      }
+
+      if (data.playerUpdates && window.currentUserId) {
+        const playerUpdate = data.playerUpdates[window.currentUserId];
+        if (playerUpdate) {
+          statusTags = playerUpdate.statusTags || statusTags;
+          storyTags = playerUpdate.storyTags || storyTags;
+        }
+      }
+
+      if (data.statusTags) {
+        statusTags = data.statusTags;
+      }
+      if (data.storyTags) {
+        storyTags = data.storyTags;
+      }
+
+      // Dispatch if we have any tags
+      if (statusTags.length > 0 || storyTags.length > 0) {
+        document.dispatchEvent(new CustomEvent('mc-tag-update', {
+          detail: {
+            statusTags: statusTags,
+            storyTags: storyTags
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('❌ Polling error:', error);
+    }
+  }, 2000); // Poll every 2 seconds for immediate updates
+}
+
+// Start polling immediately
+startBroadcastPolling();
+
 function updateBroadcastStatus(isActive) {
   const badge = document.getElementById('syncBadge');
   if (badge) {

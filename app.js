@@ -2156,22 +2156,33 @@ function handleMCTagUpdate(event) {
     console.log('📥 Received tag update from MC:', { statusTags, storyTags });
 
     // Process status tags
+    // ⭐ IMPORTANT: All MC-broadcasted Status tags are:
+    //    1. Always NEGATIVE (impact dice rolls negatively)
+    //    2. Always ONGOING (persist until MC removes them)
     if (statusTags && Array.isArray(statusTags)) {
         characterData.currentStatuses = statusTags.map(tag => {
             if (typeof tag === 'string') {
                 const parsed = parseTagFromMC(tag);
-                console.log('  Parsed status tag:', parsed);
+
+                // Force modifier to be negative (MC statuses always hinder)
+                let forcedModifier = parsed.modifier;
+                if (forcedModifier > 0) {
+                    forcedModifier = -forcedModifier; // Convert positive to negative
+                    console.log(`  ⚠️ Converted positive modifier to negative: ${parsed.modifier} → ${forcedModifier}`);
+                }
+
+                console.log('  Parsed status tag:', parsed, '→ Forced negative & ongoing');
                 return {
                     name: parsed.name,
-                    modifier: parsed.modifier,
-                    isTemporary: parsed.isTemporary,
-                    isOngoing: parsed.isOngoing,
+                    modifier: forcedModifier, // Always negative
+                    isTemporary: false, // MC statuses are never temporary
+                    isOngoing: true, // MC statuses are always ongoing
                     clicked: false // Track if temporary tag has been clicked
                 };
             }
             return tag; // Already an object
         });
-        console.log('  Updated currentStatuses:', characterData.currentStatuses);
+        console.log('  Updated currentStatuses (all forced negative & ongoing):', characterData.currentStatuses);
     }
 
     // Process story tags
