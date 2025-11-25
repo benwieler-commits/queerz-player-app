@@ -299,7 +299,7 @@ function initializeBroadcastListener() {
           statusTags: statusTags,
           storyTags: storyTags,
           totalModifier: totalModifier  // Include calculated modifier for immediate application        }
-      }));
+      });
     }
 
     // Update statuses
