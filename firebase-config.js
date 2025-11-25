@@ -1,5 +1,6 @@
 // ================================
 // FIREBASE CONFIG - PLAYER APP
+// EMERGENCY FIX - CORRECT ELEMENT IDs
 // ================================
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -44,7 +45,10 @@ try {
 
 if (auth) {
   signInAnonymously(auth)
-    .then(() => console.log('✅ Player authenticated anonymously'))
+    .then(() => {
+      console.log('✅ Player authenticated anonymously');
+      updateSyncBadge(true);
+    })
     .catch((error) => console.error('❌ Auth failed:', error));
 
   onAuthStateChanged(auth, (user) => {
@@ -74,77 +78,108 @@ if (database) {
   onValue(mcBroadcastRef, (snapshot) => {
     const data = snapshot.val();
     
-    if (!data) return;
+    if (!data) {
+      console.log('📭 No MC broadcast data yet');
+      return;
+    }
     
     console.log('📥 MC Broadcast received:', data);
     
-    // ================================
-    // LOCATION UPDATE
-    // ================================
-    if (data.location) {
-      const locationDisplay = document.getElementById('sceneFromMC');
-      if (locationDisplay) {
-        locationDisplay.innerHTML = `
-          <strong>${data.location.name || 'Unknown Location'}</strong>
-          ${data.location.description ? `<br><small>${data.location.description}</small>` : ''}
-        `;
-      }
-      
-      // Update location image if available
-      const locationImg = document.getElementById('locationImage');
-      if (locationImg && data.location.imageUrl) {
-        locationImg.src = data.location.imageUrl;
-        locationImg.style.display = 'block';
-      }
-      
-      console.log('📍 Location updated:', data.location.name);
+    // Update MC Status
+    const mcStatus = document.getElementById('mcStatus');
+    if (mcStatus) {
+      mcStatus.textContent = 'Receiving MC data...';
+      mcStatus.style.color = '#00FF00';
     }
     
     // ================================
-    // NPC UPDATE
+    // LOCATION UPDATE (environment OR location)
     // ================================
-    if (data.npc) {
-      const npcDisplay = document.getElementById('npcInfo');
-      if (npcDisplay) {
-        npcDisplay.innerHTML = `
-          <strong>NPC: ${data.npc.name || 'Unknown'}</strong>
-          ${data.npc.description ? `<br><small>${data.npc.description}</small>` : ''}
-        `;
-        npcDisplay.style.display = 'block';
+    const locationData = data.location || data.environment;
+    if (locationData) {
+      const sceneInfo = document.getElementById('sceneInfo');
+      if (sceneInfo) {
+        sceneInfo.textContent = locationData.name || 'Unknown Location';
+        if (locationData.description) {
+          sceneInfo.textContent += ` - ${locationData.description}`;
+        }
       }
       
-      // Update NPC portrait if available
-      const npcPortrait = document.getElementById('npcPortrait');
-      if (npcPortrait && data.npc.portraitUrl) {
-        npcPortrait.src = data.npc.portraitUrl;
-        npcPortrait.style.display = 'block';
+      // Update scene image if available
+      const sceneImage = document.getElementById('sceneImage');
+      if (sceneImage && locationData.imageUrl) {
+        sceneImage.src = locationData.imageUrl;
+        sceneImage.style.display = 'block';
+      } else if (sceneImage) {
+        sceneImage.style.display = 'none';
+      }
+      
+      console.log('📍 Location updated:', locationData.name);
+    }
+    
+    // ================================
+    // NPC/SPOTLIGHT UPDATE
+    // ================================
+    if (data.npc) {
+      const spotlightInfo = document.getElementById('spotlightInfo');
+      if (spotlightInfo) {
+        spotlightInfo.textContent = `NPC: ${data.npc.name || 'Unknown'}`;
+        if (data.npc.description) {
+          spotlightInfo.textContent += ` - ${data.npc.description}`;
+        }
+      }
+      
+      // Update spotlight portrait if available
+      const spotlightPortrait = document.getElementById('spotlightPortrait');
+      if (spotlightPortrait && (data.npc.portraitUrl || data.npc.imageUrl)) {
+        spotlightPortrait.src = data.npc.portraitUrl || data.npc.imageUrl;
+        spotlightPortrait.style.display = 'block';
+      } else if (spotlightPortrait) {
+        spotlightPortrait.style.display = 'none';
       }
       
       console.log('👤 NPC updated:', data.npc.name);
+    }
+    
+    // Check for character spotlight
+    if (data.spotlight) {
+      const spotlightInfo = document.getElementById('spotlightInfo');
+      if (spotlightInfo) {
+        spotlightInfo.textContent = `Spotlight: ${data.spotlight.characterName || 'Unknown'}`;
+      }
+      console.log('🎭 Spotlight on:', data.spotlight.characterName);
     }
     
     // ================================
     // MUSIC UPDATE
     // ================================
     if (data.music) {
-      const musicDisplay = document.getElementById('musicFromMC');
-      if (musicDisplay) {
-        musicDisplay.innerHTML = `♪ ${data.music.name || 'Unknown Track'}`;
+      const musicInfo = document.getElementById('musicInfo');
+      if (musicInfo) {
+        musicInfo.textContent = data.music.name || 'Unknown Track';
       }
       
       // Update audio player if available
       const audioPlayer = document.getElementById('musicPlayer');
       if (audioPlayer && data.music.url) {
         audioPlayer.src = data.music.url;
+        audioPlayer.style.display = 'block';
         
         // Auto-play if MC is playing
-        if (data.music.isPlaying) {
+        if (data.music.isPlaying || data.music.isLooping) {
           audioPlayer.play().catch(err => {
             console.log('ℹ️ Autoplay blocked - user must interact first');
           });
         } else {
           audioPlayer.pause();
         }
+        
+        // Set loop if needed
+        if (data.music.loop || data.music.isLooping) {
+          audioPlayer.loop = true;
+        }
+      } else if (audioPlayer && !data.music.url) {
+        audioPlayer.style.display = 'none';
       }
       
       console.log('🎵 Music updated:', data.music.name);
@@ -165,23 +200,10 @@ if (database) {
       });
       document.dispatchEvent(tagEvent);
       
-      // Apply tags to character if player-app.js is ready
+      // Apply tags to character if function exists
       if (window.applyMcTagsToCharacter) {
         window.applyMcTagsToCharacter(data.tags);
       }
-    }
-    
-    // ================================
-    // SPOTLIGHT UPDATE
-    // ================================
-    if (data.spotlight) {
-      const spotlightDisplay = document.getElementById('spotlightInfo');
-      if (spotlightDisplay) {
-        spotlightDisplay.innerHTML = `🎭 ${data.spotlight.characterName || 'Unknown'}`;
-        spotlightDisplay.style.display = 'block';
-      }
-      
-      console.log('🎭 Spotlight on:', data.spotlight.characterName);
     }
     
     // Update sync status badge
@@ -200,25 +222,23 @@ if (database) {
 // ================================
 
 function updateSyncBadge(isConnected) {
-  const badge = document.getElementById('syncBadge');
-  if (!badge) return;
+  const syncBadge = document.getElementById('syncBadge');
+  if (!syncBadge) return;
   
   if (isConnected) {
-    badge.textContent = '● Live Sync';
-    badge.classList.remove('offline');
-    badge.classList.add('online');
+    syncBadge.textContent = '● Live Sync';
+    syncBadge.classList.remove('offline');
+    syncBadge.classList.add('online');
   } else {
-    badge.textContent = '● Offline';
-    badge.classList.remove('online');
-    badge.classList.add('offline');
+    syncBadge.textContent = '● Offline';
+    syncBadge.classList.remove('online');
+    syncBadge.classList.add('offline');
   }
 }
 
 // ================================
 // CLOUD STORAGE FUNCTIONS
 // ================================
-// These functions save/load character data to Firebase
-// Used by player-app.js for cross-device character access
 
 /**
  * Save a character to cloud storage
@@ -245,6 +265,20 @@ export async function saveCharacterToCloud(characterData) {
     
     await set(charRef, dataToSave);
     console.log('☁️ Character saved to cloud:', characterData.name);
+    
+    // Update cloud badge
+    const cloudBadge = document.getElementById('cloudBadge');
+    if (cloudBadge) {
+      cloudBadge.textContent = '☁️ Saved';
+      cloudBadge.classList.remove('cloud-offline');
+      cloudBadge.classList.add('cloud-online');
+      
+      // Reset after 2 seconds
+      setTimeout(() => {
+        cloudBadge.textContent = '☁️';
+      }, 2000);
+    }
+    
     return true;
   } catch (error) {
     console.error('❌ Failed to save character to cloud:', error);
@@ -403,7 +437,8 @@ window.deleteCharacterFromCloud = deleteCharacterFromCloud;
 window.saveLastCharacterToCloud = saveLastCharacterToCloud;
 window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
 
-console.log('✅ player-firebase-config.js loaded');
+console.log('✅ firebase-config.js loaded');
 console.log('   📥 Listening: mcBroadcast');
 console.log('   📤 Broadcasting: playerCharacters/{userId}, playerRolls/{userId}');
-console.log('   ☁️ Cloud storage: characters, lastCharacter');
+console.log('   ☁️ Cloud storage: users/{userId}/characters');
+console.log('   🎯 Element IDs: sceneInfo, musicInfo, spotlightInfo');
