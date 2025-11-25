@@ -7,7 +7,28 @@ import { database, auth, currentUserId, ref, set } from './firebase-config.js';
 
 let lastBroadcastData = null;
 let broadcastCount = 0;
+ 
+// Track which tags came from MC (to prevent broadcasting them back)
+let mcCreatedStatusTags = new Set();
+let mcCreatedStoryTags = new Set();
 
+// Listen for MC tag updates to track MC-created tags
+document.addEventListener('mc-tag-update', (event) => {
+  const { statusTags, storyTags } = event.detail;
+
+  // Track all MC-created tags
+  if (statusTags && Array.isArray(statusTags)) {
+    statusTags.forEach(tag => mcCreatedStatusTags.add(tag));
+  }
+  if (storyTags && Array.isArray(storyTags)) {
+    storyTags.forEach(tag => mcCreatedStoryTags.add(tag));
+  }
+
+  console.log('📝 Tracking MC tags:', {
+    statusCount: mcCreatedStatusTags.size,
+    storyCount: mcCreatedStoryTags.size
+  });
+});
 // ================================
 // BROADCAST PLAYER DATA TO MC
 // ================================
@@ -79,9 +100,9 @@ export async function broadcastPlayerToMc(characterData) {
         release: theme.release || 0
       })),
 
-      // Tags managed by MC
-      currentStatuses: characterData.currentStatuses || [],
-      storyTags: characterData.storyTags || [],
+            // Tags - ONLY broadcast player-created tags (filter out MC-created to prevent duplicates)
+      currentStatuses: filterPlayerCreatedTags(characterData.currentStatuses || [], mcCreatedStatusTags),
+      storyTags: filterPlayerCreatedTags(characterData.storyTags || [], mcCreatedStoryTags),
 
       // Metadata
       lastBroadcast: Date.now(),
@@ -111,9 +132,82 @@ export async function broadcastPlayerToMc(characterData) {
 }
 
 // ================================
+// BROADCAST DICE ROLL TO MC
+// ================================
+
+/**
+ * Broadcast ONLY dice roll results to MC (separate from character data)
+ * @param {Object} rollData - Dice roll information
+ * @returns {Promise<boolean>} Success status
+ */
+export async function broadcastDiceRoll(rollData) {
+  if (!database || !window.currentUserId) {
+    console.warn('⚠️ Cannot broadcast roll: Not authenticated');
+    return false;
+  }
+
+  if (!rollData) {
+    console.warn('⚠️ Cannot broadcast roll: No roll data provided');
+    return false;
+  }
+
+   try {
+    // Broadcast to playerRolls/{userId} - where MC is listening
+    const rollRef = ref(database, `playerRolls/${window.currentUserId}`);
+
+    const rollBroadcast = {
+      characterName: rollData.characterName || 'Unknown',
+      roll: rollData.roll || 0,
+      result: rollData.result || null,
+      move: rollData.move || null,
+      modifier: rollData.modifier || 0,
+      timestamp: Date.now(),
+      sessionId: window.currentUserId
+    };
+
+    await set(rollRef, rollBroadcast);
+
+    console.log('🎲 Broadcasting dice roll to MC:', {
+      character: rollBroadcast.characterName,
+      roll: rollBroadcast.roll,
+      result: rollBroadcast.result
+    });
+
+    return true;
+
+  } catch (error) {
+    console.error('❌ Dice roll broadcast failed:', error.code || error.message);
+    return false;
+  }
+}
+ 
+// ================================
 // UTILITIES
 // ================================
 
+/**
+ * Filter out MC-created tags to only broadcast player-created tags
+ * @param {Array} tags - All tags
+ * @param {Set} mcTags - Set of MC-created tags
+ * @returns {Array} Only player-created tags
+ */
+
+function filterPlayerCreatedTags(tags, mcTags) {
+  if (!Array.isArray(tags)) return [];
+
+  // Filter out any tags that were created by MC
+  const playerTags = tags.filter(tag => !mcTags.has(tag));
+
+  if (playerTags.length !== tags.length) {
+    console.log('🔍 Filtered MC tags:', {
+      total: tags.length,
+      playerCreated: playerTags.length,
+      filtered: tags.length - playerTags.length
+    });
+  }
+
+  return playerTags;
+}
 /**
  * Get last broadcast data for debugging
  */
@@ -133,5 +227,11 @@ export function getBroadcastCount() {
 // ================================
 
 window.broadcastPlayerToMc = broadcastPlayerToMc;
+window.broadcastDiceRoll = broadcastDiceRoll;
 
-console.log('✅ firebase-broadcast.js (Player) loaded - Broadcasting to playerCharacters/{userId}');
+export { broadcastPlayerToMc, broadcastDiceRoll };
+
+console.log('✅ firebase-broadcast.js (Player) loaded');
+console.log('   📤 Character data → playerCharacters/{userId}');
+console.log('   🎲 Dice rolls → playerRolls/{userId}');
+console.log('   🚫 MC-created tags filtered to prevent duplicates');
