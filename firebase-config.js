@@ -139,10 +139,16 @@ window.calculateStatusModifier = calculateStatusModifier;
 let pollingInterval = null;
 
 function initializeBroadcastListener() {
+  console.log('🎧 Initializing MC Broadcast listener...');
   const broadcastRef = ref(database, 'mcBroadcast');
   onValue(broadcastRef, snapshot => {
+    console.log('📡 Broadcast listener fired!', snapshot.exists());
     const data = snapshot.val();
-    if (!data) return;
+    if (!data) {
+      console.log('⚠️ No broadcast data received');
+      return;
+    }
+    console.log('✅ Broadcast data received:', data);
 
     // Scene / Music / NPC handling
     // Update scene information
@@ -217,20 +223,27 @@ function initializeBroadcastListener() {
       }));
     }
 
+    console.log('✅ UI updated with broadcast data');
     updateBroadcastStatus(true);
   }, err => {
-    console.error('Broadcast error:', err);
+    console.error('❌ Broadcast listener error:', err);
     updateBroadcastStatus(false);
   });
+  console.log('✅ Broadcast listener attached');
 }
 
 function startBroadcastPolling() {
+  console.log('🔄 Starting broadcast polling (every 2s)...');
   if (pollingInterval) clearInterval(pollingInterval);
   pollingInterval = setInterval(async () => {
     try {
       const snap = await get(ref(database, 'mcBroadcast'));
       const data = snap.val();
-      if (!data) return;
+      if (!data) {
+        console.log('🔄 Poll: No data at mcBroadcast');
+        return;
+      }
+      console.log('🔄 Poll: Data received', data);
 
       // Scene / Music / NPC handling (same as listener)
       const sceneInfo = document.getElementById('sceneInfo');
@@ -323,13 +336,109 @@ startBroadcastPolling();
 // CLOUD SYNC FUNCTIONS
 // ================================
 
-function startCloudCharacterListener() { /* unchanged – kept your logic */ }
-function stopCloudCharacterListener() { /* unchanged */ }
-async function saveCharacterToCloud(characterData) { /* unchanged */ }
-async function loadCharactersFromCloud() { /* unchanged */ }
-async function saveLastCharacterToCloud(charName) { /* unchanged */ }
-async function loadLastCharacterFromCloud() { /* unchanged */ }
-async function toggleCloudSync(currentChar = null) { /* unchanged */ }
+function startCloudCharacterListener() {
+  if (!currentUserId || charactersListener) return;
+  const charsRef = ref(database, `users/${currentUserId}/characters`);
+  charactersListener = onValue(charsRef, (snapshot) => {
+    const chars = snapshot.exists() ? snapshot.val() : {};
+    if (Object.keys(chars).length > 0) console.log('🔄 Live chars updated:', Object.keys(chars).length);
+    document.dispatchEvent(new CustomEvent('cloud-characters-updated', { detail: chars }));
+    updateCloudStatus(true);
+  }, (error) => {
+    console.error('❌ Listener error:', error);
+    updateCloudStatus(false);
+  });
+  if (isInitialLoad) {
+    document.dispatchEvent(new CustomEvent('cloud-characters-loaded', { detail: {} }));
+    isInitialLoad = false;
+  }
+  console.log('✅ Cloud listener on');
+}
+
+function stopCloudCharacterListener() {
+  if (charactersListener) {
+    const charsRef = ref(database, `users/${currentUserId}/characters`);
+    off(charsRef, 'value', charactersListener);
+    charactersListener = null;
+  }
+  updateCloudStatus(false);
+}
+
+async function saveCharacterToCloud(characterData) {
+  if (!currentUserId || !characterData?.name) return false;
+  try {
+    const serialData = JSON.parse(JSON.stringify(characterData));
+    const charRef = ref(database, `users/${currentUserId}/characters/${characterData.name}`);
+    await set(charRef, { ...serialData, lastModified: Date.now() });
+    console.log('✅ Saved:', characterData.name);
+    return true;
+  } catch (error) {
+    console.error('❌ Save failed:', error.code);
+    return false;
+  }
+}
+
+async function loadCharactersFromCloud() {
+  if (!currentUserId) return null;
+  try {
+    let chars = {};
+    const userRef = ref(database, `users/${currentUserId}/characters`);
+    const snap = await get(userRef);
+    if (snap.exists()) {
+      chars = snap.val();
+    } else {
+      console.log('ℹ️ No user chars - trying legacy');
+      const legacyRef = ref(database, 'playerCharacters');
+      const legacySnap = await get(legacyRef);
+      if (legacySnap.exists()) chars = legacySnap.val();
+    }
+    console.log('✅ Loaded:', Object.keys(chars).length);
+    if (!isInitialLoad) {
+      document.dispatchEvent(new CustomEvent('cloud-characters-loaded', { detail: chars }));
+    }
+    return chars;
+  } catch (error) {
+    console.error('❌ Load failed:', error);
+    return null;
+  }
+}
+
+async function saveLastCharacterToCloud(charName) {
+  if (!currentUserId) return false;
+  try {
+    await set(ref(database, `users/${currentUserId}/lastCharacter`), charName || null);
+    return true;
+  } catch (error) {
+    console.error('❌ Last char save:', error);
+    return false;
+  }
+}
+
+async function loadLastCharacterFromCloud() {
+  if (!currentUserId) return null;
+  try {
+    const snap = await get(ref(database, `users/${currentUserId}/lastCharacter`));
+    return snap.exists() ? snap.val() : null;
+  } catch (error) {
+    console.error('❌ Last char load:', error);
+    return null;
+  }
+}
+
+async function toggleCloudSync(currentChar = null) {
+  console.log('🔄 Sync toggle...');
+  updateCloudStatus(false);
+  try {
+    if (currentChar) await saveCharacterToCloud(currentChar);
+    await loadCharactersFromCloud();
+    if (currentChar?.name) await saveLastCharacterToCloud(currentChar.name);
+    console.log('✅ Synced');
+    updateCloudStatus(true);
+  } catch (error) {
+    console.error('❌ Sync error:', error);
+    updateCloudStatus(false);
+  }
+}
 
 function updateCloudStatus(isActive) {
   const badge = document.getElementById('cloudBadge');
@@ -389,4 +498,4 @@ export {
   off
 };
 
-console.log('firebase-config.js loaded – clean & deduplicated');
+console.log('✅ firebase-config.js loaded - broadcast listeners + cloud sync active');
