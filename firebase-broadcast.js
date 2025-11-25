@@ -229,7 +229,7 @@ export function getBroadcastCount() {
 window.broadcastPlayerToMc = broadcastPlayerToMc;
 window.broadcastDiceRoll = broadcastDiceRoll;
 
-export { broadcastPlayerToMc, broadcastDiceRoll };
+export { broadcastPlayerToMc };
 
 console.log('✅ firebase-broadcast.js (Player) loaded');
 console.log('   📤 Character data → playerCharacters/{userId}');
