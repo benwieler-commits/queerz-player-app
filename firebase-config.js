@@ -251,32 +251,46 @@ if (database) {
       // Fallback 1: Check DOM element if window.characterData.name is empty
       if (!ourCharacterName) {
         const nameElement = document.getElementById('characterName');
-        if (nameElement && nameElement.textContent && nameElement.textContent !== 'Character Name') {
-          ourCharacterName = nameElement.textContent.trim();
-          console.log('📛 Got character name from DOM:', ourCharacterName);
-        }
-      }
-      
-      // Fallback 2: Check localStorage for last loaded character
-      if (!ourCharacterName) {
-        try {
-          const savedData = localStorage.getItem('queerz-player-data');
-          if (savedData) {
-            const parsed = JSON.parse(savedData);
-            if (parsed.name) {
-              ourCharacterName = parsed.name;
-              console.log('📛 Got character name from localStorage:', ourCharacterName);
-            }
+        if (nameElement) {
+          // Could be an input or a text element
+          const domName = nameElement.value || nameElement.textContent;
+          if (domName && domName !== 'Character Name' && domName.trim() !== '') {
+            ourCharacterName = domName.trim();
+            console.log('📛 Got character name from DOM:', ourCharacterName);
           }
-        } catch (e) {
-          // Ignore parse errors
+        }
+      }
+      
+      // Fallback 2: Check localStorage for current character name
+      if (!ourCharacterName) {
+        const storedName = localStorage.getItem('currentCharacterName');
+        if (storedName) {
+          ourCharacterName = storedName;
+          console.log('📛 Got character name from localStorage:', ourCharacterName);
+        }
+      }
+      
+      // Fallback 3: If we're the spotlighted player and only one player in broadcast, use that
+      if (!ourCharacterName && data.players.length === 1) {
+        ourCharacterName = data.players[0].name;
+        console.log('📛 Using only player in broadcast:', ourCharacterName);
+      }
+      
+      // Fallback 4: If spotlighted player matches a player in broadcast, use that
+      if (!ourCharacterName && data.spotlightedPlayer) {
+        const spotlightedInBroadcast = data.players.find(p => p.name === data.spotlightedPlayer);
+        if (spotlightedInBroadcast) {
+          ourCharacterName = data.spotlightedPlayer;
+          console.log('📛 Using spotlighted player name:', ourCharacterName);
         }
       }
       
       if (!ourCharacterName) {
-        console.log('ℹ️ No character loaded yet, skipping tag update');
+        console.log('⚠️ Could not determine character name from any source');
         console.log('   window.characterData:', window.characterData);
         console.log('   window.characterData?.name:', window.characterData?.name);
+        console.log('   DOM #characterName:', document.getElementById('characterName')?.value);
+        console.log('   localStorage currentCharacterName:', localStorage.getItem('currentCharacterName'));
         return;
       }
       
