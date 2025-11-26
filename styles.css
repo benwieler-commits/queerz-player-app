@@ -3676,3 +3676,185 @@ body {
     font-size: 0.9rem;
     color: #aaa;
 }
+
+/* ===================================
+   QUEERZ! MC APP - CSS ADDITIONS
+   Add these styles to your MC App CSS
+   =================================== */
+
+/* ===================================
+   ROLL NOTIFICATION - NO AUTO-DISMISS
+   =================================== */
+
+.roll-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 420px;
+    max-width: 90vw;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 2px solid #00ffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 255, 255, 0.3);
+    z-index: 10000;
+    overflow: hidden;
+}
+
+.roll-notification.notification-pulse {
+    animation: notificationPulse 2s ease-in-out infinite;
+}
+
+@keyframes notificationPulse {
+    0%, 100% { box-shadow: 0 8px 32px rgba(0, 255, 255, 0.3); }
+    50% { box-shadow: 0 8px 48px rgba(0, 255, 255, 0.6); }
+}
+
+.roll-notification.slide-in {
+    animation: slideIn 0.3s ease-out, notificationPulse 2s ease-in-out 0.3s infinite;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.roll-notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.roll-notif-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.roll-notif-header.miss {
+    background: linear-gradient(90deg, rgba(255, 0, 0, 0.3), transparent);
+    border-left: 4px solid #ff6b6b;
+}
+
+.roll-notif-header.partial {
+    background: linear-gradient(90deg, rgba(255, 200, 0, 0.3), transparent);
+    border-left: 4px solid #F4D35E;
+}
+
+.roll-notif-header.hit {
+    background: linear-gradient(90deg, rgba(0, 255, 0, 0.3), transparent);
+    border-left: 4px solid #4ADE80;
+}
+
+.close-notif-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 24px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-notif-btn:hover {
+    background: rgba(255, 0, 0, 0.5);
+    transform: scale(1.1);
+    border-color: #ff6b6b;
+}
+
+.roll-notif-body {
+    padding: 16px;
+    color: #e0e0e0;
+}
+
+.roll-result {
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.roll-outcome {
+    font-size: 1.2rem;
+    margin: 8px 0;
+}
+
+.mc-move-prompt {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    border-left: 3px solid #00ffff;
+    line-height: 1.5;
+}
+
+.mc-move-prompt strong {
+    color: #00ffff;
+}
+
+/* ===================================
+   DOWNTIME BUTTON
+   =================================== */
+
+.downtime-btn {
+    background: linear-gradient(135deg, #1e3a5f, #0d1f3c);
+    color: #ffd700;
+    border: 2px solid #ffd700;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.downtime-btn:hover {
+    background: linear-gradient(135deg, #2a4a6f, #1a2f4c);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+.downtime-btn.active {
+    background: linear-gradient(135deg, #ffd700, #ffaa00);
+    color: #1a1a2e;
+    animation: downtimePulse 2s ease-in-out infinite;
+}
+
+@keyframes downtimePulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+    50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); }
+}
+
+/* ===================================
+   PLAYER TAGS SECTION LAYOUT
+   (where Downtime button should go)
+   =================================== */
+
+.player-tags-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.player-tags-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
