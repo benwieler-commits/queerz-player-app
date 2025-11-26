@@ -26,6 +26,7 @@ let characterData = {
     juice: 0,
     clues: 0, // NEW: Clues tracker
     characterLocked: false, // NEW: Lock character after creation
+    downtimeUnlocked: false, // NEW: MC broadcasts this to allow Growth/Shade/Release editing
     themes: [
         createEmptyTheme('rainbow'),
         createEmptyTheme('rainbow'),
@@ -138,14 +139,36 @@ function setupTrackBoxes(card, themeIndex) {
     const growthBoxes = card.querySelectorAll('.growth-track .track-box');
     growthBoxes.forEach((box, boxIndex) => {
         box.addEventListener('click', () => {
+            // If character is locked, only MC can award growth during Downtime
+            if (characterData.characterLocked && !characterData.downtimeUnlocked) {
+                showNotification('🔒 Growth can only be awarded during Downtime');
+                return;
+            }
+            
+            const previousGrowth = theme.growth;
+            
+            // Toggle behavior: clicking a filled box unfills it, clicking empty fills up to it
             if (boxIndex < theme.growth) {
+                // Clicking a filled box - unfill from this point
                 theme.growth = boxIndex;
+            } else if (boxIndex === theme.growth) {
+                // Clicking the next empty box - fill it
+                theme.growth = boxIndex + 1;
             } else {
+                // Clicking a box beyond current - fill up to it
                 theme.growth = boxIndex + 1;
             }
+            
+            // Visual feedback - flash the changed boxes
+            growthBoxes.forEach((b, i) => {
+                if (i >= Math.min(previousGrowth, theme.growth) && i < Math.max(previousGrowth, theme.growth)) {
+                    b.classList.add('track-flash');
+                    setTimeout(() => b.classList.remove('track-flash'), 300);
+                }
+            });
 
-            // Check if growth is filled (3/3)
-            if (theme.growth === 3) {
+            // Check if growth is filled (3/3) AND it wasn't already 3
+            if (theme.growth === 3 && previousGrowth < 3) {
                 checkGrowthCompletion(themeIndex);
             }
 
@@ -154,19 +177,37 @@ function setupTrackBoxes(card, themeIndex) {
         });
     });
 
-    // Shade track (rainbow only)
+    // Shade track (rainbow only) - MC awards during Downtime
     const shadeBoxes = card.querySelectorAll('.shade-track .track-box');
     shadeBoxes.forEach((box, boxIndex) => {
         box.addEventListener('click', () => {
+            // If character is locked, only MC can award shade during Downtime
+            if (characterData.characterLocked && !characterData.downtimeUnlocked) {
+                showNotification('🔒 Shade can only be marked during Downtime');
+                return;
+            }
+            
+            const previousShade = theme.shade;
+            
             if (boxIndex < theme.shade) {
                 theme.shade = boxIndex;
+            } else if (boxIndex === theme.shade) {
+                theme.shade = boxIndex + 1;
             } else {
                 theme.shade = boxIndex + 1;
             }
+            
+            // Visual feedback
+            shadeBoxes.forEach((b, i) => {
+                if (i >= Math.min(previousShade, theme.shade) && i < Math.max(previousShade, theme.shade)) {
+                    b.classList.add('track-flash');
+                    setTimeout(() => b.classList.remove('track-flash'), 300);
+                }
+            });
 
-            // Check if shade is filled (3/3)
-            if (theme.shade === 3) {
-                theme.locked = false; // Unlock theme for editing
+            // Check if shade is filled (3/3) AND wasn't already
+            if (theme.shade === 3 && previousShade < 3) {
+                theme.locked = false;
                 unlockThemeFields(themeIndex);
                 alert(`⚠️ ${theme.name || 'This theme'} has faded! All 3 SHADE boxes are filled.\n\nThis theme is now UNLOCKED for editing. Replace it with an Anchor/Realness theme.`);
             }
@@ -176,19 +217,37 @@ function setupTrackBoxes(card, themeIndex) {
         });
     });
 
-    // Release track (anchor only)
+    // Release track (anchor only) - MC awards during Downtime
     const releaseBoxes = card.querySelectorAll('.release-track .track-box');
     releaseBoxes.forEach((box, boxIndex) => {
         box.addEventListener('click', () => {
+            // If character is locked, only MC can award release during Downtime
+            if (characterData.characterLocked && !characterData.downtimeUnlocked) {
+                showNotification('🔒 Release can only be marked during Downtime');
+                return;
+            }
+            
+            const previousRelease = theme.release;
+            
             if (boxIndex < theme.release) {
                 theme.release = boxIndex;
+            } else if (boxIndex === theme.release) {
+                theme.release = boxIndex + 1;
             } else {
                 theme.release = boxIndex + 1;
             }
+            
+            // Visual feedback
+            releaseBoxes.forEach((b, i) => {
+                if (i >= Math.min(previousRelease, theme.release) && i < Math.max(previousRelease, theme.release)) {
+                    b.classList.add('track-flash');
+                    setTimeout(() => b.classList.remove('track-flash'), 300);
+                }
+            });
 
-            // Check if release is filled (3/3)
-            if (theme.release === 3) {
-                theme.locked = false; // Unlock theme for editing
+            // Check if release is filled (3/3) AND wasn't already
+            if (theme.release === 3 && previousRelease < 3) {
+                theme.locked = false;
                 unlockThemeFields(themeIndex);
                 alert(`⚠️ ${theme.name || 'This theme'} has faded! All 3 RELEASE boxes are filled.\n\nThis theme is now UNLOCKED for editing. Replace it with a Rainbow/Runway theme.`);
             }
@@ -649,15 +708,13 @@ function handleResistResult(isSuccess, isPartial, isMiss, power) {
 }
 
 // BE VULNERABLE - Complication display
-// NOTE: Complications are already displayed by displayBeVulnerableResult()
-// This handler is kept for any future additional logic
+// Complications are shown inline by displayBeVulnerableResult()
 function handleBeVulnerableResult(isSuccess, isPartial, isMiss, power) {
-    if (!isPartial) return; // Only show complications on 7-9
-    
-    // Complications are shown inline by displayBeVulnerableResult
-    // No separate modal needed
-    console.log('⚡ Be Vulnerable partial - complications shown inline');
+    // Complications already displayed inline by displayBeVulnerableResult
+    // No additional action needed here
+    console.log('⚡ Be Vulnerable result handled - complications shown inline');
 }
+
 function setupDiceRoller() {
     const rollBtn = document.getElementById('rollBtn');
     const burnForGuaranteedHitBtn = document.getElementById('burnForGuaranteedHitBtn');
@@ -772,27 +829,6 @@ function setupDiceRoller() {
         removeTemporaryMCTags();
 
         saveToCloud();
-
-        // ================================
-        // BROADCAST DICE ROLL TO MC APP
-        // This sends to playerRolls/{userId} which MC App listens to
-        // ================================
-        if (window.broadcastDiceRoll) {
-            window.broadcastDiceRoll({
-                characterName: characterData.name,
-                roll: total,
-                total: total,
-                dice: [die1, die2],
-                power: power,
-                modifier: power,
-                result: total >= 10 ? 'success' : (total >= 7 ? 'partial' : 'miss'),
-                resultText: resultText,
-                move: characterData.selectedMove,
-                moveName: getMoveDisplayName(characterData.selectedMove),
-                burntTagUsed: false
-            });
-            console.log('🎲 Dice roll broadcast to MC:', total, resultText);
-        }
 
         // Handle move-specific results
         handleMoveSpecificResult(characterData.selectedMove, total, power);
@@ -926,27 +962,6 @@ function setupDiceRoller() {
         removeTemporaryMCTags();
 
         saveToCloud();
-
-        // ================================
-        // BROADCAST GUARANTEED HIT TO MC APP
-        // ================================
-        if (window.broadcastDiceRoll) {
-            window.broadcastDiceRoll({
-                characterName: characterData.name,
-                roll: finalTotal,
-                total: finalTotal,
-                dice: ['🔥', '🔥'],
-                power: finalPower,
-                modifier: finalPower,
-                result: 'partial',
-                resultText: '🔥 GUARANTEED HIT!',
-                move: characterData.selectedMove,
-                moveName: getMoveDisplayName(characterData.selectedMove),
-                burntTagUsed: true,
-                guaranteedHit: true
-            });
-            console.log('🔥 Guaranteed hit broadcast to MC');
-        }
     });
 
     resetBtn.addEventListener('click', () => {
@@ -1033,22 +1048,29 @@ function displayTalkItOutResult(rollTotal, power) {
     const rollResultDiv = document.getElementById('rollResult');
     
     if (rollTotal >= 10) {
-        // SUCCESS (10+) - Just show success message, no modal needed
+        // SUCCESS (10+) - Show success message inline, no modal needed
         rollResultDiv.innerHTML += `<div class="move-result-detail talk-it-out-result success">
             <h3>✨ TALK IT OUT: Success!</h3>
             <p>Choose ONE outcome:</p>
-            <ul style="text-align: left; margin: 10px auto; max-width: 400px;">
-                <li><strong>Make Progress</strong> - They see things more your way</li>
-                <li><strong>Strike a Deal</strong> - Agree on a trade or compromise</li>
-                <li><strong>Bond</strong> - Give them a relationship status (tier = ${power})</li>
-            </ul>
+            <div class="outcome-options" style="text-align: left; margin: 10px 0;">
+                <div class="outcome-option" style="padding: 8px; margin: 4px 0; background: rgba(0,100,0,0.2); border-radius: 4px; cursor: pointer;" onclick="showNotification('📈 Make Progress - They see things more your way')">
+                    <strong>📈 Make Progress</strong> - They see things more your way
+                </div>
+                <div class="outcome-option" style="padding: 8px; margin: 4px 0; background: rgba(0,100,0,0.2); border-radius: 4px; cursor: pointer;" onclick="showNotification('🤝 Strike a Deal - Agreed on a trade or compromise')">
+                    <strong>🤝 Strike a Deal</strong> - Agree on a trade or compromise
+                </div>
+                <div class="outcome-option" style="padding: 8px; margin: 4px 0; background: rgba(0,100,0,0.2); border-radius: 4px; cursor: pointer;" onclick="showNotification('💕 Bond - Give them a relationship status (tier = ${power})')">
+                    <strong>💕 Bond</strong> - Give them a relationship status (tier = ${power})
+                </div>
+            </div>
         </div>`;
     } else if (rollTotal >= 7) {
         // PARTIAL (7-9) - Show modal with complications
         openTalkItOutModal(power, true);
     }
-    // Miss (6-): They put up walls / MC makes hard move
+    // Miss (6-): They put up walls / MC makes hard move (shown in standard roll result)
 }
+
 /**
  * CARE - Remove statuses/tags equal to Power
  */
@@ -3417,9 +3439,14 @@ window.checkDisplayElements = function() {
     return { statusList: !!statusList, storyList: !!storyList };
 };
 
+console.log('💡 Debug functions available:');
+console.log('  - testAddTags() - Test with simple tag format');
+console.log('  - testMCBroadcast() - Test with actual MC broadcast structure');
+console.log('  - checkDisplayElements() - Verify DOM elements exist');
+
 // ===================================
-// EXPOSE MODAL FUNCTIONS GLOBALLY
-// Required for onclick handlers in HTML
+// EXPOSE ALL MODAL FUNCTIONS GLOBALLY
+// Required for onclick handlers in dynamically created HTML
 // ===================================
 
 // Talk It Out modal functions
@@ -3436,16 +3463,28 @@ window.updateClueQuestionsList = updateClueQuestionsList;
 // Care modal functions
 window.openCareModal = openCareModal;
 window.closeCareModal = closeCareModal;
+window.confirmCare = confirmCare;
 window.renderCareStatusList = renderCareStatusList;
 window.renderCareStoryTagList = renderCareStoryTagList;
 window.updateCarePointsRemaining = updateCarePointsRemaining;
 
-// Be Vulnerable (complications shown inline, but expose for future use)
+// Be Vulnerable (inline display)
 window.displayBeVulnerableResult = displayBeVulnerableResult;
 
-console.log('   🎭 Modal functions exposed globally');
+// Track box functions
+window.setupTrackBoxes = setupTrackBoxes;
+window.updateTrackDisplay = updateTrackDisplay;
+window.checkGrowthCompletion = checkGrowthCompletion;
 
-console.log('💡 Debug functions available:');
-console.log('  - testAddTags() - Test with simple tag format');
-console.log('  - testMCBroadcast() - Test with actual MC broadcast structure');
-console.log('  - checkDisplayElements() - Verify DOM elements exist');
+// Character management
+window.characterData = characterData;
+window.saveToCloud = saveToCloud;
+window.showNotification = showNotification;
+
+// Status/Tag displays
+window.updateStatusTagsDisplay = updateStatusTagsDisplay;
+window.updateStoryTagsDisplay = updateStoryTagsDisplay;
+
+console.log('   🎭 All modal functions exposed globally');
+console.log('   📊 Track box functions exposed globally');
+console.log('   💾 Character data accessible globally');
