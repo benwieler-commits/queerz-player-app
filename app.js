@@ -772,6 +772,27 @@ function setupDiceRoller() {
 
         saveToCloud();
 
+        // ================================
+        // BROADCAST DICE ROLL TO MC APP
+        // This sends to playerRolls/{userId} which MC App listens to
+        // ================================
+        if (window.broadcastDiceRoll) {
+            window.broadcastDiceRoll({
+                characterName: characterData.name,
+                roll: total,
+                total: total,
+                dice: [die1, die2],
+                power: power,
+                modifier: power,
+                result: total >= 10 ? 'success' : (total >= 7 ? 'partial' : 'miss'),
+                resultText: resultText,
+                move: characterData.selectedMove,
+                moveName: getMoveDisplayName(characterData.selectedMove),
+                burntTagUsed: false
+            });
+            console.log('🎲 Dice roll broadcast to MC:', total, resultText);
+        }
+
         // Handle move-specific results
         handleMoveSpecificResult(characterData.selectedMove, total, power);
     });
@@ -904,6 +925,27 @@ function setupDiceRoller() {
         removeTemporaryMCTags();
 
         saveToCloud();
+
+        // ================================
+        // BROADCAST GUARANTEED HIT TO MC APP
+        // ================================
+        if (window.broadcastDiceRoll) {
+            window.broadcastDiceRoll({
+                characterName: characterData.name,
+                roll: finalTotal,
+                total: finalTotal,
+                dice: ['🔥', '🔥'],
+                power: finalPower,
+                modifier: finalPower,
+                result: 'partial',
+                resultText: '🔥 GUARANTEED HIT!',
+                move: characterData.selectedMove,
+                moveName: getMoveDisplayName(characterData.selectedMove),
+                burntTagUsed: true,
+                guaranteedHit: true
+            });
+            console.log('🔥 Guaranteed hit broadcast to MC');
+        }
     });
 
     resetBtn.addEventListener('click', () => {
