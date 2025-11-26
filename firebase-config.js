@@ -245,13 +245,42 @@ if (database) {
       console.log('🏷️ Player tags received from MC:', data.players);
       console.log('🎯 Spotlighted player:', data.spotlightedPlayer);
       
-      // Get our character name
-      const ourCharacterName = window.characterData?.name;
+      // Get our character name - try multiple sources
+      let ourCharacterName = window.characterData?.name;
+      
+      // Fallback 1: Check DOM element if window.characterData.name is empty
+      if (!ourCharacterName) {
+        const nameElement = document.getElementById('characterName');
+        if (nameElement && nameElement.textContent && nameElement.textContent !== 'Character Name') {
+          ourCharacterName = nameElement.textContent.trim();
+          console.log('📛 Got character name from DOM:', ourCharacterName);
+        }
+      }
+      
+      // Fallback 2: Check localStorage for last loaded character
+      if (!ourCharacterName) {
+        try {
+          const savedData = localStorage.getItem('queerz-player-data');
+          if (savedData) {
+            const parsed = JSON.parse(savedData);
+            if (parsed.name) {
+              ourCharacterName = parsed.name;
+              console.log('📛 Got character name from localStorage:', ourCharacterName);
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
       
       if (!ourCharacterName) {
         console.log('ℹ️ No character loaded yet, skipping tag update');
+        console.log('   window.characterData:', window.characterData);
+        console.log('   window.characterData?.name:', window.characterData?.name);
         return;
       }
+      
+      console.log('✅ Looking for our character:', ourCharacterName);
       
       // Find our player data in the broadcast
       const ourPlayerData = data.players.find(p => p.name === ourCharacterName);
