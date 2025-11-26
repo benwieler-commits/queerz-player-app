@@ -2,256 +2,584 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QUEERZ! Player Companion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>QUEERZ! Player Companion v2</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Digital companion app for players in the QUEERZ! tabletop role-playing game">
+    <meta name="theme-color" content="#4A7C7E">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="QUEERZ Player">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="./manifest.json">
+
+    <!-- App Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512x512.png">
+    <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <!-- HEADER -->
     <header class="app-header">
-        <h1 class="app-title">ðŸŒˆ QUEERZ! Player Companion</h1>
+        <h1 class="app-title">🌈 QUEERZ! Player Companion</h1>
         <div class="header-controls">
-            <select id="characterSelect" class="character-select">
-                <option value="">Load Character...</option>
-            </select>
-            <label for="characterUpload" class="btn-upload">ðŸ“ Upload JSON</label>
+            <label for="characterUpload" class="btn-upload">📁 Upload JSON</label>
             <input type="file" id="characterUpload" accept=".json" style="display: none;">
-            <button id="portraitToggle" class="btn-toggle">Switch Portrait</button>
-            <button id="saveCharBtn" class="btn-save">ðŸ’¾ Save</button>
+            <button id="exportBtn" class="btn-save">💾 Export JSON</button>
+            <button id="sendToMcBtn" class="btn-send-mc">📤 Send to MC</button>
+            <button id="lockCharacterBtn" class="btn-lock">🔒 Lock Character</button>
+            <button id="portraitToggle" class="btn-toggle">📸 Toggle Portrait</button>
+            <button id="cloudSyncToggle" class="btn-cloud cloud-disabled">☁️ Cloud: OFF</button>
         </div>
         <div class="sync-status">
-            <span id="syncBadge" class="badge offline">â— Offline</span>
+            <span id="cloudBadge" class="badge cloud-offline">☁️</span>
+            <span id="syncBadge" class="badge offline">●</span>
             <span id="mcStatus" class="mc-status">Waiting for MC...</span>
+        </div>
+        <div class="header-settings" style="padding: 8px 20px; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(74, 124, 126, 0.3);">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9em;">
+                <input type="checkbox" id="disableCloudSave" style="cursor: pointer;">
+                <span>🚫 Disable Automatic Cloud Save (Still broadcasts to MC)</span>
+            </label>
         </div>
     </header>
 
     <!-- MAIN FOLIO LAYOUT -->
     <main class="folio-container">
-        
-        <!-- LEFT COLUMN: Rainbow Themes 1 & 2 -->
+
+        <!-- LEFT COLUMN: Themes 1 & 2 -->
         <section class="folio-column left-column">
-            <div class="theme-card rainbow-theme" id="theme0">
+            <!-- Theme 1 -->
+            <div class="theme-card" id="theme0" data-theme-type="rainbow">
                 <div class="theme-header">
-                    <div class="theme-type">SIGNATURE / FIGHTING STYLE</div>
-                    <h2 class="theme-name">Theme Name</h2>
+                    <select class="theme-type-selector">
+                        <option value="rainbow">🌈 Rainbow (Runway)</option>
+                        <option value="anchor">⚓ Anchor (Realness)</option>
+                    </select>
+<!-- ================================ -->
+<!-- MC BROADCAST PANEL (ADD THIS TO PLAYER APP) -->
+<!-- ================================ -->
+<!-- INSERT THIS SECTION IN index.html AFTER THE CHARACTER INFO PANEL -->
+
+<section class="panel mc-sync-panel">
+    <div class="panel-header">
+        <h3>📡 Live from MC</h3>
+        <span id="syncBadge" class="badge offline">● Offline</span>
+    </div>
+
+    <div class="mc-broadcast-container">
+        <!-- LOCATION/SCENE INFO -->
+        <div class="broadcast-card location-card">
+            <h4>📍 Current Location</h4>
+            <div id="sceneFromMC" class="broadcast-content">
+                <em>Waiting for MC broadcast...</em>
+            </div>
+            <img id="locationImage" class="broadcast-image" style="display: none;" alt="Location">
+        </div>
+
+        <!-- NPC INFO -->
+        <div class="broadcast-card npc-card">
+            <h4>👤 Active NPC</h4>
+            <div id="npcInfo" class="broadcast-content">
+                <em>No NPC in scene</em>
+            </div>
+            <img id="npcPortrait" class="broadcast-image" style="display: none;" alt="NPC Portrait">
+        </div>
+
+        <!-- MUSIC INFO -->
+        <div class="broadcast-card music-card">
+            <h4>🎵 Current Music</h4>
+            <div id="musicFromMC" class="broadcast-content">
+                <em>No music playing</em>
+            </div>
+            <audio id="musicPlayer" controls style="width: 100%; margin-top: 10px; display: none;"></audio>
+        </div>
+
+        <!-- SPOTLIGHT INFO -->
+        <div class="broadcast-card spotlight-card" style="display: none;">
+            <h4>🎭 Character Spotlight</h4>
+            <div id="spotlightInfo" class="broadcast-content">
+                <em>No spotlight active</em>
+            </div>
+        </div>
+    </div>
+</section>
+                    <input type="text" class="theme-name-input" placeholder="Theme Name">
                 </div>
-                <div class="growth-track">
-                    <label>GROWTH</label>
-                    <div class="track-boxes">
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
+
+                <!-- Rainbow Trackers -->
+                <div class="rainbow-trackers">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="shade-track">
+                        <label>SHADE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="shade" data-index="0"></div>
+                            <div class="track-box" data-track="shade" data-index="1"></div>
+                            <div class="track-box" data-track="shade" data-index="2"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="shade-track">
-                    <label>SHADE</label>
-                    <div class="track-boxes">
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
+
+                <!-- Anchor Trackers -->
+                <div class="anchor-trackers" style="display: none;">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="release-track">
+                        <label>RELEASE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="release" data-index="0"></div>
+                            <div class="track-box" data-track="release" data-index="1"></div>
+                            <div class="track-box" data-track="release" data-index="2"></div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="runway-quote">
-                    <em>"Your runway quote here"</em>
+                    <textarea class="runway-quote-input" placeholder="Your runway quote or identity statement..."></textarea>
                 </div>
-                <div class="theme-improvement">
-                    <label class="improvement-checkbox">
-                        <input type="checkbox" class="improvement-check">
-                        <span>âœ¨ Theme Improvement Requirements Met</span>
-                    </label>
-                </div>
+
                 <div class="theme-tags">
                     <div class="power-tags">
                         <h4>POWER TAGS</h4>
-                        <ul class="tag-list"></ul>
+                        <ul class="tag-list">
+                            <li class="tag-item" data-tag-index="0">
+                                <input type="text" class="tag-input" placeholder="Power Tag 1" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item" data-tag-index="1">
+                                <input type="text" class="tag-input" placeholder="Power Tag 2" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item" data-tag-index="2">
+                                <input type="text" class="tag-input" placeholder="Power Tag 3" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="3">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="4">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="5">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
+                            </li>
+                        </ul>
                     </div>
                     <div class="weakness-tag">
                         <h4>WEAKNESS TAG</h4>
-                        <p class="weakness-text"></p>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag" title="Click to apply to your roll">
                     </div>
                 </div>
             </div>
 
-            <div class="theme-card rainbow-theme" id="theme1">
+            <!-- Theme 2 (identical structure) -->
+            <div class="theme-card" id="theme1" data-theme-type="rainbow">
                 <div class="theme-header">
-                    <div class="theme-type">FIGHTING STYLE / Q-GEAR</div>
-                    <h2 class="theme-name">Theme Name</h2>
+                    <select class="theme-type-selector">
+                        <option value="rainbow">🌈 Rainbow (Runway)</option>
+                        <option value="anchor">⚓ Anchor (Realness)</option>
+                    </select>
+                    <input type="text" class="theme-name-input" placeholder="Theme Name">
                 </div>
-                <div class="growth-track">
-                    <label>GROWTH</label>
-                    <div class="track-boxes">
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
+
+                <div class="rainbow-trackers">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="shade-track">
+                        <label>SHADE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="shade" data-index="0"></div>
+                            <div class="track-box" data-track="shade" data-index="1"></div>
+                            <div class="track-box" data-track="shade" data-index="2"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="shade-track">
-                    <label>SHADE</label>
-                    <div class="track-boxes">
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
+
+                <div class="anchor-trackers" style="display: none;">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="release-track">
+                        <label>RELEASE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="release" data-index="0"></div>
+                            <div class="track-box" data-track="release" data-index="1"></div>
+                            <div class="track-box" data-track="release" data-index="2"></div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="runway-quote">
-                    <em>"Your runway quote here"</em>
+                    <textarea class="runway-quote-input" placeholder="Your runway quote or identity statement..."></textarea>
                 </div>
-                <div class="theme-improvement">
-                    <label class="improvement-checkbox">
-                        <input type="checkbox" class="improvement-check">
-                        <span>âœ¨ Theme Improvement Requirements Met</span>
-                    </label>
-                </div>
+
                 <div class="theme-tags">
                     <div class="power-tags">
                         <h4>POWER TAGS</h4>
-                        <ul class="tag-list"></ul>
+                        <ul class="tag-list">
+                            <li class="tag-item" data-tag-index="0">
+                                <input type="text" class="tag-input" placeholder="Power Tag 1" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item" data-tag-index="1">
+                                <input type="text" class="tag-input" placeholder="Power Tag 2" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item" data-tag-index="2">
+                                <input type="text" class="tag-input" placeholder="Power Tag 3" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="3">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="4">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="5">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
+                            </li>
+                        </ul>
                     </div>
                     <div class="weakness-tag">
                         <h4>WEAKNESS TAG</h4>
-                        <p class="weakness-text"></p>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag" title="Click to apply to your roll">
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- CENTER COLUMN: Portrait, MC Sync, Roller -->
+        <!-- CENTER COLUMN: Portrait, MC Sync, Dice Roller -->
         <section class="folio-center">
             <!-- Character Portrait -->
             <div class="portrait-container">
-                <img id="characterPortrait" src="" alt="Character Portrait" class="character-portrait">
+                <img id="characterPortrait" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Crect fill='%232a2a2a' width='400' height='400'/%3E%3Ctext fill='%23666' font-family='Arial' font-size='20' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3ENo Portrait%3C/text%3E%3C/svg%3E" alt="Character Portrait" class="character-portrait">
                 <div class="character-info">
-                    <h2 id="characterName">Character Name</h2>
-                    <p id="characterPronouns" class="pronouns"></p>
+                    <input type="text" id="characterName" placeholder="Character Name" class="character-name-input">
+                    <input type="text" id="characterPronouns" placeholder="Pronouns" class="pronouns-input">
+                    <div class="house-affiliation" id="houseAffiliation">
+                        <span class="house-label">House:</span>
+                        <span class="house-name" id="houseNameDisplay">Unknown House</span>
+                    </div>
+                    <div class="color-picker-section">
+                        <label for="themeColor">Theme Color:</label>
+                        <input type="color" id="themeColor" value="#4A7C7E">
+                    </div>
                 </div>
             </div>
 
-                        <!-- MC Broadcast Section -->
+            <!-- MC Broadcast Section -->
             <div class="mc-broadcast">
                 <h3>📡 MC Broadcast</h3>
                 <div class="broadcast-content">
                     <div class="broadcast-scene">
-                        <strong>🎬 Scene:</strong>
+                        <strong>Scene:</strong>
                         <p id="sceneInfo">Waiting for scene...</p>
-                        <!-- Scene Image Display -->
                         <img id="sceneImage" src="" alt="Scene" style="max-width: 100%; height: auto; border-radius: 8px; margin-top: 8px; display: none;">
-                    </div>
-                    <div class="broadcast-npc">
-                        <strong>👤 NPC:</strong>
-                        <p id="npcInfo">—</p>
-                        <!-- NPC Portrait -->
-                        <img id="npcPortrait" src="" alt="NPC Portrait" style="max-width: 150px; height: auto; border-radius: 8px; margin-top: 8px; display: none;">
                     </div>
                     <div class="broadcast-music">
                         <strong>♪ Music:</strong>
                         <p id="musicInfo">No music playing</p>
-                        <!-- Audio Player -->
                         <audio id="musicPlayer" controls style="width: 100%; margin-top: 8px; display: none;"></audio>
                     </div>
-                    <div class="broadcast-spotlight">
-                        <strong>✨ Spotlight:</strong>
+                    <div class="broadcast-character">
+                        <strong>NPC/Spotlight:</strong>
                         <p id="spotlightInfo">—</p>
-                        <!-- Spotlight Character Portrait -->
-                        <img id="spotlightPortrait" src="" alt="Spotlight Character" style="max-width: 150px; height: auto; border-radius: 8px; margin-top: 8px; display: none;">
+                        <img id="spotlightPortrait" src="" alt="Spotlight Character" style="max-width: 200px; height: auto; border-radius: 8px; margin-top: 8px; display: none;">
                     </div>
                 </div>
-                <!-- Downtime Indicator -->
+                <!-- Downtime Indicator - shows when MC enables Growth/Shade/Release editing -->
                 <div id="downtimeIndicator" class="downtime-indicator" style="display: none;">
                     <span>🌙 DOWNTIME ACTIVE</span>
                     <p>You may update Growth/Shade/Release</p>
                 </div>
             </div>
 
-            <!-- Dice Roller -->
-            <div class="dice-roller">
-                <h3>ðŸŽ² Roll Dice</h3>
-                <div class="power-display">
-                    <label>Total Power:</label>
-                    <input type="number" id="totalPower" class="power-input" value="0" min="-5" max="10">
+            <!-- Core Move Selection -->
+            <div class="move-selector">
+                <h3>📖 Select Your Core Move</h3>
+                <p class="move-hint">⚠️ REQUIRED: Click a move before rolling!</p>
+                <div class="move-icons">
+                    <div class="move-icon" data-move="strike-a-pose" title="Strike a Pose">
+                        <img src="images/moves/move-strike-a-pose.png" alt="Strike a Pose" class="move-image">
+                        <span>Strike a Pose</span>
+                    </div>
+                    <div class="move-icon" data-move="slay" title="Slay">
+                        <img src="images/moves/move-slay.png" alt="Slay" class="move-image">
+                        <span>Slay</span>
+                    </div>
+                    <div class="move-icon" data-move="get-a-clue" title="Get a Clue">
+                        <img src="images/moves/move-get-a-clue.png" alt="Get a Clue" class="move-image">
+                        <span>Get a Clue</span>
+                    </div>
+                    <div class="move-icon" data-move="talk-it-out" title="Talk It Out">
+                        <img src="images/moves/move-talk-it-out.png" alt="Talk It Out" class="move-image">
+                        <span>Talk It Out</span>
+                    </div>
+                    <div class="move-icon" data-move="care" title="Care">
+                        <img src="images/moves/move-care.png" alt="Care" class="move-image">
+                        <span>Care</span>
+                    </div>
+                    <div class="move-icon" data-move="be-vulnerable" title="Be Vulnerable">
+                        <img src="images/moves/move-be-vulnerable.png" alt="Be Vulnerable" class="move-image">
+                        <span>Be Vulnerable</span>
+                    </div>
+                    <div class="move-icon" data-move="resist" title="Resist">
+                        <img src="images/moves/move-resist.png" alt="Resist" class="move-image">
+                        <span>Resist</span>
+                    </div>
                 </div>
-                <button id="rollBtn" class="btn-roll">Roll 2d6 + Power</button>
-                <div id="rollResult" class="roll-result"></div>
+                <div id="selectedMoveDisplay" class="selected-move-display">No move selected</div>
             </div>
 
             <!-- Juice Tracker -->
             <div class="juice-tracker">
-                <h3>âœ¨ JUICE</h3>
+                <h3>✨ JUICE</h3>
                 <div class="juice-display">
-                    <button id="juiceDown" class="juice-btn">âˆ’</button>
+                    <button id="juiceDown" class="juice-btn">−</button>
                     <span id="juiceCount" class="juice-count">0</span>
                     <button id="juiceUp" class="juice-btn">+</button>
                 </div>
+                <div class="juice-options">
+                    <button id="spendJuiceBtn" class="btn-spend-juice">Spend Juice for Power (+1 per Juice)</button>
+                    <button id="useComboBtn" class="btn-use-combo">Use Combo (see below)</button>
+                </div>
+            </div>
+
+            <!-- Downtime Section (NEW) -->
+            <div class="downtime-section">
+                <h3>🌙 Downtime Moves</h3>
+                <div class="downtime-buttons">
+                    <button id="downtimePrepareBtn" class="btn-downtime-prepare">
+                        ✨ Prepare for Action<br><span class="downtime-subtitle">Gain 3 Juice</span>
+                    </button>
+                    <button id="downtimeDeepenBtn" class="btn-downtime-deepen">
+                        💖 Deepen Relationship<br><span class="downtime-subtitle">Gain 3 points (Clues/Juice)</span>
+                    </button>
+                </div>
+                <div class="clues-tracker">
+                    <label>🔍 Clues:</label>
+                    <div class="clues-display">
+                        <button id="cluesDown" class="clues-btn">−</button>
+                        <span id="cluesCount" class="clues-count">0</span>
+                        <button id="cluesUp" class="clues-btn">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dice Roller -->
+            <div class="dice-roller">
+                <h3>🎲 Roll Dice</h3>
+
+                <!-- Tag Application Instructions -->
+                <div class="tag-instructions">
+                    <p><strong>📌 Apply Tags:</strong> Click your power/weakness tags below to add to your roll (+1 or -1 each)</p>
+                    <p><strong>🔥 Burn for Guaranteed Hit:</strong> Use the button below to burn ONE tag for auto-success</p>
+                </div>
+
+                <div class="power-display">
+                    <label>Total Power:</label>
+                    <input type="number" id="totalPower" class="power-input" value="0" min="-5" max="10" readonly>
+                    <div class="power-breakdown" id="powerBreakdown"></div>
+                </div>
+
+                <!-- Normal Roll Button -->
+                <button id="rollBtn" class="btn-roll">Roll 2d6 + Power</button>
+
+                <!-- Burn Tag for Guaranteed Hit Button -->
+                <button id="burnForGuaranteedHitBtn" class="btn-burn-guaranteed">🔥 Burn Tag for Guaranteed Hit (7 + Power 3)</button>
+
+                <div id="rollResult" class="roll-result"></div>
+                <button id="resetBtn" class="btn-reset">Reset Dice & Clear Applied Tags</button>
             </div>
         </section>
 
-        <!-- RIGHT COLUMN: Rainbow Theme 3 & Realness Theme -->
+        <!-- RIGHT COLUMN: Themes 3 & 4 -->
         <section class="folio-column right-column">
-            <div class="theme-card rainbow-theme" id="theme2">
+            <!-- Theme 3 (identical structure) -->
+            <div class="theme-card" id="theme2" data-theme-type="rainbow">
                 <div class="theme-header">
-                    <div class="theme-type">Q-GEAR / PERSONALITY</div>
-                    <h2 class="theme-name">Theme Name</h2>
+                    <select class="theme-type-selector">
+                        <option value="rainbow">🌈 Rainbow (Runway)</option>
+                        <option value="anchor">⚓ Anchor (Realness)</option>
+                    </select>
+                    <input type="text" class="theme-name-input" placeholder="Theme Name">
                 </div>
-                <div class="growth-track">
-                    <label>GROWTH</label>
-                    <div class="track-boxes">
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
+
+                <div class="rainbow-trackers">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="shade-track">
+                        <label>SHADE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="shade" data-index="0"></div>
+                            <div class="track-box" data-track="shade" data-index="1"></div>
+                            <div class="track-box" data-track="shade" data-index="2"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="theme-improvement">
-                    <label class="improvement-checkbox">
-                        <input type="checkbox" class="improvement-check">
-                        <span>âœ¨ Theme Improvement Requirements Met</span>
-                    </label>
-                </div>
-                <div class="shade-track">
-                    <label>SHADE</label>
-                    <div class="track-boxes">
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
+
+                <div class="anchor-trackers" style="display: none;">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="release-track">
+                        <label>RELEASE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="release" data-index="0"></div>
+                            <div class="track-box" data-track="release" data-index="1"></div>
+                            <div class="track-box" data-track="release" data-index="2"></div>
+                        </div>
                     </div>
                 </div>
+
                 <div class="runway-quote">
-                    <em>"Your runway quote here"</em>
+                    <textarea class="runway-quote-input" placeholder="Your runway quote or identity statement..."></textarea>
                 </div>
+
                 <div class="theme-tags">
                     <div class="power-tags">
                         <h4>POWER TAGS</h4>
-                        <ul class="tag-list"></ul>
+                        <ul class="tag-list">
+                            <li class="tag-item" data-tag-index="0">
+                                <input type="text" class="tag-input" placeholder="Power Tag 1" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item" data-tag-index="1">
+                                <input type="text" class="tag-input" placeholder="Power Tag 2" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item" data-tag-index="2">
+                                <input type="text" class="tag-input" placeholder="Power Tag 3" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="3">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="4">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="5">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
+                            </li>
+                        </ul>
                     </div>
                     <div class="weakness-tag">
                         <h4>WEAKNESS TAG</h4>
-                        <p class="weakness-text"></p>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag" title="Click to apply to your roll">
                     </div>
                 </div>
             </div>
 
-            <div class="theme-card realness-theme" id="theme3">
+            <!-- Theme 4 (identical structure) -->
+            <div class="theme-card" id="theme3" data-theme-type="anchor">
                 <div class="theme-header">
-                    <div class="theme-type realness-label">REALNESS THEME</div>
-                    <h2 class="theme-name">Theme Name</h2>
+                    <select class="theme-type-selector">
+                        <option value="rainbow">🌈 Rainbow (Runway)</option>
+                        <option value="anchor" selected>⚓ Anchor (Realness)</option>
+                    </select>
+                    <input type="text" class="theme-name-input" placeholder="Theme Name">
                 </div>
-                <div class="crack-track">
-                    <label>CRACK</label>
-                    <div class="track-boxes">
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
-                        <div class="track-box"></div>
+
+                <div class="rainbow-trackers" style="display: none;">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="shade-track">
+                        <label>SHADE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="shade" data-index="0"></div>
+                            <div class="track-box" data-track="shade" data-index="1"></div>
+                            <div class="track-box" data-track="shade" data-index="2"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="runway-quote">
-                    <em>"Your identity statement here"</em>
+
+                <div class="anchor-trackers">
+                    <div class="growth-track">
+                        <label>GROWTH</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="growth" data-index="0"></div>
+                            <div class="track-box" data-track="growth" data-index="1"></div>
+                            <div class="track-box" data-track="growth" data-index="2"></div>
+                        </div>
+                    </div>
+                    <div class="release-track">
+                        <label>RELEASE</label>
+                        <div class="track-boxes">
+                            <div class="track-box" data-track="release" data-index="0"></div>
+                            <div class="track-box" data-track="release" data-index="1"></div>
+                            <div class="track-box" data-track="release" data-index="2"></div>
+                        </div>
+                    </div>
                 </div>
+
+                <div class="runway-quote">
+                    <textarea class="runway-quote-input" placeholder="Your runway quote or identity statement..."></textarea>
+                </div>
+
                 <div class="theme-tags">
                     <div class="power-tags">
                         <h4>POWER TAGS</h4>
-                        <ul class="tag-list"></ul>
+                        <ul class="tag-list">
+                            <li class="tag-item" data-tag-index="0">
+                                <input type="text" class="tag-input" placeholder="Power Tag 1" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item" data-tag-index="1">
+                                <input type="text" class="tag-input" placeholder="Power Tag 2" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item" data-tag-index="2">
+                                <input type="text" class="tag-input" placeholder="Power Tag 3" title="Click to apply to your roll">
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="3">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 4" disabled>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="4">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 5" disabled>
+                            </li>
+                            <li class="tag-item greyed-tag" data-tag-index="5">
+                                <input type="text" class="tag-input" placeholder="Locked Tag 6" disabled>
+                            </li>
+                        </ul>
                     </div>
                     <div class="weakness-tag">
                         <h4>WEAKNESS TAG</h4>
-                        <p class="weakness-text"></p>
+                        <input type="text" class="weakness-input" placeholder="Weakness tag" title="Click to apply to your roll">
                     </div>
                 </div>
             </div>
@@ -263,30 +591,15 @@
         <div class="tags-container">
             <!-- Current Statuses -->
             <div class="status-panel">
-                <h3>Current Statuses</h3>
-                <div class="status-add">
-                    <input type="text" id="statusName" placeholder="Status name" class="input-small">
-                    <input type="number" id="statusTier" value="1" min="1" max="6" class="input-tiny">
-                    <select id="statusType" class="select-small">
-                        <option value="negative">Negative</option>
-                        <option value="positive">Positive</option>
-                    </select>
-                    <button id="addStatusBtn" class="btn-add">+ Add</button>
-                </div>
+                <h3>Status Tags</h3>
+                <p class="tag-source-note">⭐ MC-assigned (auto-apply) | 👤 Player-created (from Juice)</p>
                 <div id="statusList" class="tag-display"></div>
             </div>
 
             <!-- Story Tags -->
             <div class="story-panel">
                 <h3>Story Tags</h3>
-                <div class="story-add">
-                    <input type="text" id="storyTagName" placeholder="Story tag" class="input-small">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="storyOngoing">
-                        Ongoing
-                    </label>
-                    <button id="addStoryBtn" class="btn-add">+ Add</button>
-                </div>
+                <p class="tag-source-note">⭐ MC-assigned (auto-apply) | 👤 Player-created (from Juice)</p>
                 <div id="storyTagList" class="tag-display"></div>
             </div>
 
@@ -299,129 +612,543 @@
         </div>
     </section>
 
+    <!-- JUICE SPENDING MODAL (NEW) -->
+    <div id="juiceSpendingModal" class="juice-modal hidden">
+        <div class="juice-modal-content">
+            <div class="juice-modal-header">
+                <h2>✨ Spend Your Juice!</h2>
+                <p class="juice-available">You have <span id="modalJuiceCount">0</span> Juice available</p>
+            </div>
+
+            <div class="juice-spending-options">
+                <!-- Create Story Tag -->
+                <div class="spending-option">
+                    <h3>⚡ Create Story Tag (1 Juice each)</h3>
+                    <div class="spending-controls">
+                        <input type="text" id="newStoryTagName" class="juice-input" placeholder="Tag name (e.g., 'confident-energy')">
+                        <button id="createStoryTagBtn" class="btn-juice-action">Create Tag (1 Juice)</button>
+                    </div>
+                </div>
+
+                <!-- Create Status -->
+                <div class="spending-option">
+                    <h3>🟢 Create Positive Status (1 Juice per tier)</h3>
+                    <div class="spending-controls">
+                        <input type="text" id="newStatusName" class="juice-input" placeholder="Status name (e.g., 'battle-ready')">
+                        <select id="statusTier" class="juice-select">
+                            <option value="1">Tier 1 (1 Juice)</option>
+                            <option value="2">Tier 2 (2 Juice)</option>
+                            <option value="3">Tier 3 (3 Juice)</option>
+                            <option value="4">Tier 4 (4 Juice)</option>
+                        </select>
+                        <button id="createStatusBtn" class="btn-juice-action">Create Status</button>
+                    </div>
+                </div>
+
+                <!-- Special Upgrades (only on 10+) -->
+                <div id="specialUpgrades" class="spending-option" style="display: none;">
+                    <h3>⚠️ Special Upgrades (Only on 10+)</h3>
+                    <div class="upgrade-checkboxes">
+                        <label class="upgrade-checkbox">
+                            <input type="checkbox" id="prolongEffect">
+                            <span>🔄 Prolong Effect (1 Juice) - Makes last tag/status "ongoing" instead of temporary</span>
+                        </label>
+                        <label class="upgrade-checkbox">
+                            <input type="checkbox" id="scaleUpEffect">
+                            <span>📈 Scale Up Effect (1 Juice) - Narrative: bigger, more powerful</span>
+                        </label>
+                        <label class="upgrade-checkbox">
+                            <input type="checkbox" id="makeFlashier">
+                            <span>✨ Make It Flashier (1 Juice) - Narrative: more impressive, stylish</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Created Items List -->
+                <div class="created-items">
+                    <h4>📝 Items Created This Roll:</h4>
+                    <div id="createdItemsList" class="created-items-list">
+                        <p class="empty-message">No items created yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="juice-modal-footer">
+                <button id="closeJuiceModalBtn" class="btn-juice-done">Done Spending Juice</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLAY UPGRADES MODAL -->
+    <div id="slayUpgradesModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>⚔️ SLAY - Choose Your Upgrades</h2>
+                <p id="slayUpgradeCount" class="upgrade-count">Choose 2 upgrades (can pick same twice)</p>
+            </div>
+
+            <div class="slay-upgrades-container">
+                <div class="upgrade-option" data-upgrade="killing-it">
+                    <input type="checkbox" id="upgrade-killing-it" class="upgrade-checkbox">
+                    <label for="upgrade-killing-it">
+                        <span class="upgrade-icon">⚡</span>
+                        <span class="upgrade-name">Killing it!</span>
+                        <span class="upgrade-desc">They can't counterattack (fight/argument) OR no concessions (threatening)</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="more-power">
+                    <input type="checkbox" id="upgrade-more-power" class="upgrade-checkbox">
+                    <label for="upgrade-more-power">
+                        <span class="upgrade-icon">💪</span>
+                        <span class="upgrade-name">More power</span>
+                        <span class="upgrade-desc">+1 status tier</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="more-coverage">
+                    <input type="checkbox" id="upgrade-more-coverage" class="upgrade-checkbox">
+                    <label for="upgrade-more-coverage">
+                        <span class="upgrade-icon">👥</span>
+                        <span class="upgrade-name">More coverage</span>
+                        <span class="upgrade-desc">Affect small group instead of one person</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="take-something">
+                    <input type="checkbox" id="upgrade-take-something" class="upgrade-checkbox">
+                    <label for="upgrade-take-something">
+                        <span class="upgrade-icon">🎯</span>
+                        <span class="upgrade-name">Take something</span>
+                        <span class="upgrade-desc">Remove/get story tag from them</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="keep-focused">
+                    <input type="checkbox" id="upgrade-keep-focused" class="upgrade-checkbox">
+                    <label for="upgrade-keep-focused">
+                        <span class="upgrade-icon">👀</span>
+                        <span class="upgrade-name">Keep focused</span>
+                        <span class="upgrade-desc">They stay focused on you</span>
+                    </label>
+                </div>
+
+                <div class="upgrade-option" data-upgrade="make-comeback">
+                    <input type="checkbox" id="upgrade-make-comeback" class="upgrade-checkbox">
+                    <label for="upgrade-make-comeback">
+                        <span class="upgrade-icon">🔄</span>
+                        <span class="upgrade-name">Make a comeback</span>
+                        <span class="upgrade-desc">Reduce your own negative status by 1 tier</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="selected-upgrades-display">
+                <h4>Selected Upgrades:</h4>
+                <div id="selectedSlayUpgrades" class="selected-list">None yet</div>
+            </div>
+
+            <div class="move-modal-footer">
+                <button id="confirmSlayUpgradesBtn" class="btn-move-confirm" disabled>Confirm Selection</button>
+                <button id="cancelSlayUpgradesBtn" class="btn-move-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOWNTIME DEEPEN RELATIONSHIP MODAL (NEW) -->
+    <div id="deepenRelationshipModal" class="deepen-modal hidden">
+        <div class="deepen-modal-content">
+            <h2>💖 Deepen Relationship</h2>
+            <p>Divide 3 points between Clues and Juice:</p>
+
+            <div class="deepen-sliders">
+                <div class="deepen-slider-group">
+                    <label>🔍 Clues: <span id="deepenCluesValue">0</span></label>
+                    <input type="range" id="deepenCluesSlider" min="0" max="3" value="0" class="deepen-slider">
+                </div>
+                <div class="deepen-slider-group">
+                    <label>✨ Juice: <span id="deepenJuiceValue">3</span></label>
+                    <input type="range" id="deepenJuiceSlider" min="0" max="3" value="3" class="deepen-slider">
+                </div>
+            </div>
+
+            <div class="deepen-modal-footer">
+                <button id="confirmDeepenBtn" class="btn-deepen-confirm">Confirm</button>
+                <button id="cancelDeepenBtn" class="btn-deepen-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLAY UPGRADES MODAL -->
+    <div id="slayUpgradesModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>⚔️ SLAY UPGRADES</h2>
+                <p class="upgrade-instruction">Choose <span id="slayUpgradeCount">1</span> upgrade(s)</p>
+                <p class="power-used">Power Used: <span id="slayPowerDisplay">0</span></p>
+            </div>
+
+            <div class="upgrades-list">
+                <label class="upgrade-option">
+                    <input type="checkbox" value="Killing it!">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">⚡</span>
+                        <div>
+                            <strong>Killing it!</strong><br>
+                            <span class="upgrade-desc">They can't counterattack (fight/argument) OR no concessions (threatening)</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="More power">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">💪</span>
+                        <div>
+                            <strong>More power</strong><br>
+                            <span class="upgrade-desc">+1 status tier</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="More coverage">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">👥</span>
+                        <div>
+                            <strong>More coverage</strong><br>
+                            <span class="upgrade-desc">Affect small group</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="Take something">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">🎯</span>
+                        <div>
+                            <strong>Take something</strong><br>
+                            <span class="upgrade-desc">Remove/get story tag from them</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="Keep focused">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">👀</span>
+                        <div>
+                            <strong>Keep focused</strong><br>
+                            <span class="upgrade-desc">They stay focused on you</span>
+                        </div>
+                    </div>
+                </label>
+
+                <label class="upgrade-option">
+                    <input type="checkbox" value="Make a comeback">
+                    <div class="upgrade-details">
+                        <span class="upgrade-icon">🔄</span>
+                        <div>
+                            <strong>Make a comeback</strong><br>
+                            <span class="upgrade-desc">Reduce your own negative status by 1 tier</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="move-modal-footer">
+                <button onclick="confirmSlayUpgrades()" class="btn-confirm">Confirm Selection</button>
+                <button onclick="closeSlayUpgradesModal()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GET A CLUE MODAL -->
+    <div id="getAClueModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>🔍 GET A CLUE</h2>
+                <p class="clues-gained">You gained <span id="getAClueCluesCount">0</span> Clues!</p>
+                <p class="clues-remaining">Clues Remaining: <span id="getAClueCluesRemaining">0</span></p>
+            </div>
+
+            <div class="clue-questions-section">
+                <h3>Ask Questions (1 Clue each)</h3>
+                <div class="question-input-group">
+                    <input type="text" id="clueQuestionInput" class="clue-question-field" placeholder="Type your question for the MC...">
+                    <button onclick="askClueQuestion()" class="btn-ask-question">Ask Question (1 Clue)</button>
+                </div>
+
+                <div class="questions-asked">
+                    <h4>Questions Asked:</h4>
+                    <div id="clueQuestionsList">
+                        <p class="empty-message">No questions asked yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="getAClueComplications" class="complications-section" style="display: none;">
+                <h3>⚠️ MC Chooses ONE Complication:</h3>
+                <div class="complications-list">
+                    <button class="complication-option" onclick="applyGetAClueComplication('counter-question')">
+                        🔄 <strong>Counter Question</strong><br>
+                        <span>They ask you a question for each Clue spent (answer honestly but not directly)</span>
+                    </button>
+                    <button class="complication-option" onclick="applyGetAClueComplication('side-effects')">
+                        😰 <strong>Side Effects</strong><br>
+                        <span>Take tier-1 relevant status (muddy-1, infatuated-1) - cannot Resist</span>
+                    </button>
+                    <button class="complication-option" onclick="applyGetAClueComplication('drama')">
+                        🎭 <strong>Drama</strong><br>
+                        <span>Dramatic story complication (seen spying, someone notices, etc.)</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="move-modal-footer">
+                <button onclick="closeGetAClueModal()" class="btn-confirm">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TALK IT OUT MODAL -->
+    <div id="talkItOutModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>💬 TALK IT OUT</h2>
+                <p class="power-used">Power Used: <span id="talkItOutPower">0</span></p>
+            </div>
+
+            <div class="outcomes-section">
+                <h3>Choose ONE Outcome:</h3>
+                <div class="outcomes-list">
+                    <label class="outcome-option">
+                        <input type="radio" name="talkItOutOutcome" value="make-progress">
+                        <div class="outcome-details">
+                            <span class="outcome-icon">🎯</span>
+                            <div>
+                                <strong>Make Progress</strong><br>
+                                <span class="outcome-desc">They see things more your way</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="outcome-option">
+                        <input type="radio" name="talkItOutOutcome" value="strike-deal">
+                        <div class="outcome-details">
+                            <span class="outcome-icon">🤝</span>
+                            <div>
+                                <strong>Strike a Deal</strong><br>
+                                <span class="outcome-desc">Agree to trade/compromise</span>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="outcome-option">
+                        <input type="radio" name="talkItOutOutcome" value="bond">
+                        <div class="outcome-details">
+                            <span class="outcome-icon">💕</span>
+                            <div>
+                                <strong>Bond</strong><br>
+                                <span class="outcome-desc">Give them relationship status with tier = Power</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="talkItOutComplications" class="complications-section" style="display: none;">
+                <h3>⚠️ MC or Target PC Chooses ONE Complication:</h3>
+                <div class="complications-list">
+                    <button class="complication-option" onclick="applyTalkItOutComplication('condition')">
+                        💰 <strong>Condition/Price</strong><br>
+                        <span>They have a condition or price you won't like</span>
+                    </button>
+                    <button class="complication-option" onclick="applyTalkItOutComplication('understanding')">
+                        👁️ <strong>Show Understanding</strong><br>
+                        <span>They want you to prove you understand their perspective</span>
+                    </button>
+                    <button class="complication-option" onclick="applyTalkItOutComplication('attached')">
+                        💔 <strong>Get Attached</strong><br>
+                        <span>They give YOU a relationship status with tier = Power</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="move-modal-footer">
+                <button onclick="confirmTalkItOut()" class="btn-confirm">Confirm Selection</button>
+                <button onclick="closeTalkItOutModal()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARE MODAL -->
+    <div id="careModal" class="move-modal hidden">
+        <div class="move-modal-content">
+            <div class="move-modal-header">
+                <h2>💖 CARE</h2>
+                <p class="power-used">Power: <span id="carePowerDisplay">0</span> | Points Remaining: <span id="carePointsRemaining">0</span></p>
+                <p class="care-instruction">Select statuses/tags to remove (statuses = tier cost, tags = 1 point each)</p>
+            </div>
+
+            <div class="care-removal-section">
+                <div class="care-category">
+                    <h3>Current Statuses:</h3>
+                    <div id="careStatusList" class="care-items-list">
+                        <p class="empty-message">No current statuses</p>
+                    </div>
+                </div>
+
+                <div class="care-category">
+                    <h3>Story Tags:</h3>
+                    <div id="careStoryTagList" class="care-items-list">
+                        <p class="empty-message">No story tags</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="careSideEffect" class="side-effect-warning" style="display: none;">
+                <h3>⚠️ Side Effect (7-9):</h3>
+                <p>You will gain a random tier-1 negative status (concerned-1, tired-1, saddened-1, dirty-1, or drained-1) - cannot Resist</p>
+            </div>
+
+            <div class="move-modal-footer">
+                <button onclick="confirmCare()" class="btn-confirm">Confirm Removal</button>
+                <button onclick="closeCareModal()" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TAG COMBOS SECTION -->
     <section class="combos-section">
         <div class="combos-container">
             <div class="combos-panel">
-                <h2>ðŸŽ¯ TAG COMBOS</h2>
-                <p class="combos-subtitle">Create powerful combinations of your tags!</p>
-                
-                <!-- Add New Combo -->
+                <h2>🎯 TAG COMBOS</h2>
+                <p class="combos-subtitle">Create powerful combinations! (Burns both tags when activated)</p>
+
                 <div class="combo-add">
-                    <input type="text" id="comboName" placeholder="Combo name (e.g., 'Get the Drop on a Baddie')" class="input-combo-name">
-                    <div class="combo-tags-input">
-                        <input type="text" id="comboTag1" placeholder="Tag 1" class="input-small">
-                        <input type="text" id="comboTag2" placeholder="Tag 2" class="input-small">
-                        <input type="text" id="comboTag3" placeholder="Tag 3 (optional)" class="input-small">
+                    <input type="text" id="comboName" placeholder="Combo name (e.g., 'Glitter Bomb Attack')" class="input-combo-name">
+
+                    <div class="combo-fields-grid">
+                        <div class="combo-field">
+                            <label for="comboPower">Power (1-4):</label>
+                            <select id="comboPower" class="combo-power-select">
+                                <option value="">Select Power</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                            </select>
+                        </div>
+
+                        <div class="combo-field">
+                            <label for="comboCoreMove">Core Move:</label>
+                            <select id="comboCoreMove" class="combo-core-move-select">
+                                <option value="">Select Core Move</option>
+                                <option value="Strike a Pose">Strike a Pose</option>
+                                <option value="Slay">Slay</option>
+                                <option value="Get a Clue">Get a Clue</option>
+                                <option value="Talk It Out">Talk It Out</option>
+                                <option value="Care">Care</option>
+                                <option value="Be Vulnerable">Be Vulnerable</option>
+                                <option value="Resist">Resist</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="combo-details">
-                        <input type="number" id="comboPower" value="2" min="1" max="5" class="input-tiny" placeholder="Power">
-                        <select id="comboMove" class="select-small">
-                            <option value="">Select Core Move...</option>
-                            <option value="strike-a-pose">Strike a Pose</option>
-                            <option value="slay">Slay</option>
-                            <option value="get-a-clue">Get a Clue</option>
-                            <option value="sneak-and-spy">Sneak and Spy</option>
-                            <option value="care">Care</option>
-                            <option value="be-vulnerable">Be Vulnerable</option>
-                            <option value="resist">Resist</option>
-                        </select>
-                        <button id="addComboBtn" class="btn-add">+ Add Combo</button>
+
+                    <div class="combo-tag-selector">
+                        <label>Select 2 Tags (click to select):</label>
+                        <div id="comboAvailableTags" class="combo-available-tags"></div>
+                        <div id="comboSelectedTags" class="combo-selected-tags">
+                            <span class="selected-tags-label">Selected: </span>
+                            <span id="comboSelectedTagsDisplay" class="selected-tags-display">None</span>
+                        </div>
                     </div>
+
+                    <button id="addComboBtn" class="btn-add">+ Add Combo</button>
                 </div>
-                
-                <!-- Combo List -->
+
                 <div id="comboList" class="combo-display"></div>
-                
-                <!-- Clear Combos Button -->
-                <button id="clearCombosBtn" class="btn-secondary" style="margin-top: 15px;">Clear All Combos</button>
             </div>
         </div>
     </section>
 
     <!-- CORE MOVES REFERENCE -->
     <section class="moves-section">
-        <h2>ðŸ“– CORE MOVES REFERENCE</h2>
+        <h2>📖 CORE MOVES REFERENCE</h2>
         <button id="toggleMovesBtn" class="btn-toggle-moves">Show/Hide Moves</button>
         <div id="movesPanel" class="moves-panel hidden">
             <div class="moves-grid">
-                <!-- Strike a Pose -->
                 <div class="move-card">
                     <h3 class="move-name">STRIKE A POSE</h3>
-                    <p class="move-trigger">When you <strong>attempt to give yourself or your allies a positive status</strong>, or <strong>make an impression or influence others</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Give self/ally positive status or make an impression</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Choose 2 upgrades</p>
-                        <p><strong>7-9:</strong> Choose 1 upgrade</p>
-                        <p><strong>Miss:</strong> MC makes a move</p>
+                        <p><strong>ON A HIT (7+):</strong> Gain Juice = Power (min 2 on 10+). Spend Juice to create story tags (1 each) or statuses (1 per tier).</p>
+                        <p><strong>ON A 10+:</strong> Also buy upgrades (1 Juice each): ⏰ Prolong effect (ongoing), 📏 Scale up, ✨ Make flashier</p>
+                        <p><strong>ON A MISS (6-):</strong> MC makes a hard move</p>
                     </div>
-                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting, Contagious</p>
                 </div>
 
-                <!-- Slay -->
                 <div class="move-card">
                     <h3 class="move-name">SLAY</h3>
-                    <p class="move-trigger">When you <strong>give your opponents a negative status or overcome their Ignorance Limit</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Give opponent status or overcome Ignorance Limit</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Choose 2 upgrades</p>
-                        <p><strong>7-9:</strong> Choose 1 upgrade</p>
-                        <p><strong>Miss:</strong> MC makes a move</p>
+                        <p><strong>ON A HIT (7+):</strong> Give them status with tier = Power</p>
+                        <p><strong>ON A 10+:</strong> Choose TWO upgrades (can pick same twice)</p>
+                        <p><strong>ON A 7-9:</strong> Choose ONE upgrade</p>
+                        <p><strong>ON A MISS (6-):</strong> MC makes a hard move</p>
                     </div>
-                    <p class="move-upgrades"><strong>Upgrades:</strong> More coverage, Impressive, Lasting</p>
+                    <p class="move-upgrades"><strong>Upgrades:</strong> ⚡ Killing it! (no counterattack/concessions) • 💪 More power (+1 tier) • 👥 More coverage (small group) • 🎯 Take something (remove/get story tag) • 👀 Keep focused • 🔄 Make comeback (reduce own negative -1)</p>
                 </div>
 
-                <!-- Get a Clue -->
                 <div class="move-card">
                     <h3 class="move-name">GET A CLUE</h3>
-                    <p class="move-trigger">When you <strong>investigate, research, or gather information</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Investigate, research, gather information</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Gain a Story Tag and ask 2 questions</p>
-                        <p><strong>7-9:</strong> Ask 1 question or gain a Story Tag</p>
-                        <p><strong>Miss:</strong> MC makes a move</p>
+                        <p><strong>ON A HIT (7+):</strong> Get Clues = Power. Spend each to ask MC/player a question (honest, not necessarily direct)</p>
+                        <p><strong>ON A 7-9:</strong> MC also picks ONE complication: 🔄 Counter Question • 😰 Side Effects (tier-1 status, cannot Resist) • 🎭 Drama</p>
+                        <p><strong>ON A MISS (6-):</strong> MC makes a hard move</p>
                     </div>
                 </div>
 
-                <!-- Sneak and Spy -->
                 <div class="move-card">
-                    <h3 class="move-name">SNEAK AND SPY</h3>
-                    <p class="move-trigger">When you <strong>avoid detection or move unseen</strong>, roll 2d6 + Power.</p>
+                    <h3 class="move-name">TALK IT OUT</h3>
+                    <p class="move-trigger"><strong>Trigger:</strong> De-escalate or negotiate in good faith</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> You succeed undetected</p>
-                        <p><strong>7-9:</strong> You succeed but choose: leave evidence, take longer, or face a cost</p>
-                        <p><strong>Miss:</strong> You're spotted or trigger danger</p>
+                        <p><strong>ON A HIT (7+):</strong> Choose ONE: 🎯 Make progress • 🤝 Strike a deal • 💕 Bond (relationship status, tier = Power)</p>
+                        <p><strong>ON A 7-9:</strong> MC/target also picks ONE: 💰 Condition/Price • 👁️ Show Understanding • 💔 Get Attached (you receive relationship status)</p>
+                        <p><strong>ON A MISS (6-):</strong> They put up walls / MC makes a hard move</p>
                     </div>
                 </div>
 
-                <!-- Care -->
                 <div class="move-card">
                     <h3 class="move-name">CARE</h3>
-                    <p class="move-trigger">When you <strong>help someone with their emotional or physical needs</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Help with emotional/physical needs</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Remove a negative status tier or give a positive status</p>
-                        <p><strong>7-9:</strong> As above, but you take a status yourself or mark Growth</p>
-                        <p><strong>Miss:</strong> Your care backfires</p>
+                        <p><strong>ON A HIT (7+):</strong> Remove story tags or status tiers = Power (you distribute)</p>
+                        <p><strong>ON A 7-9:</strong> MC gives you tier-1 negative status (concerned, tired, saddened, dirty, drained). Cannot Resist.</p>
+                        <p><strong>ON A MISS (6-):</strong> Care backfires / MC makes a hard move</p>
                     </div>
                 </div>
 
-                <!-- Be Vulnerable -->
-                <div class="move-card">
-                    <h3 class="move-name">BE VULNERABLE</h3>
-                    <p class="move-trigger">When you <strong>open up emotionally or share something difficult</strong>, roll 2d6 + Power.</p>
-                    <div class="move-results">
-                        <p><strong>10+:</strong> Mark Growth and choose 2 benefits</p>
-                        <p><strong>7-9:</strong> Mark Growth and choose 1 benefit</p>
-                        <p><strong>Miss:</strong> Mark Growth but MC makes a move</p>
-                    </div>
-                    <p class="move-upgrades"><strong>Benefits:</strong> Gain support, clear a status, earn trust, inspire others</p>
-                </div>
-
-                <!-- Resist -->
                 <div class="move-card">
                     <h3 class="move-name">RESIST</h3>
-                    <p class="move-trigger">When you <strong>fight against a status being applied to you or try to reduce its tier</strong>, roll 2d6 + Power.</p>
+                    <p class="move-trigger"><strong>Trigger:</strong> Avoid status being imposed on you</p>
                     <div class="move-results">
-                        <p><strong>10+:</strong> Fully resist or reduce by 2 tiers</p>
-                        <p><strong>7-9:</strong> Reduce status by 1 tier</p>
-                        <p><strong>Miss:</strong> Take the full status</p>
+                        <p><strong>ON A 10+:</strong> Fend off effect - take NO status</p>
+                        <p><strong>ON A 7-9:</strong> Take status with one less tier (e.g., Guilty-3 → Guilty-2)</p>
+                        <p><strong>ON A MISS (6-):</strong> Take full status</p>
+                    </div>
+                    <p class="move-upgrades"><strong>Note:</strong> Cannot Resist side effects from Care (7-9), Get a Clue (7-9), or Be Vulnerable (7-9)</p>
+                </div>
+
+                <div class="move-card">
+                    <h3 class="move-name">BE VULNERABLE</h3>
+                    <p class="move-trigger"><strong>Trigger:</strong> Put yourself on the line - action that could end badly</p>
+                    <div class="move-results">
+                        <p><strong>ON A 10+:</strong> You do it and it's wonderful!</p>
+                        <p><strong>ON A 7-9:</strong> You do it, but MC picks ONE: 😰 Side Effects (negative status, cannot Resist) • 🔥 Burnout (one tag burnt) • 🎭 Drama</p>
+                        <p><strong>ON A MISS (6-):</strong> You fail OR succeed but MC makes hard move</p>
                     </div>
                 </div>
             </div>
@@ -430,7 +1157,24 @@
 
     <!-- Firebase Config -->
     <script type="module" src="firebase-config.js"></script>
+    <!-- Firebase Broadcast -->
+    <script type="module" src="firebase-broadcast.js"></script>
     <!-- Main App JavaScript -->
     <script type="module" src="app.js"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then((registration) => {
+                        console.log('ServiceWorker registration successful:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('ServiceWorker registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
