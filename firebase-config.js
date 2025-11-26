@@ -434,6 +434,33 @@ if (database) {
     }
     
     // ================================
+    // DOWNTIME UNLOCK FROM MC
+    // Allows players to edit Growth/Shade/Release
+    // ================================
+    if (data.downtimeUnlocked !== undefined) {
+      if (window.characterData) {
+        window.characterData.downtimeUnlocked = data.downtimeUnlocked;
+      }
+      
+      // Show/hide downtime indicator if it exists
+      const indicator = document.getElementById('downtimeIndicator');
+      if (indicator) {
+        indicator.style.display = data.downtimeUnlocked ? 'block' : 'none';
+      }
+      
+      // Notify user
+      if (window.showNotification) {
+        if (data.downtimeUnlocked) {
+          window.showNotification('🌙 DOWNTIME: You may now update Growth/Shade/Release!');
+        } else {
+          window.showNotification('🔒 Downtime ended - Growth/Shade/Release locked');
+        }
+      }
+      
+      console.log(`🌙 Downtime ${data.downtimeUnlocked ? 'ENABLED' : 'DISABLED'} by MC`);
+    }
+    
+    // ================================
     // LEGACY TAG FORMAT SUPPORT
     // For backward compatibility with old format
     // ================================
