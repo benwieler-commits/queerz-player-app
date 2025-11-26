@@ -46,6 +46,10 @@ let characterData = {
     activeCombo: null // NEW: Track active combo (stores combo power and move until reset)
 };
 
+// IMPORTANT: Expose characterData globally IMMEDIATELY so firebase-config.js can access it
+// This must happen before any MC broadcasts are received
+window.characterData = characterData;
+
 function createEmptyTheme(type = 'rainbow') {
     return {
         type: type, // 'rainbow' or 'anchor'
@@ -2568,7 +2572,12 @@ function setupFileHandling() {
             reader.onload = (event) => {
                 try {
                     const imported = JSON.parse(event.target.result);
-                    characterData = imported;
+                    // IMPORTANT: Use Object.assign to maintain window.characterData reference
+                    // Don't reassign characterData = imported (breaks window reference!)
+                    Object.keys(characterData).forEach(key => delete characterData[key]);
+                    Object.assign(characterData, imported);
+                    // Ensure window reference is updated
+                    window.characterData = characterData;
                     loadCharacterToUI();
                     alert('✅ Character loaded successfully!');
                 } catch (error) {
