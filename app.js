@@ -2578,6 +2578,11 @@ function setupFileHandling() {
                     Object.assign(characterData, imported);
                     // Ensure window reference is updated
                     window.characterData = characterData;
+                    // IMMEDIATELY store name in localStorage for MC broadcast matching
+                    if (characterData.name) {
+                        localStorage.setItem('currentCharacterName', characterData.name);
+                        console.log('📛 Stored character name in localStorage:', characterData.name);
+                    }
                     loadCharacterToUI();
                     alert('✅ Character loaded successfully!');
                 } catch (error) {
