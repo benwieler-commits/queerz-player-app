@@ -322,6 +322,17 @@ if (database) {
             console.log('📌 Status tags updated:', window.characterData.currentStatuses);
           }
           
+          // Dispatch mc-tag-update event FIRST for firebase-broadcast.js to track MC tags
+          // This MUST happen before any UI updates that might trigger a broadcast
+          const tagTrackingEvent = new CustomEvent('mc-tag-update', {
+            detail: {
+              statusTags: ourPlayerData.currentStatuses || [],
+              storyTags: ourPlayerData.storyTags || []
+            }
+          });
+          document.dispatchEvent(tagTrackingEvent);
+          console.log('📡 mc-tag-update event dispatched for tag tracking');
+          
           // Dispatch custom event for UI update
           const tagEvent = new CustomEvent('mc-tags-updated', {
             detail: {
@@ -331,7 +342,7 @@ if (database) {
             }
           });
           document.dispatchEvent(tagEvent);
-          console.log('📡 Tag update event dispatched');
+          console.log('📡 mc-tags-updated event dispatched for UI');
           
           // Call update function if it exists
           if (window.updateCharacterDisplay) {
