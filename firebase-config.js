@@ -1,6 +1,6 @@
 // ================================
 // FIREBASE CONFIG - PLAYER APP  
-// COMPLETE REWRITE - Proper Tag Parsing
+// COMPLETE FIX - Music, Tags, & Rolls
 // ================================
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -38,112 +38,6 @@ try {
 } catch (error) {
   console.error('❌ Firebase initialization failed:', error);
 }
-
-// ================================
-// TAG PARSING UTILITIES
-// ================================
-
-/**
- * Parse a STATUS tag from MC format
- * INPUT: "example-tag-1" through "example-tag-6"
- * OUTPUT: { name: "Example Tag", tier: 1, modifier: -1, isOngoing: true }
- * 
- * Status tags are ALWAYS:
- * - Ongoing (until removed by MC)
- * - Negative modifier (penalty to Power)
- * - Tier 1-6
- * 
- * @param {string} tagString - Raw tag string from MC
- * @returns {Object} Parsed status object
- */
-function parseStatusTagFromMC(tagString) {
-  if (!tagString || typeof tagString !== 'string') {
-    return null;
-  }
-  
-  console.log('🔍 Parsing STATUS tag:', tagString);
-  
-  // Match format: "anything-here-1" through "anything-here-6"
-  const match = tagString.match(/^(.+)-([1-6])$/);
-  
-  if (match) {
-    const [, namePart, tierStr] = match;
-    const tier = parseInt(tierStr);
-    
-    // Convert kebab-case to Title Case for display
-    const displayName = namePart
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-    
-    const parsed = {
-      name: displayName,
-      tier: tier,
-      modifier: -tier,           // Status tags are always NEGATIVE
-      isTemporary: false,        // Status tags from MC are ALWAYS Ongoing
-      isOngoing: true,           // Status tags from MC are ALWAYS Ongoing
-      mcCreated: true,           // Flag to identify MC-created tags
-      rawString: tagString       // Keep original for reference
-    };
-    
-    console.log('✅ Parsed STATUS tag:', parsed);
-    return parsed;
-  }
-  
-  // Fallback: treat as tier 2 if no valid suffix
-  console.warn('⚠️ Invalid status tag format, using default tier 2:', tagString);
-  return {
-    name: tagString.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-    tier: 2,
-    modifier: -2,
-    isTemporary: false,
-    isOngoing: true,
-    mcCreated: true,
-    rawString: tagString
-  };
-}
-
-/**
- * Parse a STORY tag from MC format
- * INPUT: "example-story-tag" (no numerical suffix)
- * OUTPUT: { name: "Example Story Tag", modifier: 0, isOngoing: true }
- * 
- * Story tags are ALWAYS:
- * - Ongoing (until removed by MC)
- * - NO modifier (they are clue reminders, not power bonuses)
- * 
- * @param {string} tagString - Raw tag string from MC
- * @returns {Object} Parsed story tag object
- */
-function parseStoryTagFromMC(tagString) {
-  if (!tagString || typeof tagString !== 'string') {
-    return null;
-  }
-  
-  console.log('🔍 Parsing STORY tag:', tagString);
-  
-  // Convert kebab-case to Title Case for display
-  const displayName = tagString
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-  
-  const parsed = {
-    name: displayName,
-    modifier: 0,               // Story tags have NO modifier
-    isTemporary: false,        // Story tags from MC are ALWAYS Ongoing
-    isOngoing: true,           // Story tags from MC are ALWAYS Ongoing
-    mcCreated: true,           // Flag to identify MC-created tags
-    rawString: tagString       // Keep original for reference
-  };
-  
-  console.log('✅ Parsed STORY tag:', parsed);
-  return parsed;
-}
-
-// Make parsing functions globally available
-window.parseStatusTagFromMC = parseStatusTagFromMC;
-window.parseStoryTagFromMC = parseStoryTagFromMC;
 
 // ================================
 // AUTHENTICATION
@@ -200,10 +94,9 @@ if (database) {
     
     // ================================
     // LOCATION UPDATE (environment OR location)
-    // Only process if NOT a tags-only update
     // ================================
     const locationData = data.location || data.environment;
-    if (locationData && !data.tagsOnly) {
+    if (locationData && !data.tagsOnly) {  // Skip if tags-only update
       const sceneInfo = document.getElementById('sceneInfo');
       if (sceneInfo) {
         sceneInfo.textContent = locationData.name || 'Unknown Location';
@@ -222,15 +115,13 @@ if (database) {
         sceneImage.style.display = 'none';
       }
 
-      // STOP MUSIC on location change ONLY if no new music provided
-      // This is the ONLY way music stops - location change without new music
+            // STOP MUSIC on location change (if no new music provided)
+      // Music should only continue if explicitly sent with location change
       const audioPlayer = document.getElementById('musicPlayer');
       if (audioPlayer && !data.music) {
         audioPlayer.pause();
         audioPlayer.src = '';
-        const musicInfo = document.getElementById('musicInfo');
-        if (musicInfo) musicInfo.textContent = 'No music playing';
-        console.log('🎵 Music stopped due to location change (no new music provided)');
+        console.log('🎵 Music stopped due to location change');
       }
       
       console.log('📍 Location updated:', locationData.name);
@@ -238,9 +129,8 @@ if (database) {
     
     // ================================
     // NPC/SPOTLIGHT UPDATE
-    // Only process if NOT a tags-only update
     // ================================
-    if (data.npc && !data.tagsOnly) {
+    if (data.npc && !data.tagsOnly) {  // Skip if tags-only update
       const spotlightInfo = document.getElementById('spotlightInfo');
       if (spotlightInfo) {
         spotlightInfo.textContent = `NPC: ${data.npc.name || 'Unknown'}`;
@@ -274,17 +164,15 @@ if (database) {
     }
     
     // ================================
-    // MUSIC UPDATE
-    // Only process if NOT a tags-only update
-    // Tags/NPC updates should NEVER interrupt music
+    // MUSIC UPDATE - ENHANCED!
     // ================================
-    if (data.music && !data.tagsOnly) {
+    if (data.music && !data.tagsOnly) {  // Skip if tags-only update
       const musicInfo = document.getElementById('musicInfo');
       if (musicInfo) {
         musicInfo.textContent = data.music.name || 'Unknown Track';
       }
       
-      // Update audio player
+      // Update audio player - ALWAYS show if URL exists
       const audioPlayer = document.getElementById('musicPlayer');
       if (audioPlayer) {
         if (data.music.url) {
@@ -321,134 +209,25 @@ if (database) {
     }
     
     // ================================
-    // TAG UPDATES - PROPER PARSING
-    // MC sends: {players: [{name, storyTags, currentStatuses}], spotlightedPlayer: "name"}
-    // 
-    // STATUS TAGS: "example-tag-1" through "example-tag-6"
-    //   - Always Ongoing until MC removes
-    //   - Negative modifier (penalty to Power)
-    //   
-    // STORY TAGS: "example-tag" (no numerical suffix)
-    //   - Always Ongoing until MC removes
-    //   - NO modifier (clue reminders)
-    // ================================
-    if (data.players && Array.isArray(data.players)) {
-      console.log('🏷️ Player tags received from MC:', data.players);
-      console.log('🎯 Spotlighted player:', data.spotlightedPlayer);
-      
-      // Get our character name from localStorage
-      const ourCharacterName = localStorage.getItem('currentCharacterName') || window.characterData?.name;
-      
-      if (!ourCharacterName) {
-        console.log('ℹ️ No character loaded yet, skipping tag update');
-        return;
-      }
-      
-      // Find our player data in the broadcast
-      // Check for exact match OR "ALL_PLAYERS" broadcast
-      const ourPlayerData = data.players.find(p => 
-        p.name === ourCharacterName || 
-        p.name === "ALL_PLAYERS"
-      );
-      
-      if (ourPlayerData) {
-        console.log('✅ Found applicable tag data:', ourPlayerData);
-        
-        // Check if we're spotlighted
-        const isSpotlighted = data.spotlightedPlayer === ourCharacterName;
-        if (isSpotlighted) {
-          console.log('🎭 WE ARE SPOTLIGHTED!');
-        }
-        
-        // Parse and apply status tags
-        const parsedStatuses = [];
-        if (ourPlayerData.currentStatuses && Array.isArray(ourPlayerData.currentStatuses)) {
-          ourPlayerData.currentStatuses.forEach(tagString => {
-            const parsed = parseStatusTagFromMC(tagString);
-            if (parsed) {
-              parsedStatuses.push(parsed);
-            }
-          });
-          console.log('📌 Parsed STATUS tags:', parsedStatuses);
-        }
-        
-        // Parse and apply story tags
-        const parsedStoryTags = [];
-        if (ourPlayerData.storyTags && Array.isArray(ourPlayerData.storyTags)) {
-          ourPlayerData.storyTags.forEach(tagString => {
-            const parsed = parseStoryTagFromMC(tagString);
-            if (parsed) {
-              parsedStoryTags.push(parsed);
-            }
-          });
-          console.log('📖 Parsed STORY tags:', parsedStoryTags);
-        }
-        
-        // Dispatch custom event for UI update in player-app.js
-        const tagEvent = new CustomEvent('mc-tag-update', {
-          detail: {
-            statusTags: parsedStatuses,
-            storyTags: parsedStoryTags,
-            isSpotlighted: isSpotlighted,
-            rawStatuses: ourPlayerData.currentStatuses || [],
-            rawStoryTags: ourPlayerData.storyTags || []
-          }
-        });
-        document.dispatchEvent(tagEvent);
-        console.log('📡 Tag update event dispatched');
-        
-        // Also dispatch the mc-tags-updated event for backward compatibility
-        const compatEvent = new CustomEvent('mc-tags-updated', {
-          detail: {
-            storyTags: parsedStoryTags,
-            currentStatuses: parsedStatuses,
-            isSpotlighted: isSpotlighted
-          }
-        });
-        document.dispatchEvent(compatEvent);
-        
-        // Call update function if it exists
-        if (window.updateCharacterDisplay) {
-          window.updateCharacterDisplay();
-          console.log('🔄 Character display updated');
-        }
-        
-        // Recalculate power with new status modifiers
-        if (window.calculateTotalPower) {
-          window.calculateTotalPower();
-          console.log('⚡ Power recalculated with status modifiers');
-        }
-        
-        // Show notification
-        const totalTags = parsedStatuses.length + parsedStoryTags.length;
-        if (totalTags > 0) {
-          // Try to use app's notification function
-          if (window.showNotification) {
-            window.showNotification(`📥 Received ${totalTags} tag(s) from MC`);
-          }
-        }
-        
-      } else {
-        console.log('ℹ️ No tags for our character in this broadcast');
-      }
-    }
-    
-    // ================================
     // DOWNTIME UNLOCK FROM MC
     // Allows players to edit Growth/Shade/Release
     // ================================
     if (data.downtimeUnlocked !== undefined) {
+      console.log('🌙 Downtime status received:', data.downtimeUnlocked);
+      
+      // Update characterData
       if (window.characterData) {
         window.characterData.downtimeUnlocked = data.downtimeUnlocked;
+        console.log('🌙 characterData.downtimeUnlocked set to:', data.downtimeUnlocked);
       }
       
-      // Show/hide downtime indicator if it exists
+      // Show/hide downtime indicator
       const indicator = document.getElementById('downtimeIndicator');
       if (indicator) {
         indicator.style.display = data.downtimeUnlocked ? 'block' : 'none';
       }
       
-      // Notify user
+      // Show notification to player
       if (window.showNotification) {
         if (data.downtimeUnlocked) {
           window.showNotification('🌙 DOWNTIME: You may now update Growth/Shade/Release!');
@@ -456,41 +235,96 @@ if (database) {
           window.showNotification('🔒 Downtime ended - Growth/Shade/Release locked');
         }
       }
-      
-      console.log(`🌙 Downtime ${data.downtimeUnlocked ? 'ENABLED' : 'DISABLED'} by MC`);
     }
     
     // ================================
-    // LEGACY TAG FORMAT SUPPORT
-    // For backward compatibility with old format
+    // TAG UPDATES - FIXED STRUCTURE!
+    // MC sends: {players: [{name, storyTags, currentStatuses}], spotlightedPlayer: "name"}
     // ================================
+    if (data.players && Array.isArray(data.players)) {
+      console.log('🏷️ Player tags received from MC:', data.players);
+      console.log('🎯 Spotlighted player:', data.spotlightedPlayer);
+      
+      // Get our character name
+      const ourCharacterName = window.characterData?.name;
+      
+      if (!ourCharacterName) {
+        console.log('ℹ️ No character loaded yet, skipping tag update');
+        return;
+      }
+      
+      // Find our player data in the broadcast
+      const ourPlayerData = data.players.find(p => p.name === ourCharacterName);
+      
+      if (ourPlayerData) {
+        console.log('✅ Found our character data in broadcast:', ourPlayerData);
+        
+        // Check if we're spotlighted
+        const isSpotlighted = data.spotlightedPlayer === ourCharacterName;
+        if (isSpotlighted) {
+          console.log('🎭 WE ARE SPOTLIGHTED!');
+        }
+        
+        // Update character data with tags from MC
+        if (window.characterData) {
+          // Update story tags
+          if (ourPlayerData.storyTags) {
+            window.characterData.storyTags = [...ourPlayerData.storyTags];
+            console.log('📖 Story tags updated:', window.characterData.storyTags);
+          }
+          
+          // Update status tags (already formatted by MC)
+          if (ourPlayerData.currentStatuses) {
+            window.characterData.currentStatuses = [...ourPlayerData.currentStatuses];
+            console.log('📌 Status tags updated:', window.characterData.currentStatuses);
+          }
+          
+          // Dispatch custom event for UI update
+          const tagEvent = new CustomEvent('mc-tags-updated', {
+            detail: {
+              storyTags: ourPlayerData.storyTags || [],
+              currentStatuses: ourPlayerData.currentStatuses || [],
+              isSpotlighted: isSpotlighted
+            }
+          });
+          document.dispatchEvent(tagEvent);
+          console.log('📡 Tag update event dispatched');
+          
+          // Call update function if it exists
+          if (window.updateCharacterDisplay) {
+            window.updateCharacterDisplay();
+            console.log('🔄 Character display updated');
+          }
+          
+          // Calculate power with new status tags if function exists
+          if (window.calculateTotalPower) {
+            window.calculateTotalPower();
+            console.log('⚡ Power recalculated with status modifiers');
+          }
+        }
+      } else {
+        console.log('ℹ️ Our character not found in MC broadcast (we might not be in the session yet)');
+      }
+    }
+    
+    // Legacy tag format support (direct tags object)
     if (data.tags && !data.players) {
       console.log('🏷️ Legacy tag format received:', data.tags);
-      
-      // Parse status tags
-      const parsedStatuses = (data.tags.status || []).map(tag => {
-        if (typeof tag === 'string') {
-          return parseStatusTagFromMC(tag);
-        }
-        return tag;
-      }).filter(t => t);
-      
-      // Parse story tags
-      const parsedStoryTags = (data.tags.story || []).map(tag => {
-        if (typeof tag === 'string') {
-          return parseStoryTagFromMC(tag);
-        }
-        return tag;
-      }).filter(t => t);
       
       // Dispatch custom event for tag updates
       const tagEvent = new CustomEvent('mc-tag-update', {
         detail: {
-          statusTags: parsedStatuses,
-          storyTags: parsedStoryTags
+          statusTags: data.tags.status || [],
+          storyTags: data.tags.story || []
         }
       });
       document.dispatchEvent(tagEvent);
+      
+      // Apply tags to character if function exists
+      if (window.applyMcTagsToCharacter) {
+        console.log('📝 Applying legacy tags to character...');
+        window.applyMcTagsToCharacter(data.tags);
+      }
     }
     
     // Update sync status badge
@@ -502,10 +336,7 @@ if (database) {
   });
   
   console.log('✅ MC broadcast listener active');
-  console.log('   📥 Listening for: location, music, npc, players (with tags)');
-  console.log('   🏷️ STATUS TAGS: "example-tag-1" through "example-tag-6" (negative, ongoing)');
-  console.log('   📖 STORY TAGS: "example-tag" (no modifier, ongoing)');
-  console.log('   🎵 Music only stops on LOCATION change without new music');
+  console.log('   📥 Listening for: location, music, npc, players (with tags), spotlightedPlayer');
 }
 
 // ================================
@@ -728,10 +559,10 @@ window.deleteCharacterFromCloud = deleteCharacterFromCloud;
 window.saveLastCharacterToCloud = saveLastCharacterToCloud;
 window.loadLastCharacterFromCloud = loadLastCharacterFromCloud;
 
-console.log('✅ firebase-config.js loaded (COMPLETE REWRITE)');
+console.log('✅ firebase-config.js loaded - COMPLETE FIX VERSION');
 console.log('   📥 Listening: mcBroadcast');
 console.log('   📤 Broadcasting: playerCharacters/{userId}, playerRolls/{userId}');
 console.log('   ☁️ Cloud storage: users/{userId}/characters');
-console.log('   🎵 Music: ONLY stops on location change without new music');
-console.log('   🏷️ STATUS TAGS: "example-tag-1" to "example-tag-6" (negative, ongoing)');
-console.log('   📖 STORY TAGS: "example-tag" (no modifier, ongoing, clue reminders)');
+console.log('   🎵 Music player: ALWAYS shows when URL present');
+console.log('   🏷️ Tags: Handles players array with spotlightedPlayer');
+console.log('   🎯 Element IDs: sceneInfo, musicInfo, spotlightInfo, musicPlayer');
