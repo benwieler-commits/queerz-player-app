@@ -649,14 +649,15 @@ function handleResistResult(isSuccess, isPartial, isMiss, power) {
 }
 
 // BE VULNERABLE - Complication display
+// NOTE: Complications are already displayed by displayBeVulnerableResult()
+// This handler is kept for any future additional logic
 function handleBeVulnerableResult(isSuccess, isPartial, isMiss, power) {
     if (!isPartial) return; // Only show complications on 7-9
-
-    setTimeout(() => {
-        showBeVulnerableComplications();
-    }, 500);
+    
+    // Complications are shown inline by displayBeVulnerableResult
+    // No separate modal needed
+    console.log('⚡ Be Vulnerable partial - complications shown inline');
 }
-
 function setupDiceRoller() {
     const rollBtn = document.getElementById('rollBtn');
     const burnForGuaranteedHitBtn = document.getElementById('burnForGuaranteedHitBtn');
@@ -1029,13 +1030,25 @@ function displayGetAClueResult(rollTotal, power) {
  * TALK IT OUT - Choose outcome and handle complications
  */
 function displayTalkItOutResult(rollTotal, power) {
-    if (rollTotal >= 7) {
-        const hasComplications = rollTotal >= 7 && rollTotal < 10;
-        openTalkItOutModal(power, hasComplications);
+    const rollResultDiv = document.getElementById('rollResult');
+    
+    if (rollTotal >= 10) {
+        // SUCCESS (10+) - Just show success message, no modal needed
+        rollResultDiv.innerHTML += `<div class="move-result-detail talk-it-out-result success">
+            <h3>✨ TALK IT OUT: Success!</h3>
+            <p>Choose ONE outcome:</p>
+            <ul style="text-align: left; margin: 10px auto; max-width: 400px;">
+                <li><strong>Make Progress</strong> - They see things more your way</li>
+                <li><strong>Strike a Deal</strong> - Agree on a trade or compromise</li>
+                <li><strong>Bond</strong> - Give them a relationship status (tier = ${power})</li>
+            </ul>
+        </div>`;
+    } else if (rollTotal >= 7) {
+        // PARTIAL (7-9) - Show modal with complications
+        openTalkItOutModal(power, true);
     }
-    // Miss: They put up walls / MC makes hard move
+    // Miss (6-): They put up walls / MC makes hard move
 }
-
 /**
  * CARE - Remove statuses/tags equal to Power
  */
@@ -3403,6 +3416,34 @@ window.checkDisplayElements = function() {
 
     return { statusList: !!statusList, storyList: !!storyList };
 };
+
+// ===================================
+// EXPOSE MODAL FUNCTIONS GLOBALLY
+// Required for onclick handlers in HTML
+// ===================================
+
+// Talk It Out modal functions
+window.openTalkItOutModal = openTalkItOutModal;
+window.closeTalkItOutModal = closeTalkItOutModal;
+window.confirmTalkItOut = confirmTalkItOut;
+
+// Get A Clue modal functions
+window.openGetAClueModal = openGetAClueModal;
+window.closeGetAClueModal = closeGetAClueModal;
+window.askClueQuestion = askClueQuestion;
+window.updateClueQuestionsList = updateClueQuestionsList;
+
+// Care modal functions
+window.openCareModal = openCareModal;
+window.closeCareModal = closeCareModal;
+window.renderCareStatusList = renderCareStatusList;
+window.renderCareStoryTagList = renderCareStoryTagList;
+window.updateCarePointsRemaining = updateCarePointsRemaining;
+
+// Be Vulnerable (complications shown inline, but expose for future use)
+window.displayBeVulnerableResult = displayBeVulnerableResult;
+
+console.log('   🎭 Modal functions exposed globally');
 
 console.log('💡 Debug functions available:');
 console.log('  - testAddTags() - Test with simple tag format');
