@@ -818,6 +818,51 @@ body {
     color: var(--text-secondary);
 }
 
+/* Scene + Portrait Overlay Container */
+.scene-portrait-container {
+    position: relative;
+    width: 100%;
+    min-height: 200px;
+    margin-top: 8px;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scene-image {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: none; /* Hidden by default, shown by JS */
+}
+
+.npc-portrait-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 60%;
+    max-height: 80%;
+    height: auto;
+    border-radius: 8px;
+    display: none; /* Hidden by default, shown by JS */
+    filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 40px rgba(74, 124, 126, 0.4));
+    z-index: 10;
+    pointer-events: none; /* Allow clicking through transparent areas */
+}
+
+/* When only portrait is visible (no scene image) */
+.scene-portrait-container:has(.scene-image[style*="display: none"]) .npc-portrait-overlay,
+.scene-portrait-container:has(.scene-image:not([src])) .npc-portrait-overlay {
+    position: static;
+    transform: none;
+    max-width: 300px;
+    margin: 8px auto;
+    display: none; /* Still controlled by JS */
+}
+
 /* MOVE SELECTOR */
 
 .move-selector {
